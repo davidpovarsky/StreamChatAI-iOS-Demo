@@ -1,0 +1,44 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project StreamChatAIDemo.xcodeproj -scheme StreamChatAIDemo
+      - name: Build for iOS device
+        run: |
+          set -o pipefail
+          xcodebuild -project StreamChatAIDemo.xcodeproj -scheme StreamChatAIDemo -configuration Release -sdk iphoneos -destination "generic/platform=iOS" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee build.log
+      - name: Package unsigned IPA
+        run: |
+          APP=$(find DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" -print -quit)
+          test -n "$APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry StreamChatAI-Demo-unsigned.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: StreamChatAI-Demo-IPA
+          path: StreamChatAI-Demo-unsigned.ipa
+          if-no-files-found: error
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore

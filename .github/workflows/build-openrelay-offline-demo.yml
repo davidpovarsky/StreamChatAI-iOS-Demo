@@ -5,22 +5,31 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 26
+      - name: Select newest Xcode with Swift 6.3+
         run: |
-          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort -V | tail -1)
           if [ -z "$XCODE" ]; then
-            echo "Xcode 26 not found"
+            echo "No Xcode 26 found"
             ls -1 /Applications | grep '^Xcode'
             exit 1
           fi
           echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+          SWIFT_VER=$("$XCODE/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc" --version | head -1)
+          echo "$SWIFT_VER"
+          case "$SWIFT_VER" in
+            *"Swift version 6.3"*|*"Swift version 6.4"*|*"Swift version 7."*) ;;
+            *)
+              echo "Selected Xcode does not provide Swift 6.3+"
+              exit 1
+              ;;
+          esac
 
       - name: Clone Open Relay
         run: |

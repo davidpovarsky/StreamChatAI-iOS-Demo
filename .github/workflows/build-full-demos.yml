@@ -1,0 +1,97 @@
+name: Build Full Chat SDK Demos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  swiftchat:
+    name: SwiftChat Full Demo
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone SwiftChat
+        run: |
+          mkdir -p upstream
+          git clone --depth 1 https://github.com/sachaservan/SwiftChat.git upstream/SwiftChat
+      - name: Patch into offline full showcase
+        run: python3 scripts/patch_swiftchat_full_demo.py
+      - name: Build device app
+        run: |
+          set -o pipefail
+          cd upstream/SwiftChat
+          xcodebuild -project SwiftChat.xcodeproj -scheme SwiftChat -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../swiftchat-build.log
+      - name: Package IPA
+        run: |
+          APP=$(find upstream/SwiftChat/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry SwiftChat-Full-Demo-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SwiftChat-Full-Demo-IPA
+          path: SwiftChat-Full-Demo-unsigned.ipa
+
+  swiftychat:
+    name: SwiftyChat Official Full Demo
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone SwiftyChat
+        run: |
+          mkdir -p upstream
+          git clone --depth 1 https://github.com/EnesKaraosman/SwiftyChat.git upstream/SwiftyChat
+      - name: Build official showcase app
+        run: |
+          set -o pipefail
+          cd upstream/SwiftyChat/SwiftyChatDemo
+          xcodebuild -project SwiftyChatDemo.xcodeproj -scheme SwiftyChatDemo -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../../swiftychat-build.log
+      - name: Package IPA
+        run: |
+          APP=$(find upstream/SwiftyChat/SwiftyChatDemo/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry SwiftyChat-Official-Full-Demo-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SwiftyChat-Official-Full-Demo-IPA
+          path: SwiftyChat-Official-Full-Demo-unsigned.ipa
+
+  manifold:
+    name: ManifoldKit Advanced Agent Demo
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone ManifoldKit
+        run: |
+          mkdir -p upstream
+          git clone --depth 1 https://github.com/ManifoldKit/ManifoldKit.git upstream/ManifoldKit
+      - name: Build official Advanced reference app
+        run: |
+          set -o pipefail
+          cd upstream/ManifoldKit
+          xcodebuild -project Example/Advanced.xcodeproj -scheme Advanced -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../manifold-build.log
+      - name: Package IPA
+        run: |
+          APP=$(find upstream/ManifoldKit/DerivedData/Build/Products/Debug-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry ManifoldKit-Advanced-Agent-Demo-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ManifoldKit-Advanced-Agent-Demo-IPA
+          path: ManifoldKit-Advanced-Agent-Demo-unsigned.ipa
+
+      - name: Build notes
+        if: always()
+        run: |
+          echo "ManifoldKit's Advanced app contains the official scripted scenario system."
+          echo "On a normal sideload launch, choose the built-in demo scenario cards."

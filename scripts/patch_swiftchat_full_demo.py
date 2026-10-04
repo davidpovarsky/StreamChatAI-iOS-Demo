@@ -1,9 +1,8 @@
 from pathlib import Path
-import re
 
 root = Path("upstream/SwiftChat")
 content_view = root / "SwiftChat/ContentView.swift"
-content_view.write_text("""import SwiftUI
+content_view.write_text('''import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = ChatViewModel()
@@ -13,18 +12,21 @@ struct ContentView: View {
             .environmentObject(viewModel)
     }
 }
-""", encoding="utf-8")
+''', encoding="utf-8")
 
 vm_path = root / "SwiftChat/ViewModels/ChatViewModel.swift"
 src = vm_path.read_text(encoding="utf-8")
 
-src = src.replace(
-    "self.isWebSearchEnabled = SettingsManager.shared.webSearchEnabled\n\n        // Create initial blank chat\n        let newChat = Chat.create(modelType: currentModel)\n        currentChat = newChat\n        chats = [newChat]",
-    """self.isWebSearchEnabled = SettingsManager.shared.webSearchEnabled
+old_init = '''self.isWebSearchEnabled = SettingsManager.shared.webSearchEnabled
+
+        // Create initial blank chat
+        let newChat = Chat.create(modelType: currentModel)
+        currentChat = newChat
+        chats = [newChat]'''
+
+new_init = '''self.isWebSearchEnabled = SettingsManager.shared.webSearchEnabled
         AppConfig.shared.apiKey = "__DEMO__"
 
-        // Full offline showcase data. These are real SwiftChat Message/Chat models,
-        // rendered by the app's production views without calling any API.
         let markdownChat = Chat.create(
             title: "Markdown, Code & Math",
             titleState: .manual,
@@ -35,13 +37,13 @@ src = src.replace(
                     content: """
                     ## Rich response
 
-                    SwiftChat renders **bold**, *italic*, lists, links and code blocks.
+                    SwiftChat renders **bold**, *italic*, lists, links and code.
 
                     - Streaming-friendly Markdown
                     - Syntax-highlighted code
                     - Native LaTeX rendering
 
-                    \\(E = mc^2\\)
+                    \\\\(E = mc^2\\\\)
 
                     ```swift
                     struct AgentReply: View {
@@ -107,6 +109,7 @@ src = src.replace(
                 )
             )
         ]
+
         let searchChat = Chat.create(
             title: "Web Search & Citations",
             titleState: .manual,
@@ -132,24 +135,18 @@ src = src.replace(
             type: .document,
             fileName: "brief.md",
             mimeType: "text/markdown",
-            textContent: "# Product brief\nA compact AI assistant interface.",
+            textContent: "# Product brief\\nA compact AI assistant interface.",
             description: "Markdown product brief",
             fileSize: 52,
             processingState: .completed
         )
+
         let attachmentChat = Chat.create(
             title: "Images & Documents",
             titleState: .manual,
             messages: [
-                Message(
-                    role: .user,
-                    content: "Use these files as context.",
-                    attachments: [imageAttachment, docAttachment]
-                ),
-                Message(
-                    role: .assistant,
-                    content: "I can see both attachments. The image provides visual context, while the document can be injected as text context."
-                )
+                Message(role: .user, content: "Use these files as context.", attachments: [imageAttachment, docAttachment]),
+                Message(role: .assistant, content: "I can see both attachments. The image provides visual context, while the document can be injected as text context.")
             ],
             modelType: currentModel
         )
@@ -179,11 +176,15 @@ src = src.replace(
         )
 
         chats = [markdownChat, reasoningChat, searchChat, attachmentChat, errorChat, longChat]
-        currentChat = markdownChat"""
-)
+        currentChat = markdownChat'''
 
-needle = "func sendMessage(text: String) {\n        guard !isLoading else { return }"
-replacement = """func sendMessage(text: String) {
+if old_init not in src:
+    raise SystemExit("Could not find SwiftChat init block")
+src = src.replace(old_init, new_init, 1)
+
+needle = '''func sendMessage(text: String) {
+        guard !isLoading else { return }'''
+replacement = '''func sendMessage(text: String) {
         guard !isLoading else { return }
 
         if AppConfig.shared.apiKey == "__DEMO__" {
@@ -200,7 +201,7 @@ replacement = """func sendMessage(text: String) {
                 guard let self else { return }
                 let reply = Message(
                     role: .assistant,
-                    content: "This is an **offline demo reply** rendered by SwiftChat's real production message view.\n\nTry the sidebar demo conversations to inspect reasoning, search/citations, attachments, errors, long context, Markdown, code and math.",
+                    content: "This is an **offline demo reply** rendered by SwiftChat's real production message view.\\n\\nTry the sidebar conversations to inspect reasoning, search/citations, attachments, errors, long context, Markdown, code and math.",
                     thoughts: "Demo mode simulated a short reasoning phase locally; no API request was made.",
                     isThinking: false,
                     isCollapsed: true,
@@ -210,13 +211,11 @@ replacement = """func sendMessage(text: String) {
                 self.isLoading = false
             }
             return
-        }"""
-if needle not in src:
-    raise SystemExit("Could not locate sendMessage() insertion point")
-src = src.replace(needle, replacement, 1)
+        }'''
 
-if "__DEMO__" not in src:
-    raise SystemExit("SwiftChat demo patch did not apply")
+if needle not in src:
+    raise SystemExit("Could not locate sendMessage insertion point")
+src = src.replace(needle, replacement, 1)
 
 vm_path.write_text(src, encoding="utf-8")
 print("SwiftChat patched for full offline showcase")

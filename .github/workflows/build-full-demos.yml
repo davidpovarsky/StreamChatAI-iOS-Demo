@@ -30,6 +30,13 @@ jobs:
         run: |
           python3 scripts/patch_swiftchat_full_demo.py
           python3 scripts/upgrade_swiftchat_ui.py
+          git -C upstream/SwiftChat add -A
+          git -C upstream/SwiftChat \
+            -c user.name="SwiftChat Baseline" \
+            -c user.email="baseline@example.invalid" \
+            commit -m "local golden baseline after existing patches"
+          python3 scripts/apply_swiftchat_safe_overlay.py
+          python3 scripts/verify_swiftchat_safe_overlay.py
       - name: Build device app
         run: |
           set -o pipefail

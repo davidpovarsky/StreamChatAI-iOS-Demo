@@ -11,7 +11,8 @@ ASSETS = UPSTREAM / "SwiftChat" / "Assets.xcassets"
 
 
 def run(*arguments: str) -> None:
-    subprocess.run(arguments, cwd=UPSTREAM, check=True)
+    command = [arguments[0], "-c", f"safe.directory={UPSTREAM.as_posix()}", *arguments[1:]]
+    subprocess.run(command, cwd=UPSTREAM, check=True)
 
 
 def copy_overlay_files() -> None:
@@ -45,6 +46,7 @@ def apply_checked_patches() -> None:
 
 def main() -> None:
     copy_overlay_files()
+    run("git", "add", "-N", "SwiftChat/Features", "SwiftChat/Assets.xcassets/demo-architecture.imageset")
     apply_checked_patches()
     print("SwiftChat safe overlay applied successfully")
 

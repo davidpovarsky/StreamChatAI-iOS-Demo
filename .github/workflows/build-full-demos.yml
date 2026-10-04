@@ -44,6 +44,12 @@ jobs:
           set -o pipefail
           cd upstream/SwiftChat
           xcodebuild -project SwiftChat.xcodeproj -scheme SwiftChat -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../swiftchat-build.log
+      - name: Report SwiftChat build errors
+        if: failure()
+        run: |
+          grep -E 'error:|warning:' swiftchat-build.log | tail -100 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
       - name: Package IPA
         run: |
           APP=$(find upstream/SwiftChat/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)

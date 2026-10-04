@@ -26,7 +26,9 @@ jobs:
           mkdir -p upstream
           git clone --depth 1 https://github.com/sachaservan/SwiftChat.git upstream/SwiftChat
       - name: Patch into offline full showcase
-        run: python3 scripts/patch_swiftchat_full_demo.py
+        run: |
+          python3 scripts/patch_swiftchat_full_demo.py
+          python3 scripts/upgrade_swiftchat_ui.py
       - name: Build device app
         run: |
           set -o pipefail

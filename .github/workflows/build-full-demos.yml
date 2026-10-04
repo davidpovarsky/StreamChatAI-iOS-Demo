@@ -105,11 +105,15 @@ jobs:
         run: |
           mkdir -p upstream
           git clone --depth 1 https://github.com/ManifoldKit/ManifoldKit.git upstream/ManifoldKit
+      - name: Resolve ManifoldKit package graph with SwiftPM
+        run: |
+          cd upstream/ManifoldKit
+          swift package resolve --scratch-path .spm
+
       - name: Build official Advanced reference app
         run: |
           set -o pipefail
           cd upstream/ManifoldKit
-          xcodebuild -resolvePackageDependencies -project Example/Advanced.xcodeproj -scheme Advanced -clonedSourcePackagesDirPath .spm
           xcodebuild -project Example/Advanced.xcodeproj -scheme Advanced -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData -clonedSourcePackagesDirPath .spm -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../manifold-build.log
       - name: Package IPA
         run: |

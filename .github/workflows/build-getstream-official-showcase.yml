@@ -1,0 +1,63 @@
+name: Build GetStream Official AI Showcase
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone official GetStream sample
+        run: |
+          mkdir -p upstream
+          git clone --depth 1 https://github.com/GetStream/chat-ai-samples.git upstream/chat-ai-samples
+
+      - name: Patch offline full showcase
+        run: python3 scripts/patch_getstream_offline_showcase.py
+
+      - name: Resolve packages
+        run: |
+          cd upstream/chat-ai-samples/ios
+          xcodebuild -resolvePackageDependencies -project AIComponents.xcodeproj -scheme AIComponents
+
+      - name: Build unsigned device app
+        run: |
+          set -o pipefail
+          cd upstream/chat-ai-samples/ios
+          xcodebuild \
+            -project AIComponents.xcodeproj \
+            -scheme AIComponents \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build | tee ../../../getstream-official-build.log
+
+      - name: Package IPA
+        run: |
+          APP=$(find upstream/chat-ai-samples/ios/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry GetStream-Official-AI-Showcase-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GetStream-Official-AI-Showcase-IPA
+          path: GetStream-Official-AI-Showcase-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: getstream-official-build-log
+          path: getstream-official-build.log
+          if-no-files-found: ignore

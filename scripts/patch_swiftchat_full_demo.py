@@ -2,7 +2,7 @@ from pathlib import Path
 
 root = Path("upstream/SwiftChat")
 
-# Keep the original SwiftChat UI and replace only its initial data/runtime with
+# Keep the original SwiftChat UI root and replace only its initial data/runtime with
 # deterministic offline demo conversations.
 content_view = root / "SwiftChat/ContentView.swift"
 content_view.write_text("""import SwiftUI
@@ -49,54 +49,61 @@ new_init = r'''        self.isWebSearchEnabled = SettingsManager.shared.webSearc
             modelType: currentModel
         )
 
-        var researchMessage = Message(
-            role: .assistant,
-            content: """
-            ## What makes a modern AI chat interface feel excellent
+        // Sources for Web Research
+        let s1 = WebSearchSource(title: "SwiftUI Documentation - Apple", url: "https://developer.apple.com/documentation/swiftui")
+        let s2 = WebSearchSource(title: "SwiftChat Open Source Client", url: "https://github.com/sachaservan/SwiftChat")
+        let s3 = WebSearchSource(title: "Human Interface Guidelines - Apple", url: "https://developer.apple.com/design/human-interface-guidelines")
+        let s4 = WebSearchSource(title: "OpenAI Developer Platform", url: "https://platform.openai.com/docs")
+        let s5 = WebSearchSource(title: "GetStream StreamChatAI SDK", url: "https://github.com/GetStream/stream-chat-swift-ai")
+        let s6 = WebSearchSource(title: "Materials & Liquid Glass - Apple HIG", url: "https://developer.apple.com/design/human-interface-guidelines/materials")
 
-            A strong AI interface becomes useful **while the answer is still arriving**. Progressive rendering should keep headings, lists and emphasis stable instead of making the page jump as new text appears. [1](#cite-1~https%3A%2F%2Fdeveloper.apple.com%2Fxcode%2Fswiftui~SwiftUI)
+        let researchParts: [MessageContentPart] = [
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ## Modern AI Chat Client Architecture
 
-            ### 1. Live streaming must feel calm
+                A first-class AI chat client prioritizes layout stability and responsiveness during live token arrival. By decoupling network streaming from high-fidelity rendering, interfaces avoid jarring reflows as headings, lists, and formatted code arrive.
+                """,
+                sources: [s1]
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Section-Level Evidence & Citations
 
-            The conversation should follow the newest text only while the reader is already near the bottom. If the reader scrolls upward, the app should respect that choice. The stop control should remain immediately reachable during generation. [2](#cite-2~https%3A%2F%2Fgithub.com%2Fsachaservan%2FSwiftChat~SwiftChat) [3](#cite-3~https%3A%2F%2Fdeveloper.apple.com%2Fdocumentation%2Fswiftui%2Fscrollview~ScrollView)
+                In comprehensive research answers, gathering all references in a single footer disconnects claims from their evidence. Presenting quiet, section-specific source indicators directly beside the relevant paragraphs preserves reading flow while enabling on-demand verification.
+                """,
+                sources: [s2, s3]
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Progressive Multimodal Streaming
 
-            ### 2. Citations belong beside the claims they support
+                Modern LLMs output structured responses that interleave narrative explanation with search results, tool calls, and media embeds. A typed content-part model allows the user interface to stream and place rich components safely without relying on fragile string parsing or pseudo-Markdown syntax.
+                """,
+                sources: [s4, s5]
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Fluid System Integration with Liquid Glass
 
-            In a long research answer, collecting every source only at the bottom makes provenance difficult to follow. Citations work better when they are woven through the relevant sections, so a reader can inspect a source without leaving the paragraph they are reading. [4](#cite-4~https%3A%2F%2Fplatform.openai.com%2Fdocs~OpenAI%20Docs)
+                On iOS 26, system presentations emerging from Liquid Glass controls seamlessly morph from the invoking button into the expanded menu. Adhering to Apple's native presentation behaviors ensures the application feels completely integrated with the latest system conventions.
+                """,
+                sources: [s6]
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Performance & Table View Optimization
 
-            That matters even more when different parts of the same answer rely on different evidence. Framework behavior may come from platform documentation, while an implementation pattern may come from an open-source project or SDK sample. [5](#cite-5~https%3A%2F%2Fgithub.com%2FGetStream%2Fchat-ai-samples~GetStream%20AI%20Samples)
-
-            ### 3. Agent activity should remain visible but quiet
-
-            Searches, file reads, tool calls and approvals should appear as lightweight conversation events. The user needs enough visibility to understand what the agent is doing, but the activity UI should never compete with the final answer. [6](#cite-6~https%3A%2F%2Fgithub.com%2FGetStream%2Fstream-chat-swift-ai~StreamChatAI)
-
-            ### 4. The composer is part of the agent experience
-
-            Attachments and secondary actions should stay connected to the message field. On iPad, a source-anchored popover can remain visually attached to the **+** button rather than replacing the conversation with a sheet. [7](#cite-7~https%3A%2F%2Fdeveloper.apple.com%2Fdocumentation%2Fswiftui%2Fview%2Fpopover%28ispresented%3Aattachmentanchor%3Aarrowedge%3Acontent%3A%29~SwiftUI%20Popover)
-
-            ### 5. Rich rendering needs to survive the stream
-
-            Markdown, code, math and links should remain readable before generation completes. That is where an AI-specific renderer differs from simply dropping a finished string into a normal text view. [8](#cite-8~https%3A%2F%2Fdeveloper.apple.com%2Fdesign%2Fhuman-interface-guidelines~Human%20Interface%20Guidelines)
-
-            ### Bottom line
-
-            The strongest experience combines **stable live streaming, section-level citations, inline source inspection, rich rendering and an anchored composer menu**. Each detail is small, but together they determine whether the assistant feels polished. [2](#cite-2~https%3A%2F%2Fgithub.com%2Fsachaservan%2FSwiftChat~SwiftChat) [7](#cite-7~https%3A%2F%2Fdeveloper.apple.com%2Fdocumentation%2Fswiftui%2Fview%2Fpopover%28ispresented%3Aattachmentanchor%3Aarrowedge%3Acontent%3A%29~SwiftUI%20Popover)
-            """,
-            webSearchState: WebSearchState(
-                query: "modern AI chat UI streaming citations composer",
-                status: .completed,
-                sources: [
-                    WebSearchSource(title: "SwiftUI", url: "https://developer.apple.com/xcode/swiftui"),
-                    WebSearchSource(title: "SwiftChat", url: "https://github.com/sachaservan/SwiftChat"),
-                    WebSearchSource(title: "SwiftUI ScrollView", url: "https://developer.apple.com/documentation/swiftui/scrollview"),
-                    WebSearchSource(title: "OpenAI developer documentation", url: "https://platform.openai.com/docs"),
-                    WebSearchSource(title: "GetStream AI samples", url: "https://github.com/GetStream/chat-ai-samples"),
-                    WebSearchSource(title: "StreamChatAI", url: "https://github.com/GetStream/stream-chat-swift-ai"),
-                    WebSearchSource(title: "SwiftUI Popover", url: "https://developer.apple.com/documentation/swiftui/view/popover(isPresented:attachmentAnchor:arrowEdge:content:)"),
-                    WebSearchSource(title: "Human Interface Guidelines", url: "https://developer.apple.com/design/human-interface-guidelines")
-                ]
+                Rendering rich chats on iOS requires careful cell lifecycle management. Combining UITableView caching with fixed-aspect media surfaces prevents geometric jitter during asynchronous loading and scrolling.
+                """,
+                sources: [s2]
             )
-        )
+        ]
 
         let researchChat = Chat.create(
             title: "Web Research + Inline Sources",
@@ -106,7 +113,219 @@ new_init = r'''        self.isWebSearchEnabled = SettingsManager.shared.webSearc
                     role: .user,
                     content: "Research what makes a modern AI chat interface feel excellent. Cite the relevant sources throughout the answer."
                 ),
-                researchMessage
+                Message(
+                    role: .assistant,
+                    content: researchParts.compactMap(\.markdown).joined(separator: "\n\n"),
+                    webSearchState: WebSearchState(
+                        query: "modern AI chat client streaming inline citations Liquid Glass",
+                        status: .completed,
+                        sources: [s1, s2, s3, s4, s5, s6]
+                    ),
+                    contentParts: researchParts
+                )
+            ],
+            modelType: currentModel
+        )
+
+        let imagesParts: [MessageContentPart] = [
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Visualizing Generative Design Systems
+
+                Modern AI interfaces combine structured typography with rich inline visual assets to communicate complex architectures at a glance.
+                """
+            ),
+            MessageContentPart(
+                kind: .image,
+                url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80",
+                title: "Interface Architecture",
+                caption: "Fig 1. Generative canvas rendering with stable 16:9 aspect ratio."
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                The image above is rendered inline with rounded corners and consistent padding. Notice how text continues smoothly beneath the graphic without requiring manual layout shifts.
+                """
+            )
+        ]
+
+        let imagesChat = Chat.create(
+            title: "Images in AI Responses",
+            titleState: .manual,
+            messages: [
+                Message(role: .user, content: "Show me an example of an AI response with inline images."),
+                Message(
+                    role: .assistant,
+                    content: imagesParts.compactMap(\.markdown).joined(separator: "\n\n"),
+                    contentParts: imagesParts
+                )
+            ],
+            modelType: currentModel
+        )
+
+        let videoParts: [MessageContentPart] = [
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Video Media Integration
+
+                Below is a playable native video stream powered by AVKit with standard playback controls and stable geometry.
+                """
+            ),
+            MessageContentPart(
+                kind: .video,
+                url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                title: "Sample Video Stream",
+                caption: "High-definition MP4 stream rendered with standard AVKit player controls."
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Video Presentations & YouTube
+
+                In addition to direct file streams, assistants can embed interactive YouTube presentations directly in the conversation flow.
+                """
+            ),
+            MessageContentPart(
+                kind: .youtube,
+                url: "https://www.youtube.com/watch?v=kocbm7kO198",
+                title: "Explore SwiftUI animations and transitions",
+                subtitle: "Apple Developer • WWDC",
+                youtubeVideoID: "kocbm7kO198"
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                The embedded player renders inline with a 16:9 aspect ratio and does not interrupt the surrounding conversation.
+                """
+            )
+        ]
+
+        let videoChat = Chat.create(
+            title: "Video & YouTube",
+            titleState: .manual,
+            messages: [
+                Message(role: .user, content: "Demonstrate video playback and embedded YouTube videos."),
+                Message(
+                    role: .assistant,
+                    content: videoParts.compactMap(\.markdown).joined(separator: "\n\n"),
+                    contentParts: videoParts
+                )
+            ],
+            modelType: currentModel
+        )
+
+        let linkParts: [MessageContentPart] = [
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Curated Developer References
+
+                Here are the primary developer documentation portals for SwiftUI and native chat architectures:
+                """
+            ),
+            MessageContentPart(
+                kind: .linkPreview,
+                url: "https://developer.apple.com/xcode/swiftui/",
+                title: "SwiftUI - Apple Developer",
+                subtitle: "Build better apps across all Apple platforms with the power of Swift.",
+                thumbnailURL: "https://developer.apple.com/favicon.ico"
+            ),
+            MessageContentPart(
+                kind: .linkPreview,
+                url: "https://github.com/sachaservan/SwiftChat",
+                title: "sachaservan/SwiftChat",
+                subtitle: "An elegant open-source AI chat client built with Swift and SwiftUI.",
+                thumbnailURL: "https://github.githubassets.com/favicons/favicon.png"
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                Both resources provide comprehensive documentation, design guidelines, and reproducible reference samples.
+                """
+            )
+        ]
+
+        let richLinksChat = Chat.create(
+            title: "Rich Links",
+            titleState: .manual,
+            messages: [
+                Message(role: .user, content: "Provide rich link previews for SwiftUI and SwiftChat."),
+                Message(
+                    role: .assistant,
+                    content: linkParts.compactMap(\.markdown).joined(separator: "\n\n"),
+                    contentParts: linkParts
+                )
+            ],
+            modelType: currentModel
+        )
+
+        let mixedParts: [MessageContentPart] = [
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Multimodal Architecture for Apple Intelligence
+
+                Modern assistant clients blend reasoning, live web retrieval, and rich interactive media into a single continuous stream.
+                """,
+                sources: [s1, s3]
+            ),
+            MessageContentPart(
+                kind: .image,
+                url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
+                title: "Design System Architecture",
+                caption: "Fig 1. Spatial computing materials and layout flow."
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Audio & Video Playback Integration
+
+                Media playback components maintain a fixed 16:9 aspect ratio to avoid jumpy row-height calculations during incremental streaming.
+                """,
+                sources: [s2, s5]
+            ),
+            MessageContentPart(
+                kind: .youtube,
+                url: "https://www.youtube.com/watch?v=kocbm7kO198",
+                title: "What's new in SwiftUI | WWDC",
+                subtitle: "Apple Developer • 24 min",
+                youtubeVideoID: "kocbm7kO198"
+            ),
+            MessageContentPart(
+                kind: .linkPreview,
+                url: "https://developer.apple.com/documentation/swiftui",
+                title: "SwiftUI Documentation - Apple Developer",
+                subtitle: "Declarative framework for building apps across Apple platforms.",
+                thumbnailURL: "https://developer.apple.com/favicon.ico"
+            ),
+            MessageContentPart(
+                kind: .markdown,
+                markdown: """
+                ### Conclusion & Synthesis
+
+                Combining structured content parts with native Liquid Glass controls ensures the client remains responsive, accessible, and aligned with iOS 26 conventions.
+                """,
+                sources: [s1, s2]
+            )
+        ]
+
+        let mixedMediaChat = Chat.create(
+            title: "Mixed Media Research",
+            titleState: .manual,
+            messages: [
+                Message(role: .user, content: "Synthesize multimodal research with inline sources, images, YouTube, and rich links."),
+                Message(
+                    role: .assistant,
+                    content: mixedParts.compactMap(\.markdown).joined(separator: "\n\n"),
+                    webSearchState: WebSearchState(
+                        query: "multimodal Apple intelligence SwiftUI rich media",
+                        status: .completed,
+                        sources: [s1, s2, s3, s5]
+                    ),
+                    contentParts: mixedParts
+                )
             ],
             modelType: currentModel
         )
@@ -208,7 +427,18 @@ new_init = r'''        self.isWebSearchEnabled = SettingsManager.shared.webSearc
             modelType: currentModel
         )
 
-        chats = [liveStreamingChat, researchChat, markdownChat, reasoningChat, attachmentChat, errorChat]
+        chats = [
+            liveStreamingChat,
+            researchChat,
+            imagesChat,
+            videoChat,
+            richLinksChat,
+            mixedMediaChat,
+            markdownChat,
+            reasoningChat,
+            attachmentChat,
+            errorChat
+        ]
         currentChat = liveStreamingChat
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) { [weak self] in
@@ -462,4 +692,4 @@ if old_cancel not in src:
 src = src.replace(old_cancel, new_cancel, 1)
 
 vm_path.write_text(src, encoding="utf-8")
-print("SwiftChat offline demo patched: guaranteed live stream + long multi-section research")
+print("SwiftChat offline demo patched: guaranteed live stream + 10 showcase conversations")

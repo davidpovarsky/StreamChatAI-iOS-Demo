@@ -1,0 +1,5 @@
+upstream/
+DerivedData/
+*.ipa
+Payload/
+*.log

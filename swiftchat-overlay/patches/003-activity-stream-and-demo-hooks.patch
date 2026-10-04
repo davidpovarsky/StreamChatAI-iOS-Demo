@@ -1,0 +1,146 @@
+diff --git a/SwiftChat/ViewModels/ChatViewModel.swift b/SwiftChat/ViewModels/ChatViewModel.swift
+index d52281a..27906a2 100644
+--- a/SwiftChat/ViewModels/ChatViewModel.swift
++++ b/SwiftChat/ViewModels/ChatViewModel.swift
+@@ -165,7 +165,7 @@ class ChatViewModel: ObservableObject {
+             ),
+             MessageContentPart(
+                 kind: .image,
+-                url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80",
++                url: "bundle://demo-architecture",
+                 title: "Interface Architecture",
+                 caption: "Fig 1. Generative canvas rendering with stable 16:9 aspect ratio."
+             ),
+@@ -202,7 +202,7 @@ class ChatViewModel: ObservableObject {
+             ),
+             MessageContentPart(
+                 kind: .video,
+-                url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
++                url: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8",
+                 title: "Sample Video Stream",
+                 caption: "High-definition MP4 stream rendered with standard AVKit player controls."
+             ),
+@@ -300,7 +300,7 @@ class ChatViewModel: ObservableObject {
+             ),
+             MessageContentPart(
+                 kind: .image,
+-                url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
++                url: "bundle://demo-architecture",
+                 title: "Design System Architecture",
+                 caption: "Fig 1. Spatial computing materials and layout flow."
+             ),
+@@ -598,6 +598,7 @@ class ChatViewModel: ObservableObject {
+         replaceChat(chat)
+         currentChat = chat
+         isLoading = true
++        AgentActivityDemoDriver.start(messageID: emptyAssistant.id)
+ 
+         let chatID = chat.id
+         let full = """
+@@ -628,6 +629,7 @@ class ChatViewModel: ObservableObject {
+             guard let self else { return }
+ 
+             try? await Task.sleep(for: .milliseconds(550))
++            AgentActivityStore.shared.markAnswerStarted(messageID: emptyAssistant.id)
+ 
+             for character in full {
+                 guard !Task.isCancelled else { return }
+@@ -661,6 +663,7 @@ class ChatViewModel: ObservableObject {
+             self.currentChat = finishedChat
+             self.isLoading = false
+             self.demoStreamingTask = nil
++            AgentActivityStore.shared.finish(messageID: emptyAssistant.id)
+         }
+     }
+ 
+@@ -873,6 +876,7 @@ class ChatViewModel: ObservableObject {
+ 
+         let assistantMessage = Message(role: .assistant, content: "", isCollapsed: true)
+         addMessage(assistantMessage)
++        AgentActivityStore.shared.begin(messageID: assistantMessage.id)
+ 
+         if var chat = currentChat {
+             chat.hasActiveStream = true
+@@ -881,6 +885,7 @@ class ChatViewModel: ObservableObject {
+         }
+ 
+         let streamChatId = currentChat?.id
++        let activityMessageID = assistantMessage.id
+         currentTask?.cancel()
+ 
+         currentTask = Task {
+@@ -1008,6 +1013,7 @@ class ChatViewModel: ObservableObject {
+                     case .outputText(.delta(let textEvent)):
+                         let content = textEvent.delta
+                         if !content.isEmpty {
++                            AgentActivityStore.shared.markAnswerStarted(messageID: activityMessageID)
+                             if isInThinkingMode {
+                                 if let startTime = thinkStartTime {
+                                     generationTimeSeconds = Date().timeIntervalSince(startTime)
+@@ -1033,6 +1039,7 @@ class ChatViewModel: ObservableObject {
+                     case .reasoning(.delta(let reasoningEvent)):
+                         let text = (reasoningEvent.delta.value as? [String: Any])?["text"] as? String ?? ""
+                         if !text.isEmpty {
++                            AgentActivityStore.shared.beginReasoning(messageID: activityMessageID)
+                             if !isInThinkingMode {
+                                 isInThinkingMode = true
+                                 thinkStartTime = Date()
+@@ -1046,6 +1053,7 @@ class ChatViewModel: ObservableObject {
+                             Task { @MainActor [weak self] in
+                                 ThinkingSummaryService.shared.generateSummary(thoughts: currentThoughtsForSummary) { summary in
+                                     self?.thinkingSummary = summary
++                                    AgentActivityStore.shared.updateReasoningSummary(messageID: activityMessageID, summary: summary)
+                                 }
+                             }
+                         }
+@@ -1056,11 +1064,15 @@ class ChatViewModel: ObservableObject {
+                            type == "url_citation",
+                            let url = dict["url"] as? String {
+                             let title = dict["title"] as? String ?? url
+-                            collectedSources.append(WebSearchSource(title: title, url: url))
++                            let source = WebSearchSource(title: title, url: url)
++                            collectedSources.append(source)
++                            AgentActivityStore.shared.beginWebSearch(messageID: activityMessageID)
++                            AgentActivityStore.shared.addSearchSource(messageID: activityMessageID, source: source)
+                             didMutateState = true
+                         }
+ 
+                     case .webSearchCall(.inProgress(_)), .webSearchCall(.searching(_)):
++                        AgentActivityStore.shared.beginWebSearch(messageID: activityMessageID)
+                         Task { @MainActor [weak self] in
+                             guard let self = self else { return }
+                             guard var chat = self.currentChat,
+@@ -1075,6 +1087,7 @@ class ChatViewModel: ObservableObject {
+                         }
+ 
+                     case .webSearchCall(.completed(_)):
++                        AgentActivityStore.shared.completeWebSearch(messageID: activityMessageID)
+                         Task { @MainActor [weak self] in
+                             guard let self = self else { return }
+                             guard var chat = self.currentChat,
+@@ -1176,6 +1189,7 @@ class ChatViewModel: ObservableObject {
+                     self.replaceChat(chat)
+                     self.currentChat = chat
+                     self.isLoading = false
++                    AgentActivityStore.shared.finish(messageID: activityMessageID)
+ 
+                     // Generate title if needed
+                     if chat.needsGeneratedTitle && chat.messages.count >= 2 {
+@@ -1212,6 +1226,7 @@ class ChatViewModel: ObservableObject {
+                     self.isLoading = false
+                     self.thinkingSummary = ""
+                     self.webSearchSummary = ""
++                    AgentActivityStore.shared.finish(messageID: activityMessageID)
+ 
+                     if var chat = self.currentChat, chat.id == streamChatId {
+                         chat.hasActiveStream = false
+@@ -1229,6 +1244,9 @@ class ChatViewModel: ObservableObject {
+     }
+ 
+     func cancelGeneration() {
++        if let messageID = currentChat?.messages.last?.id {
++            AgentActivityStore.shared.finish(messageID: messageID)
++        }
+         currentTask?.cancel()
+         currentTask = nil
+         demoStreamingTask?.cancel()

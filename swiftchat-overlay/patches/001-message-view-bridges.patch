@@ -1,0 +1,156 @@
+diff --git a/SwiftChat/Views/MessageView.swift b/SwiftChat/Views/MessageView.swift
+index 1a4049d..6b8b0cf 100644
+--- a/SwiftChat/Views/MessageView.swift
++++ b/SwiftChat/Views/MessageView.swift
+@@ -20,6 +20,7 @@ struct MessageView: View {
+     let isLoading: Bool
+     let messageIndex: Int
+     @EnvironmentObject var viewModel: SwiftChat.ChatViewModel
++    @ObservedObject private var activityStore = AgentActivityStore.shared
+     @State private var showCopyFeedback = false
+     @State private var cachedParsedContent: (thinkingText: String, remainderText: String, contentHash: Int)? = nil
+     @State private var showLongMessageSheet = false
+@@ -32,6 +33,10 @@ struct MessageView: View {
+     @State private var showThoughtsSheet = false
+     @State private var showURLFetchSheet = false
+ 
++    private var hasAgentActivity: Bool {
++        activityStore.session(for: message.id) != nil
++    }
++
+     var body: some View {
+         HStack {
+             if message.role == .user {
+@@ -48,6 +53,10 @@ struct MessageView: View {
+             }
+ 
+             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 2) {
++                if message.role == .assistant {
++                    AgentActivityTimelineBridge(messageID: message.id, isDarkMode: isDarkMode)
++                }
++
+                 // Show the loading dots for a fresh streaming assistant response (but not if we have thoughts or are thinking)
+                 if message.role == .assistant &&
+                     message.content.isEmpty &&
+@@ -61,7 +70,7 @@ struct MessageView: View {
+                         }
+ 
+                         // Show web search box if searching
+-                        if let webSearchState = message.webSearchState {
++                        if !hasAgentActivity, let webSearchState = message.webSearchState {
+                             WebSearchBox(
+                                 webSearchState: webSearchState,
+                                 isDarkMode: isDarkMode,
+@@ -72,7 +81,7 @@ struct MessageView: View {
+                         }
+ 
+                         // Show loading dots if no web search or search is complete
+-                        if message.webSearchState == nil || message.webSearchState?.status != .searching {
++                        if !hasAgentActivity && (message.webSearchState == nil || message.webSearchState?.status != .searching) {
+                             LoadingDotsView(isDarkMode: isDarkMode)
+                                 .padding(.horizontal)
+                         }
+@@ -88,7 +97,7 @@ struct MessageView: View {
+                         }
+ 
+                         // Web search box (if applicable) - shown before thoughts since search happens first
+-                        if let webSearchState = message.webSearchState {
++                        if !hasAgentActivity, let webSearchState = message.webSearchState {
+                             WebSearchBox(
+                                 webSearchState: webSearchState,
+                                 isDarkMode: isDarkMode,
+@@ -98,14 +107,16 @@ struct MessageView: View {
+                             )
+                         }
+ 
+-                        CollapsibleThinkingBox(
+-                            thinkingText: message.thoughts ?? "",
+-                            isDarkMode: isDarkMode,
+-                            isStreaming: message.isThinking && isLoading && isLastMessage,
+-                            generationTimeSeconds: message.generationTimeSeconds,
+-                            thinkingSummary: isLastMessage && message.isThinking ? viewModel.thinkingSummary : nil,
+-                            onTap: { showThoughtsSheet = true }
+-                        )
++                        if !hasAgentActivity {
++                            CollapsibleThinkingBox(
++                                thinkingText: message.thoughts ?? "",
++                                isDarkMode: isDarkMode,
++                                isStreaming: message.isThinking && isLoading && isLastMessage,
++                                generationTimeSeconds: message.generationTimeSeconds,
++                                thinkingSummary: isLastMessage && message.isThinking ? viewModel.thinkingSummary : nil,
++                                onTap: { showThoughtsSheet = true }
++                            )
++                        }
+ 
+                         if !message.content.isEmpty {
+                             if !message.contentChunks.isEmpty {
+@@ -195,7 +206,7 @@ struct MessageView: View {
+                             }
+ 
+                             // Web search box for non-thinking assistant messages
+-                            if let webSearchState = message.webSearchState {
++                            if !hasAgentActivity, let webSearchState = message.webSearchState {
+                                 WebSearchBox(
+                                     webSearchState: webSearchState,
+                                     isDarkMode: isDarkMode,
+@@ -210,19 +221,25 @@ struct MessageView: View {
+                                     switch part.kind {
+                                     case .markdown:
+                                         if let text = part.markdown, !text.isEmpty {
+-                                            LaTeXMarkdownView(content: text, isDarkMode: isDarkMode, isStreaming: false)
+-                                                .equatable()
++                                            if part.sources.isEmpty {
++                                                LaTeXMarkdownView(content: text, isDarkMode: isDarkMode, isStreaming: false)
++                                                    .equatable()
++                                                    .frame(maxWidth: .infinity, alignment: .leading)
++                                            } else {
++                                                InlineSectionSourcesView(
++                                                    markdown: text,
++                                                    sources: part.sources,
++                                                    isDarkMode: isDarkMode
++                                                )
+                                                 .frame(maxWidth: .infinity, alignment: .leading)
+-                                        }
+-                                        if !part.sources.isEmpty {
+-                                            SectionSourcesClusterView(sources: part.sources, isDarkMode: isDarkMode)
++                                            }
+                                         }
+                                     case .image:
+-                                        InlineImageView(part: part, isDarkMode: isDarkMode)
++                                        SafeInlineImageMediaView(part: part, isDarkMode: isDarkMode)
+                                     case .video:
+-                                        InlineVideoView(part: part, isDarkMode: isDarkMode)
++                                        SafeInlineVideoMediaView(part: part, isDarkMode: isDarkMode)
+                                     case .youtube:
+-                                        InlineYouTubeView(part: part, isDarkMode: isDarkMode)
++                                        SafeInlineYouTubeMediaView(part: part, isDarkMode: isDarkMode)
+                                     case .linkPreview:
+                                         InlineLinkPreviewView(part: part, isDarkMode: isDarkMode)
+                                     }
+@@ -271,7 +288,7 @@ struct MessageView: View {
+                             showRawContentModal = true
+                         } label: {
+                             Image(systemName: "doc.on.doc")
+-                                .font(.system(size: 16))
++                                .font(.system(size: 14, weight: .semibold))
+                                 .foregroundColor(isDarkMode ? .white.opacity(0.5) : .black.opacity(0.5))
+                                 .frame(width: 32, height: 32)
+                                 .contentShape(Rectangle())
+@@ -284,7 +301,7 @@ struct MessageView: View {
+                                 viewModel.regenerateMessage(at: messageIndex - 1)
+                             } label: {
+                                 Image(systemName: "arrow.clockwise")
+-                                    .font(.system(size: 16))
++                                    .font(.system(size: 14, weight: .semibold))
+                                     .foregroundColor(isDarkMode ? .white.opacity(0.5) : .black.opacity(0.5))
+                                     .frame(width: 32, height: 32)
+                                     .contentShape(Rectangle())
+@@ -1758,7 +1775,7 @@ private struct SourcesButton: View {
+ }
+ 
+ /// Sheet view showing all sources
+-private struct SourcesSheetView: View {
++struct SourcesSheetView: View {
+     let sources: [WebSearchSource]
+     let isDarkMode: Bool
+     @Environment(\.dismiss) private var dismiss

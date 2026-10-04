@@ -1,0 +1,30 @@
+name: StreamChatAIDemo
+options:
+  bundleIdPrefix: com.davidpovarsky
+  deploymentTarget:
+    iOS: "16.0"
+packages:
+  StreamChatAI:
+    url: https://github.com/GetStream/stream-chat-swift-ai.git
+    from: 0.10.0
+targets:
+  StreamChatAIDemo:
+    type: application
+    platform: iOS
+    sources:
+      - StreamChatAIDemo
+    dependencies:
+      - package: StreamChatAI
+        product: StreamChatAI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidpovarsky.StreamChatAIDemo
+        PRODUCT_NAME: StreamChatAI Demo
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: StreamChatAI Demo
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Voice input for the AI chat composer.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Convert speech to text in the AI chat composer.
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO

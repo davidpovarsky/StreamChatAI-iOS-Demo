@@ -182,6 +182,57 @@ if old_init not in src:
     raise SystemExit("Could not find SwiftChat init block")
 src = src.replace(old_init, new_init, 1)
 
+method = '''private func runLiveStreamingDemoIfNeeded() {
+        guard AppConfig.shared.apiKey == "__DEMO__",
+              currentChat.title == "LIVE Streaming Demo",
+              currentChat.messages.count == 1,
+              !isLoading else { return }
+
+        let full = """
+        ## Building a modern AI chat UI
+
+        A good assistant should become useful **before the answer is finished**. The renderer needs to handle incomplete Markdown without flashing or waiting for the whole response.
+
+        ### Streaming behavior
+
+        As tokens arrive, headings, lists and emphasis should settle naturally. The conversation should keep scrolling only while the reader is already following the newest content.
+
+        ### Rich content
+
+        The same message can contain prose, **Markdown**, lists and structured sections while the response is still streaming.
+
+        ### Interaction
+
+        The user should always be able to stop generation, copy the completed response, regenerate it, or immediately type the next message.
+
+        This entire answer was streamed locally so you can inspect SwiftChat's live rendering without an API key.
+        """
+
+        var reply = Message(role: .assistant, content: "")
+        reply.isStreaming = true
+        currentChat.messages.append(reply)
+        isLoading = true
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            for character in full {
+                guard self.isLoading,
+                      self.currentChat.title == "LIVE Streaming Demo",
+                      !self.currentChat.messages.isEmpty else { return }
+                let last = self.currentChat.messages.count - 1
+                self.currentChat.messages[last].content.append(character)
+                try? await Task.sleep(for: .milliseconds(character == "\\n" ? 34 : 11))
+            }
+            if !self.currentChat.messages.isEmpty {
+                let last = self.currentChat.messages.count - 1
+                self.currentChat.messages[last].isStreaming = false
+                self.currentChat.messages[last].generationTimeSeconds = 6.8
+            }
+            self.isLoading = false
+        }
+    }
+
+'''
 needle = '''func sendMessage(text: String) {
         guard !isLoading else { return }'''
 replacement = '''func sendMessage(text: String) {
@@ -215,7 +266,7 @@ replacement = '''func sendMessage(text: String) {
 
 if needle not in src:
     raise SystemExit("Could not locate sendMessage insertion point")
-src = src.replace(needle, replacement, 1)
+src = src.replace(needle, method + replacement, 1)
 
 vm_path.write_text(src, encoding="utf-8")
 print("SwiftChat patched for full offline showcase")

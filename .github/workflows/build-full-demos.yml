@@ -109,6 +109,8 @@ jobs:
         run: |
           cd upstream/ManifoldKit
           swift package resolve --scratch-path .spm
+          mkdir -p Example/Advanced.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+          cp Package.resolved Example/Advanced.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
       - name: Build official Advanced reference app
         run: |

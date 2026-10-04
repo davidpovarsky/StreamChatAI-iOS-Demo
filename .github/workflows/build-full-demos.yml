@@ -76,7 +76,8 @@ jobs:
         run: |
           set -o pipefail
           cd upstream/ManifoldKit
-          xcodebuild -project Example/Advanced.xcodeproj -scheme Advanced -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../manifold-build.log
+          xcodebuild -resolvePackageDependencies -project Example/Advanced.xcodeproj -scheme Advanced -clonedSourcePackagesDirPath .spm
+          xcodebuild -project Example/Advanced.xcodeproj -scheme Advanced -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData -clonedSourcePackagesDirPath .spm -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../manifold-build.log
       - name: Package IPA
         run: |
           APP=$(find upstream/ManifoldKit/DerivedData/Build/Products/Debug-iphoneos -maxdepth 1 -name '*.app' -print -quit)

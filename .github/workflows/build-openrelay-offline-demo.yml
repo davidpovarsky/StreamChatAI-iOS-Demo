@@ -1,0 +1,76 @@
+name: Build Open Relay Offline Demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "Xcode 26 not found"
+            ls -1 /Applications | grep '^Xcode'
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Clone Open Relay
+        run: |
+          mkdir -p upstream
+          git clone --depth 1 https://github.com/Ichigo3766/Open-Relay.git upstream/Open-Relay
+
+      - name: Patch offline demo mode
+        run: python3 scripts/patch_openrelay_offline_demo.py
+
+      - name: Resolve packages
+        run: |
+          cd upstream/Open-Relay
+          xcodebuild -resolvePackageDependencies -project "Open UI.xcodeproj" -scheme "Open UI"
+
+      - name: Build unsigned iOS app
+        run: |
+          set -o pipefail
+          cd upstream/Open-Relay
+          xcodebuild \
+            -project "Open UI.xcodeproj" \
+            -scheme "Open UI" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tee ../../openrelay-build.log
+
+      - name: Package unsigned IPA
+        run: |
+          APP=$(find upstream/Open-Relay/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf "$APP/PlugIns" "$APP/Watch" "$APP/Frameworks/OpenRelayWatch.framework" || true
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry OpenRelay-Offline-Demo-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OpenRelay-Offline-Demo-IPA
+          path: OpenRelay-Offline-Demo-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrelay-build-log
+          path: openrelay-build.log
+          if-no-files-found: ignore

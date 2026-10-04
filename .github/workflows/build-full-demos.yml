@@ -2,6 +2,8 @@ name: Build Full Chat SDK Demos
 
 on:
   workflow_dispatch:
+  push:
+    branches: [agent/swiftchat-safe-overlay-v3]
 
 jobs:
   swiftchat:

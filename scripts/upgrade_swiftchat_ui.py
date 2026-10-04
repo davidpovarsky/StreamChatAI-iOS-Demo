@@ -717,7 +717,7 @@ struct ChatSidebar: View {
                     if let chat = chatToRename {
                         let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !trimmed.isEmpty {
-                            viewModel.renameChat(chat, to: trimmed)
+                            viewModel.updateChatTitle(chat.id, newTitle: trimmed)
                         }
                     }
                     chatToRename = nil
@@ -727,7 +727,7 @@ struct ChatSidebar: View {
                 Button("Cancel", role: .cancel) { chatToDelete = nil }
                 Button("Delete", role: .destructive) {
                     if let chat = chatToDelete {
-                        viewModel.deleteChat(chat)
+                        viewModel.deleteChat(chat.id)
                     }
                     chatToDelete = nil
                 }

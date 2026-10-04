@@ -1,0 +1,86 @@
+name: Build mobileLLM iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "Xcode 26 not found"
+            ls -1 /Applications | grep '^Xcode'
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Install build tools
+        run: brew install xcodegen cmake
+
+      - name: Clone mobileLLM
+        run: |
+          mkdir -p upstream
+          git clone --depth 1 https://github.com/nanguoyu/mobileLLM.git upstream/mobileLLM
+
+      - name: Build llama.cpp XCFramework
+        run: |
+          cd upstream/mobileLLM
+          ./scripts/build-llama-xcframework.sh
+
+      - name: Prepare project
+        run: |
+          cd upstream/mobileLLM
+          cp Signing.xcconfig.example Signing.xcconfig
+          xcodegen generate
+
+      - name: Resolve packages
+        run: |
+          cd upstream/mobileLLM
+          xcodebuild -resolvePackageDependencies -project mobileLLM.xcodeproj -scheme mobileLLM
+
+      - name: Build unsigned device app
+        run: |
+          set -o pipefail
+          cd upstream/mobileLLM
+          xcodebuild \
+            -project mobileLLM.xcodeproj \
+            -scheme mobileLLM \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tee ../../mobilellm-build.log
+
+      - name: Package unsigned IPA
+        run: |
+          APP=$(find upstream/mobileLLM/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry mobileLLM-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobileLLM-iOS-IPA
+          path: mobileLLM-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobilellm-build-log
+          path: mobilellm-build.log
+          if-no-files-found: ignore

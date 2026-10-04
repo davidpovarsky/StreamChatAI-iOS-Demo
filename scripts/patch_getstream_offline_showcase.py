@@ -479,4 +479,21 @@ struct ContentView: View {
 }
 ''', encoding="utf-8")
 
+
+# The official sample also contains backend/StreamChat/A2UI integration files.
+# This offline showcase deliberately exercises StreamChatAI directly, so blank
+# integration-only sources that otherwise depend on rapidly-moving sample APIs.
+for name in [
+    "A2uiInteractionForwarder.swift",
+    "A2uiPayload.swift",
+    "AIComponentsFactory.swift",
+    "AgentService.swift",
+    "ClientToolActionHandler.swift",
+    "ConversationListView.swift",
+    "GenUIView.swift",
+    "StreamChatClientTools.swift",
+    "TypingIndicatorHandler.swift",
+]:
+    (root / name).write_text("import Foundation\n", encoding="utf-8")
+
 print("Patched official GetStream iOS sample into offline full showcase")

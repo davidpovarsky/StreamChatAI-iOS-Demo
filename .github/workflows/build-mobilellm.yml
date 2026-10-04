@@ -44,7 +44,7 @@ jobs:
       - name: Resolve packages
         run: |
           cd upstream/mobileLLM
-          xcodebuild -resolvePackageDependencies -project mobileLLM.xcodeproj -scheme mobileLLM
+          xcodebuild -resolvePackageDependencies -project mobileLLM.xcodeproj -scheme mobileLLM -skipMacroValidation -skipPackagePluginValidation
 
       - name: Build unsigned device app
         run: |
@@ -60,6 +60,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
             build | tee ../../mobilellm-build.log
 
       - name: Package unsigned IPA

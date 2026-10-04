@@ -184,8 +184,9 @@ src = src.replace(old_init, new_init, 1)
 
 method = '''private func runLiveStreamingDemoIfNeeded() {
         guard AppConfig.shared.apiKey == "__DEMO__",
-              currentChat.title == "LIVE Streaming Demo",
-              currentChat.messages.count == 1,
+              var chat = currentChat,
+              chat.title == "LIVE Streaming Demo",
+              chat.messages.count == 1,
               !isLoading else { return }
 
         let full = """
@@ -210,24 +211,38 @@ method = '''private func runLiveStreamingDemoIfNeeded() {
 
         var reply = Message(role: .assistant, content: "")
         reply.isStreaming = true
-        currentChat.messages.append(reply)
+        chat.messages.append(reply)
+        replaceChat(chat)
+        currentChat = chat
         isLoading = true
 
         Task { @MainActor [weak self] in
             guard let self else { return }
+
             for character in full {
                 guard self.isLoading,
-                      self.currentChat.title == "LIVE Streaming Demo",
-                      !self.currentChat.messages.isEmpty else { return }
-                let last = self.currentChat.messages.count - 1
-                self.currentChat.messages[last].content.append(character)
+                      var updatedChat = self.currentChat,
+                      updatedChat.title == "LIVE Streaming Demo",
+                      !updatedChat.messages.isEmpty else { return }
+
+                let last = updatedChat.messages.count - 1
+                updatedChat.messages[last].content.append(character)
+                self.replaceChat(updatedChat)
+                self.currentChat = updatedChat
+
                 try? await Task.sleep(for: .milliseconds(character == "\\n" ? 34 : 11))
             }
-            if !self.currentChat.messages.isEmpty {
-                let last = self.currentChat.messages.count - 1
-                self.currentChat.messages[last].isStreaming = false
-                self.currentChat.messages[last].generationTimeSeconds = 6.8
+
+            if var finishedChat = self.currentChat,
+               finishedChat.title == "LIVE Streaming Demo",
+               !finishedChat.messages.isEmpty {
+                let last = finishedChat.messages.count - 1
+                finishedChat.messages[last].isStreaming = false
+                finishedChat.messages[last].generationTimeSeconds = 6.8
+                self.replaceChat(finishedChat)
+                self.currentChat = finishedChat
             }
+
             self.isLoading = false
         }
     }

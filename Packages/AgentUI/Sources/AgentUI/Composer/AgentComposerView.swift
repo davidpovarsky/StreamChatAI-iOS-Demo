@@ -9,17 +9,17 @@ import SwiftUI
 import UIKit
 import PhotosUI
 
-public struct AgentComposerView<Driver: AgentComposerDriving>: View {
-    fileprivate enum Layout {
-        static let defaultHeight: CGFloat = 72
-        static let minimumHeight: CGFloat = 72
-        static let maximumHeight: CGFloat = 180
-    }
+fileprivate enum AgentComposerLayout {
+    static let defaultHeight: CGFloat = 72
+    static let minimumHeight: CGFloat = 72
+    static let maximumHeight: CGFloat = 180
+}
 
+public struct AgentComposerView<Driver: AgentComposerDriving>: View {
     @Binding public var messageText: String
     @ObservedObject public var driver: Driver
     @Environment(\.colorScheme) private var colorScheme
-    @State private var textHeight: CGFloat = Layout.defaultHeight
+    @State private var textHeight: CGFloat = AgentComposerLayout.defaultHeight
     public var isKeyboardVisible: Bool = false
 
     public init(
@@ -337,7 +337,7 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
         } else if !messageText.isEmpty || !driver.pendingAttachments.isEmpty {
             driver.sendMessage(text: messageText)
             messageText = ""
-            textHeight = Layout.defaultHeight
+            textHeight = AgentComposerLayout.defaultHeight
         }
     }
 

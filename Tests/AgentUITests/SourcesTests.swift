@@ -41,4 +41,17 @@ struct SourcesTests {
         #expect(msg?.sectionSources["p1"]?.count == 1)
         #expect(msg?.allSources.contains(where: { $0.id == "sec-1" }) == true)
     }
+
+    @Test("Source cluster preserves deterministic first-seen domain order")
+    func testDeterministicSourceClusterOrder() {
+        let sources = [
+            AgentSource(title: "A", url: "https://zebra.com/1"),
+            AgentSource(title: "B", url: "https://apple.com/2"),
+            AgentSource(title: "C", url: "https://zebra.com/3"),
+            AgentSource(title: "D", url: "https://banana.com/4"),
+            AgentSource(title: "E", url: "https://apple.com/5")
+        ]
+        let cluster = AgentSourceClusterData(sources: sources)
+        #expect(cluster.uniqueDomains == ["zebra.com", "apple.com", "banana.com"])
+    }
 }

@@ -7,17 +7,21 @@ public struct AgentSourceCluster: View {
     public let maxVisible: Int
 
     @Environment(\.agentUIDesignTokens) private var tokens
+    @Environment(\.agentFaviconResolver) private var faviconResolver
 
     public init(sources: [AgentSource], maxVisible: Int = 4) {
         self.sources = sources
         self.maxVisible = maxVisible
     }
 
+    private var orderedDomains: [String] {
+        Array(AgentSourceClusterData(sources: sources).uniqueDomains.prefix(maxVisible))
+    }
+
     public var body: some View {
-        let uniqueDomains = Array(Set(sources.map { $0.domain })).prefix(maxVisible)
         HStack(spacing: -6) {
-            ForEach(Array(uniqueDomains), id: \.self) { domain in
-                let favicon = URL(string: "https://icons.duckduckgo.com/ip3/\(domain).ico")
+            ForEach(orderedDomains, id: \.self) { domain in
+                let favicon = faviconResolver?.resolveFavicon(for: domain) ?? URL(string: "https://icons.duckduckgo.com/ip3/\(domain).ico")
                 AsyncImage(url: favicon) { image in
                     image.resizable().scaledToFit()
                 } placeholder: {

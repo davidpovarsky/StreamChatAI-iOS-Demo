@@ -33,7 +33,14 @@ public struct AgentAssistantMessageView: View {
 
                 // Render content blocks
                 ForEach(message.blocks) { block in
-                    AgentContentRenderer(block: block)
+                    if case .markdown(let id, let content) = block {
+                        AgentMarkdownView(
+                            content: content,
+                            sectionSources: message.sectionSources[id] ?? (message.sectionSources.count == 1 ? message.sectionSources.values.first : nil)
+                        )
+                    } else {
+                        AgentContentRenderer(block: block)
+                    }
                 }
 
                 // Streaming indicator if active with no content yet

@@ -5,8 +5,8 @@ import AgentUIShowcaseSupport
 
 struct ShowcaseRootView: View {
     @State private var session: AgentUISession
-    @State private var selectedScenarioID: String? = "chat.plain"
-    @State private var isRTL: Bool = false
+    @State private var selectedScenarioID: String?
+    @State private var isRTL: Bool
     @State private var mockRuntime = MockAgentRuntime()
     @State private var toolRegistry: AgentToolSurfaceRegistry
     @State private var embeddedRegistry: AgentEmbeddedSurfaceRegistry
@@ -22,7 +22,18 @@ struct ShowcaseRootView: View {
         _toolRegistry = State(initialValue: tools)
         _embeddedRegistry = State(initialValue: embedded)
 
-        let defaultScenario = ShowcaseCatalog.allScenarios.first!
+        var scenarioID = "chat.plain"
+        let args = ProcessInfo.processInfo.arguments
+        if let idx = args.firstIndex(of: "--agentui-scenario"), idx + 1 < args.count {
+            scenarioID = args[idx + 1]
+        } else if let envID = ProcessInfo.processInfo.environment["AGENTUI_SCENARIO"] {
+            scenarioID = envID
+        }
+
+        let selectedScenario = ShowcaseCatalog.allScenarios.first(where: { $0.id == scenarioID }) ?? ShowcaseCatalog.allScenarios.first!
+        _selectedScenarioID = State(initialValue: selectedScenario.id)
+        _isRTL = State(initialValue: selectedScenario.id == "chat.hebrew")
+
         let initialSession = AgentUISession(
             runtime: MockAgentRuntime(),
             models: [
@@ -30,9 +41,9 @@ struct ShowcaseRootView: View {
                 AgentModelDescriptor(id: "claude-3-5", displayName: "Claude 3.5 Sonnet", iconSystemName: "bolt"),
                 AgentModelDescriptor(id: "gemini-pro", displayName: "Gemini 1.5 Pro", iconSystemName: "cpu")
             ],
-            messages: defaultScenario.initialMessages
+            messages: selectedScenario.initialMessages
         )
-        initialSession.activitySessions = defaultScenario.initialActivities
+        initialSession.activitySessions = selectedScenario.initialActivities
         _session = State(initialValue: initialSession)
     }
 
@@ -68,30 +79,29 @@ struct ShowcaseRootView: View {
                     }
                 }
                 .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isRTL.toggle()
-                    } label: {
-                        Image(systemName: isRTL ? "character.ar" : "globe")
-                    }
-                    .accessibilityLabel(isRTL ? "Switch to LTR" : "Switch to RTL")
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        // Reset current scenario
-                        if let current = ShowcaseCatalog.allScenarios.first(where: { $0.id == selectedScenarioID }) {
-                            loadScenario(current)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            isRTL.toggle()
+                        } label: {
+                            Image(systemName: isRTL ? "character.ar" : "globe")
                         }
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
+                        .accessibilityLabel(isRTL ? "Switch to LTR" : "Switch to RTL")
                     }
-                    .accessibilityLabel("Reset scenario")
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            if let current = ShowcaseCatalog.allScenarios.first(where: { $0.id == selectedScenarioID }) {
+                                loadScenario(current)
+                            }
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                        }
+                        .accessibilityLabel("Reset scenario")
+                    }
                 }
             }
         }
-    }
     }
 
     private var currentScenarioTitle: String {

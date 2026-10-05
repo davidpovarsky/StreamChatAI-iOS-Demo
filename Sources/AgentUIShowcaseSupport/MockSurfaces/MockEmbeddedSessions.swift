@@ -40,6 +40,28 @@ public enum MockEmbeddedSessions {
                 tearDown: {}
             )
         }
+
+        registry.registerResolver(for: "embedded.test.card") { descriptor in
+            AnyAgentEmbeddedResultSession(
+                rootView: {
+                    AnyView(
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "square.grid.2x2")
+                                    .foregroundStyle(.blue)
+                                Text(descriptor.title ?? "Interactive Embedded Surface")
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                            Text("Active session rendering inline content with support for full-screen and sheet modals.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                    )
+                },
+                tearDown: {}
+            )
+        }
     }
 }
 #endif

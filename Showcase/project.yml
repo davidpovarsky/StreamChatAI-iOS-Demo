@@ -27,3 +27,21 @@ targets:
         SWIFT_VERSION: "6.0"
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
+
+  AgentUIShowcaseUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    dependencies:
+      - target: AgentUIShowcase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidpovarsky.AgentUIShowcaseUITests
+        PRODUCT_NAME: AgentUIShowcaseUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "6.0"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        TEST_TARGET_NAME: AgentUIShowcase

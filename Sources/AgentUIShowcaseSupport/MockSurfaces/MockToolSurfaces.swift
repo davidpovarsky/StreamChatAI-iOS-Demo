@@ -55,9 +55,48 @@ public enum MockToolSurfaces {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Read File")
+                    Text("File Operation")
                         .font(.system(size: 13, weight: .medium))
                     Text(context.execution.inspection.toolName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        registry.registerToolHandler("command_exec") { context in
+            HStack(spacing: 8) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.green)
+                    .frame(width: 22, height: 22)
+                    .background(Color.green.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Terminal Command")
+                        .font(.system(size: 13, weight: .medium))
+                    Text(context.execution.inspection.arguments)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+
+        registry.registerToolHandler("map_lookup") { context in
+            HStack(spacing: 8) {
+                Image(systemName: "map")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.orange)
+                    .frame(width: 22, height: 22)
+                    .background(Color.orange.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Map Location")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Retrieved coordinates and place info")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -77,6 +116,25 @@ public enum MockToolSurfaces {
                     Text("Calendar Query")
                         .font(.system(size: 13, weight: .medium))
                     Text("Retrieved upcoming events")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        registry.registerToolHandler("image_gen") { context in
+            HStack(spacing: 8) {
+                Image(systemName: "paintpalette")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.purple)
+                    .frame(width: 22, height: 22)
+                    .background(Color.purple.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Image Generation")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Rendered generative visual asset")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

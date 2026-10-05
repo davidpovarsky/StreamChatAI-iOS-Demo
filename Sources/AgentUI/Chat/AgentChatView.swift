@@ -26,6 +26,7 @@ public struct AgentChatView: View {
 
     @State private var ownedToolRegistry: AgentToolSurfaceRegistry
     @State private var ownedEmbeddedRegistry: AgentEmbeddedSurfaceRegistry
+    @State private var ownedExpansionCoordinator = AgentExpansionCoordinator()
 
     public init(
         session: AgentUISession,
@@ -51,6 +52,55 @@ public struct AgentChatView: View {
         .environment(\.agentToolSurfaces, surfaces ?? ownedToolRegistry)
         .environment(\.agentEmbeddedSurfaces, embeddedSurfaces ?? ownedEmbeddedRegistry)
         .environment(\.agentHostActions, hostActions)
+        .environment(\.agentExpansionCoordinator, ownedExpansionCoordinator)
+        .sheet(item: Binding(
+            get: {
+                if ownedExpansionCoordinator.activePresentation?.mode == .sheet {
+                    return ownedExpansionCoordinator.activePresentation
+                }
+                return nil
+            },
+            set: { if $0 == nil { ownedExpansionCoordinator.dismiss() } }
+        )) { presentation in
+            if let session = ownedExpansionCoordinator.activeSession {
+                NavigationStack {
+                    session.rootView
+                        .navigationTitle(presentation.descriptor.title ?? "Result")
+                        #if os(iOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                        #endif
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { ownedExpansionCoordinator.dismiss() }
+                            }
+                        }
+                }
+            }
+        }
+        #if os(iOS)
+        .fullScreenCover(item: Binding(
+            get: {
+                if ownedExpansionCoordinator.activePresentation?.mode == .fullScreen {
+                    return ownedExpansionCoordinator.activePresentation
+                }
+                return nil
+            },
+            set: { if $0 == nil { ownedExpansionCoordinator.dismiss() } }
+        )) { presentation in
+            if let session = ownedExpansionCoordinator.activeSession {
+                NavigationStack {
+                    session.rootView
+                        .navigationTitle(presentation.descriptor.title ?? "Result")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { ownedExpansionCoordinator.dismiss() }
+                            }
+                        }
+                }
+            }
+        }
+        #endif
     }
 }
 #endif

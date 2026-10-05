@@ -13,6 +13,7 @@ public struct AgentEmbeddedResultHost: View {
     @Environment(\.agentUIDesignTokens) private var tokens
     @Environment(\.agentUITheme) private var theme
     @Environment(\.agentHostActions) private var hostActions
+    @Environment(\.agentExpansionCoordinator) private var expansionCoordinator
 
     @State private var hasTornDown = false
 
@@ -143,28 +144,41 @@ public struct AgentEmbeddedResultHost: View {
             if let hostActions {
                 hostActions.requestWindow(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
             } else if descriptor.expansion.allowedModes.contains(.fullScreen) {
-                #if os(iOS)
-                isFullScreenPresented = true
-                #else
-                isSheetPresented = true
-                #endif
+                presentExpanded(mode: .fullScreen)
             } else if descriptor.expansion.allowedModes.contains(.sheet) {
-                isSheetPresented = true
+                presentExpanded(mode: .sheet)
             }
         case .fullScreen:
             #if os(iOS)
             if descriptor.expansion.allowedModes.contains(.fullScreen) {
-                isFullScreenPresented = true
+                presentExpanded(mode: .fullScreen)
             } else if descriptor.expansion.allowedModes.contains(.sheet) {
-                isSheetPresented = true
+                presentExpanded(mode: .sheet)
             }
             #else
-            isSheetPresented = true
+            presentExpanded(mode: .sheet)
             #endif
         case .sheet:
             if descriptor.expansion.allowedModes.contains(.sheet) {
-                isSheetPresented = true
+                presentExpanded(mode: .sheet)
             } else if descriptor.expansion.allowedModes.contains(.fullScreen) {
+                #if os(iOS)
+                presentExpanded(mode: .fullScreen)
+                #else
+                presentExpanded(mode: .sheet)
+                #endif
+            }
+        }
+    }
+
+    private func presentExpanded(mode: AgentExpansionMode) {
+        guard let session else { return }
+        if let expansionCoordinator {
+            expansionCoordinator.present(descriptor: descriptor, session: session, mode: mode)
+        } else {
+            if mode == .sheet {
+                isSheetPresented = true
+            } else if mode == .fullScreen {
                 #if os(iOS)
                 isFullScreenPresented = true
                 #else
@@ -190,14 +204,10 @@ public struct AgentEmbeddedResultHost: View {
         if action.actionID == "window" {
             hostActions.requestWindow(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
         } else if action.actionID == "sheet" {
-            isSheetPresented = true
+            presentExpanded(mode: .sheet)
             hostActions.requestSheet(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
         } else if action.actionID == "fullscreen" {
-            #if os(iOS)
-            isFullScreenPresented = true
-            #else
-            isSheetPresented = true
-            #endif
+            presentExpanded(mode: .fullScreen)
             hostActions.requestFullScreen(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
         } else {
             hostActions.performAction(AgentHostAction(actionID: action.actionID, payload: descriptor.payload.jsonString))
@@ -206,7 +216,12 @@ public struct AgentEmbeddedResultHost: View {
 
     private func performTeardown() {
         guard !hasTornDown else { return }
-        guard !isSheetPresented && !isFullScreenPresented else { return }
+        if let expansionCoordinator, expansionCoordinator.isPresenting(descriptor: descriptor) {
+            return
+        }
+        if isSheetPresented || isFullScreenPresented {
+            return
+        }
         hasTornDown = true
         session?.tearDown()
     }

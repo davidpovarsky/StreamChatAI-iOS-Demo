@@ -16,6 +16,7 @@ public final class AnyAgentEmbeddedResultSession: AgentEmbeddedResultSession {
     public let id: UUID
     private let _rootView: @MainActor () -> AnyView
     private let _tearDown: @MainActor () -> Void
+    private var hasTornDown = false
 
     public init<S: AgentEmbeddedResultSession>(_ session: S) {
         self.id = session.id
@@ -38,6 +39,8 @@ public final class AnyAgentEmbeddedResultSession: AgentEmbeddedResultSession {
     }
 
     public func tearDown() {
+        guard !hasTornDown else { return }
+        hasTornDown = true
         _tearDown()
     }
 }
@@ -52,6 +55,7 @@ public protocol AgentEmbeddedResultSession: AnyObject, Identifiable {
 public final class AnyAgentEmbeddedResultSession: AgentEmbeddedResultSession {
     public let id: UUID
     private let _tearDown: @MainActor () -> Void
+    private var hasTornDown = false
 
     public init<S: AgentEmbeddedResultSession>(_ session: S) {
         self.id = session.id
@@ -67,6 +71,8 @@ public final class AnyAgentEmbeddedResultSession: AgentEmbeddedResultSession {
     }
 
     public func tearDown() {
+        guard !hasTornDown else { return }
+        hasTornDown = true
         _tearDown()
     }
 }

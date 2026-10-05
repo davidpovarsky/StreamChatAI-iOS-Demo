@@ -2,31 +2,54 @@
 import Foundation
 import Observation
 
+public struct AgentExpansionPresentation: Identifiable, Sendable {
+    public let id: String
+    public let descriptor: AgentEmbeddedPresentationDescriptor
+    public let mode: AgentExpansionMode
+
+    public init(descriptor: AgentEmbeddedPresentationDescriptor, mode: AgentExpansionMode) {
+        self.id = descriptor.handlerID
+        self.descriptor = descriptor
+        self.mode = mode
+    }
+}
+
 @MainActor
 @Observable
 public final class AgentExpansionCoordinator {
-    public var activeSheetSession: (any AgentEmbeddedResultSession)?
-    public var activeFullScreenSession: (any AgentEmbeddedResultSession)?
+    public var activePresentation: AgentExpansionPresentation?
+    public var activeSession: (any AgentEmbeddedResultSession)?
+
     public var isSheetPresented: Bool {
-        activeSheetSession != nil
+        activePresentation?.mode == .sheet
     }
+
     public var isFullScreenPresented: Bool {
-        activeFullScreenSession != nil
+        activePresentation?.mode == .fullScreen
     }
 
     public init() {}
 
-    public func presentSheet(_ session: any AgentEmbeddedResultSession) {
-        self.activeSheetSession = session
+    public func present(descriptor: AgentEmbeddedPresentationDescriptor, session: any AgentEmbeddedResultSession, mode: AgentExpansionMode) {
+        self.activePresentation = AgentExpansionPresentation(descriptor: descriptor, mode: mode)
+        self.activeSession = session
     }
 
-    public func presentFullScreen(_ session: any AgentEmbeddedResultSession) {
-        self.activeFullScreenSession = session
+    public func presentSheet(descriptor: AgentEmbeddedPresentationDescriptor, session: any AgentEmbeddedResultSession) {
+        present(descriptor: descriptor, session: session, mode: .sheet)
+    }
+
+    public func presentFullScreen(descriptor: AgentEmbeddedPresentationDescriptor, session: any AgentEmbeddedResultSession) {
+        present(descriptor: descriptor, session: session, mode: .fullScreen)
     }
 
     public func dismiss() {
-        self.activeSheetSession = nil
-        self.activeFullScreenSession = nil
+        self.activePresentation = nil
+        self.activeSession = nil
+    }
+
+    public func isPresenting(descriptor: AgentEmbeddedPresentationDescriptor) -> Bool {
+        activePresentation?.descriptor.handlerID == descriptor.handlerID
     }
 }
 

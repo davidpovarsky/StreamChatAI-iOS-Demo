@@ -29,6 +29,7 @@ public struct AgentActivityTimelineView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("agentui_activity_duration_pill")
             .accessibilityLabel(session.isExpanded ? "Collapse activity timeline" : "Expand activity timeline")
 
             if session.isExpanded {

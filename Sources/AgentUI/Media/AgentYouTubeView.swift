@@ -77,9 +77,6 @@ public struct AgentYouTubeView: View {
                 }
                 .aspectRatio(16 / 9, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: tokens.mediaCornerRadius))
-            }
-            .accessibilityIdentifier("agentui_youtube_fallback")
-
             HStack {
                 Link(destination: URL(string: "https://www.youtube.com/watch?v=\(videoID)") ?? URL(string: "https://www.youtube.com")!) {
                     HStack(spacing: 4) {
@@ -93,6 +90,7 @@ public struct AgentYouTubeView: View {
             }
             .padding(.leading, 4)
         }
+        .accessibilityIdentifier("agentui_youtube_fallback")
     }
 }
 

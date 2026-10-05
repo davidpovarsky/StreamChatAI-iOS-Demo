@@ -46,23 +46,40 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
     }
 
     public var body: some View {
-        DisclosureGroup(isExpanded: isExpandedBinding) {
-            ToolCallInspectionView(call: call, status: status)
-                .padding(.top, 4)
-        } label: {
-            HStack(spacing: 8) {
-                presentation()
-
-                Spacer(minLength: 4)
-
-                if status == .running {
-                    ProgressView()
-                        .controlSize(.mini)
-                } else if status == .failed {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.orange)
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpandedBinding.wrappedValue.toggle()
                 }
+            } label: {
+                HStack(spacing: 8) {
+                    presentation()
+
+                    Spacer(minLength: 4)
+
+                    if status == .running {
+                        ProgressView()
+                            .controlSize(.mini)
+                    } else if status == .failed {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.orange)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpandedBinding.wrappedValue ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: isExpandedBinding.wrappedValue)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpandedBinding.wrappedValue {
+                ToolCallInspectionView(call: call, status: status)
+                    .padding(.top, 8)
+                    .transition(.opacity)
             }
         }
         .padding(.horizontal, 12)

@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-public enum ToolDemoKind: Equatable {
+enum ToolDemoKind: Equatable {
     case gitHub(repo: String, count: Int)
     case webSearch(count: Int, query: String)
     case fileRead(file: String, lines: String)
@@ -17,13 +17,13 @@ public enum ToolDemoKind: Equatable {
     case failed(title: String, subtitle: String)
 }
 
-public struct ToolExecutionDemoItem: Identifiable, Equatable {
-    public let id: String
-    public let call: ToolCallInspection
-    public let status: ToolExecutionStatus
-    public let kind: ToolDemoKind
+struct ToolExecutionDemoItem: Identifiable, Equatable {
+    let id: String
+    let call: ToolCallInspection
+    let status: ToolExecutionStatus
+    let kind: ToolDemoKind
 
-    public init(id: String = UUID().uuidString, call: ToolCallInspection, status: ToolExecutionStatus, kind: ToolDemoKind) {
+    init(id: String = UUID().uuidString, call: ToolCallInspection, status: ToolExecutionStatus, kind: ToolDemoKind) {
         self.id = id
         self.call = call
         self.status = status
@@ -32,26 +32,26 @@ public struct ToolExecutionDemoItem: Identifiable, Equatable {
 }
 
 @MainActor
-public final class ToolExecutionDemoStore: ObservableObject {
-    public static let shared = ToolExecutionDemoStore()
+final class ToolExecutionDemoStore: ObservableObject {
+    static let shared = ToolExecutionDemoStore()
 
-    public static let demoAssistantMessageID = "tool-demo-showcase-assistant-msg"
+    static let demoAssistantMessageID = "tool-demo-showcase-assistant-msg"
 
     @Published private var itemsByMessageID: [String: [ToolExecutionDemoItem]] = [:]
 
-    public init() {
+    init() {
         registerShowcaseData()
     }
 
-    public func hasExecutions(for messageID: String) -> Bool {
+    func hasExecutions(for messageID: String) -> Bool {
         !(itemsByMessageID[messageID]?.isEmpty ?? true)
     }
 
-    public func executions(for messageID: String) -> [ToolExecutionDemoItem] {
+    func executions(for messageID: String) -> [ToolExecutionDemoItem] {
         itemsByMessageID[messageID] ?? []
     }
 
-    public func createDemoChat(modelType: ModelType) -> Chat {
+    func createDemoChat(modelType: ModelType) -> Chat {
         registerShowcaseData()
 
         let userMessage = Message(

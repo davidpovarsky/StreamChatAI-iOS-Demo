@@ -7,16 +7,11 @@
 
 import SwiftUI
 
-public struct GitHubToolPresentationView: View {
-    public let repository: String
-    public let resultCount: Int
+struct GitHubToolPresentationView: View {
+    let repository: String
+    let resultCount: Int
 
-    public init(repository: String, resultCount: Int) {
-        self.repository = repository
-        self.resultCount = resultCount
-    }
-
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "chevron.left.forwardslash.chevron.right")
                 .font(.system(size: 11, weight: .semibold))
@@ -38,16 +33,11 @@ public struct GitHubToolPresentationView: View {
     }
 }
 
-public struct WebSearchToolPresentationView: View {
-    public let siteCount: Int
-    public let query: String
+struct WebSearchToolPresentationView: View {
+    let siteCount: Int
+    let query: String
 
-    public init(siteCount: Int, query: String) {
-        self.siteCount = siteCount
-        self.query = query
-    }
-
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "globe")
                 .font(.system(size: 11, weight: .semibold))
@@ -70,16 +60,11 @@ public struct WebSearchToolPresentationView: View {
     }
 }
 
-public struct FileReadToolPresentationView: View {
-    public let fileName: String
-    public let lineRange: String
+struct FileReadToolPresentationView: View {
+    let fileName: String
+    let lineRange: String
 
-    public init(fileName: String, lineRange: String) {
-        self.fileName = fileName
-        self.lineRange = lineRange
-    }
-
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "doc.text")
                 .font(.system(size: 11, weight: .semibold))
@@ -101,16 +86,11 @@ public struct FileReadToolPresentationView: View {
     }
 }
 
-public struct CalendarToolPresentationView: View {
-    public let eventCount: Int
-    public let timeframe: String
+struct CalendarToolPresentationView: View {
+    let eventCount: Int
+    let timeframe: String
 
-    public init(eventCount: Int, timeframe: String) {
-        self.eventCount = eventCount
-        self.timeframe = timeframe
-    }
-
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "calendar")
                 .font(.system(size: 11, weight: .semibold))
@@ -132,20 +112,13 @@ public struct CalendarToolPresentationView: View {
     }
 }
 
-public struct GenericAppToolPresentationView: View {
-    public let icon: String
-    public let title: String
-    public let subtitle: String
-    public var tintColor: Color
+struct GenericAppToolPresentationView: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    var tintColor: Color = .primary
 
-    public init(icon: String, title: String, subtitle: String, tintColor: Color = .primary) {
-        self.icon = icon
-        self.title = title
-        self.subtitle = subtitle
-        self.tintColor = tintColor
-    }
-
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .semibold))

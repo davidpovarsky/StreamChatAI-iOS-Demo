@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-public struct ToolExecutionDemoBridge: View {
-    public let messageID: String
-    public let isDarkMode: Bool
+struct ToolExecutionDemoBridge: View {
+    let messageID: String
+    let isDarkMode: Bool
     @ObservedObject private var store = ToolExecutionDemoStore.shared
 
-    public init(messageID: String, isDarkMode: Bool = false) {
+    init(messageID: String, isDarkMode: Bool = false) {
         self.messageID = messageID
         self.isDarkMode = isDarkMode
     }

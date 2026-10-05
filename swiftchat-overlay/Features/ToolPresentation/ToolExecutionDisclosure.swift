@@ -9,4 +9,3 @@
 import SwiftUI
 
 typealias ToolExecutionDisclosure = AgentUI.ToolExecutionDisclosure
-typealias ToolExecutionDisclosureData = AgentUI.ToolExecutionDisclosureData

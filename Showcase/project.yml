@@ -1,0 +1,29 @@
+name: AgentUIShowcase
+options:
+  bundleIdPrefix: com.davidpovarsky
+  deploymentTarget:
+    iOS: "18.0"
+packages:
+  AgentUIPackage:
+    path: ..
+targets:
+  AgentUIShowcase:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    dependencies:
+      - package: AgentUIPackage
+        product: AgentUI
+      - package: AgentUIPackage
+        product: AgentUIShowcaseSupport
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidpovarsky.AgentUIShowcase
+        PRODUCT_NAME: AgentUI Showcase
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: AgentUI Showcase
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "6.0"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO

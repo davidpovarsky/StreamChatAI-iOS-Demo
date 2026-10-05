@@ -9,7 +9,7 @@ import XCTest
 
 final class AgentUITests: XCTestCase {
     func testAgentUIVersion() {
-        XCTAssertEqual(AgentUI.version, "1.0.0")
+        XCTAssertEqual(AgentUIMetadata.version, "1.0.0")
     }
 
     func testModelDescriptors() {

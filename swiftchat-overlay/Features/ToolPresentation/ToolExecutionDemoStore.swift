@@ -7,7 +7,6 @@
 
 import Foundation
 import Combine
-import AgentUI
 
 enum ToolDemoKind: Equatable {
     case gitHub(repo: String, count: Int)
@@ -153,11 +152,10 @@ final class ToolExecutionDemoStore: ObservableObject {
                     toolName: "fetch_pull_request",
                     callID: "call_pr_06",
                     arguments: .json("{\n  \"pr_number\": 999\n}"),
-                    resultSummary: nil,
                     errorMessage: "404 Not Found: Pull request #999 does not exist in repository sachaservan/SwiftChat"
                 ),
-                status: ToolExecutionStatus.failed,
-                kind: ToolDemoKind.failed(title: "Fetch pull request #999", subtitle: "sachaservan/SwiftChat")
+                status: .failed,
+                kind: .failed(title: "Fetch pull request #999", subtitle: "sachaservan/SwiftChat")
             )
         ]
 

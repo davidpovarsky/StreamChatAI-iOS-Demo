@@ -7,6 +7,6 @@
 
 import SwiftUI
 
-public enum AgentUI {
+public enum AgentUIMetadata {
     public static let version = "1.0.0"
 }

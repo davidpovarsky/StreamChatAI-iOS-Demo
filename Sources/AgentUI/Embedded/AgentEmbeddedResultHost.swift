@@ -44,7 +44,7 @@ public struct AgentEmbeddedResultHost: View {
                             .padding(4)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Expand result")
+                    .accessibilityLabel(AgentLocalization.string("Expand result"))
                     .accessibilityIdentifier("agentui_embedded_expand_button")
                 }
             }
@@ -107,13 +107,13 @@ public struct AgentEmbeddedResultHost: View {
             if let session {
                 NavigationStack {
                     session.rootView
-                        .navigationTitle(descriptor.title ?? "Result")
+                        .navigationTitle(descriptor.title ?? AgentLocalization.string("Result"))
                         #if os(iOS)
                         .navigationBarTitleDisplayMode(.inline)
                         #endif
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { isSheetPresented = false }
+                                Button(AgentLocalization.string("Done")) { isSheetPresented = false }
                             }
                         }
                 }
@@ -124,11 +124,11 @@ public struct AgentEmbeddedResultHost: View {
             if let session {
                 NavigationStack {
                     session.rootView
-                        .navigationTitle(descriptor.title ?? "Result")
+                        .navigationTitle(descriptor.title ?? AgentLocalization.string("Result"))
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { isFullScreenPresented = false }
+                                Button(AgentLocalization.string("Done")) { isFullScreenPresented = false }
                             }
                         }
                 }

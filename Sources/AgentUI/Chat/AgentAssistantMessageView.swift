@@ -48,7 +48,7 @@ public struct AgentAssistantMessageView: View {
                     HStack(spacing: 4) {
                         ProgressView()
                             .controlSize(.small)
-                        Text("Thinking...")
+                        Text(AgentLocalization.string("Thinking..."))
                             .font(.subheadline)
                             .foregroundStyle(theme.secondaryText)
                     }

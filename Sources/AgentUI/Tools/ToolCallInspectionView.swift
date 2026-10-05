@@ -22,7 +22,7 @@ public struct ToolCallInspectionView: View {
 
             if let service = inspection.service, !service.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Repository / Service")
+                    Text(AgentLocalization.string("Repository / Service"))
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(theme.tertiaryText)
                     Text(service)
@@ -32,7 +32,7 @@ public struct ToolCallInspectionView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Tool call")
+                Text(AgentLocalization.string("Tool call"))
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(theme.tertiaryText)
                 HStack(spacing: 6) {
@@ -49,7 +49,7 @@ public struct ToolCallInspectionView: View {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Arguments")
+                Text(AgentLocalization.string("Arguments"))
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(theme.tertiaryText)
 
@@ -69,7 +69,7 @@ public struct ToolCallInspectionView: View {
 
             if let result = inspection.resultSummary, !result.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Result")
+                    Text(AgentLocalization.string("Result"))
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(theme.tertiaryText)
                     Text(result)
@@ -80,7 +80,7 @@ public struct ToolCallInspectionView: View {
 
             if let error = inspection.errorMessage, !error.isEmpty {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Error")
+                    Text(AgentLocalization.string("Error"))
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(theme.errorColor)
                     Text(error)

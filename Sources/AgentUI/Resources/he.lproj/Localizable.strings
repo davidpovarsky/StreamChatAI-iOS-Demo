@@ -4,3 +4,16 @@
 "Sources" = "מקורות";
 "Copy" = "העתק";
 "Retry" = "נסה שוב";
+"Repository / Service" = "מאגר / שירות";
+"Tool call" = "קריאת כלי";
+"Arguments" = "ארגומנטים";
+"Result" = "תוצאה";
+"Error" = "שגיאה";
+"Failed to load image" = "טעינת התמונה נכשלה";
+"Image not available" = "התמונה אינה זמינה";
+"Section Sources" = "מקורות לפסקה";
+"All Sources" = "כל המקורות";
+"Thinking..." = "חושב...";
+"Done" = "סיום";
+"Expand result" = "הרחב תוצאה";
+"Open in YouTube" = "פתח ב-YouTube";

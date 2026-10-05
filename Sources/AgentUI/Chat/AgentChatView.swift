@@ -65,13 +65,13 @@ public struct AgentChatView: View {
             if let session = ownedExpansionCoordinator.activeSession {
                 NavigationStack {
                     session.rootView
-                        .navigationTitle(presentation.descriptor.title ?? "Result")
+                        .navigationTitle(presentation.descriptor.title ?? AgentLocalization.string("Result"))
                         #if os(iOS)
                         .navigationBarTitleDisplayMode(.inline)
                         #endif
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { ownedExpansionCoordinator.dismiss() }
+                                Button(AgentLocalization.string("Done")) { ownedExpansionCoordinator.dismiss() }
                             }
                         }
                 }
@@ -90,11 +90,11 @@ public struct AgentChatView: View {
             if let session = ownedExpansionCoordinator.activeSession {
                 NavigationStack {
                     session.rootView
-                        .navigationTitle(presentation.descriptor.title ?? "Result")
+                        .navigationTitle(presentation.descriptor.title ?? AgentLocalization.string("Result"))
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { ownedExpansionCoordinator.dismiss() }
+                                Button(AgentLocalization.string("Done")) { ownedExpansionCoordinator.dismiss() }
                             }
                         }
                 }

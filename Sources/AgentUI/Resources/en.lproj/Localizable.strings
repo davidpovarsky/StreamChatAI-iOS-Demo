@@ -4,3 +4,16 @@
 "Sources" = "Sources";
 "Copy" = "Copy";
 "Retry" = "Retry";
+"Repository / Service" = "Repository / Service";
+"Tool call" = "Tool call";
+"Arguments" = "Arguments";
+"Result" = "Result";
+"Error" = "Error";
+"Failed to load image" = "Failed to load image";
+"Image not available" = "Image not available";
+"Section Sources" = "Section Sources";
+"All Sources" = "All Sources";
+"Thinking..." = "Thinking...";
+"Done" = "Done";
+"Expand result" = "Expand result";
+"Open in YouTube" = "Open in YouTube";

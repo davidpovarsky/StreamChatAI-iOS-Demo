@@ -24,6 +24,9 @@ public struct AgentChatView: View {
     public var embeddedSurfaces: AgentEmbeddedSurfaceRegistry?
     public var hostActions: (any AgentHostActions)?
 
+    @State private var ownedToolRegistry: AgentToolSurfaceRegistry
+    @State private var ownedEmbeddedRegistry: AgentEmbeddedSurfaceRegistry
+
     public init(
         session: AgentUISession,
         configuration: AgentChatConfiguration = .default,
@@ -36,6 +39,8 @@ public struct AgentChatView: View {
         self.surfaces = surfaces
         self.embeddedSurfaces = embeddedSurfaces
         self.hostActions = hostActions
+        self._ownedToolRegistry = State(initialValue: surfaces ?? AgentToolSurfaceRegistry())
+        self._ownedEmbeddedRegistry = State(initialValue: embeddedSurfaces ?? AgentEmbeddedSurfaceRegistry())
     }
 
     public var body: some View {
@@ -43,8 +48,9 @@ public struct AgentChatView: View {
             session: session,
             title: configuration.showHeader ? configuration.title : nil
         )
-        .environment(\.agentToolSurfaces, surfaces ?? AgentToolSurfaceRegistry.shared)
-        .environment(\.agentEmbeddedSurfaces, embeddedSurfaces ?? AgentEmbeddedSurfaceRegistry.shared)
+        .environment(\.agentToolSurfaces, surfaces ?? ownedToolRegistry)
+        .environment(\.agentEmbeddedSurfaces, embeddedSurfaces ?? ownedEmbeddedRegistry)
+        .environment(\.agentHostActions, hostActions)
     }
 }
 #endif

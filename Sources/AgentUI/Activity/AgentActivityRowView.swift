@@ -47,6 +47,10 @@ public struct AgentActivityRowView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(theme.errorColor)
+                    } else if item.status == .cancelled {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(theme.tertiaryText)
                     } else if hasDetails {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 9, weight: .semibold))

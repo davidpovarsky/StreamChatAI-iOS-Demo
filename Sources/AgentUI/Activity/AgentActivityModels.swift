@@ -34,6 +34,7 @@ public enum AgentActivityStatus: Sendable, Equatable, Hashable {
     case running
     case completed
     case failed
+    case cancelled
 }
 
 public struct AgentActivityItem: Identifiable, Sendable, Equatable, Hashable {

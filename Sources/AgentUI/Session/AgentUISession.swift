@@ -206,6 +206,16 @@ public final class AgentUISession {
                 act.summary = errorMessage
             }
 
+        case .toolCancelled(let messageID, let toolCallID):
+            updateToolExecution(messageID: messageID, callID: toolCallID) { exec in
+                exec.status = .cancelled
+                exec.completedAt = Date()
+            }
+            updateActivity(messageID: messageID, itemID: AgentActivityID(rawValue: toolCallID.rawValue)) { act in
+                act.status = .cancelled
+                act.completedAt = Date()
+            }
+
         case .sourceDiscovered(let messageID, let source):
             if let index = messages.firstIndex(where: { $0.id == messageID }) {
                 if !messages[index].allSources.contains(where: { $0.id == source.id || $0.url == source.url }) {
@@ -255,6 +265,15 @@ public final class AgentUISession {
                 if let lastIndex = messages.indices.last {
                     messages[lastIndex].isStreaming = false
                     messages[lastIndex].error = error
+                }
+            }
+
+        case .requestCancelled(let requestID):
+            if currentRequestID == requestID {
+                isStreaming = false
+                currentRequestID = nil
+                for i in messages.indices {
+                    messages[i].isStreaming = false
                 }
             }
         }
@@ -313,8 +332,7 @@ public final class AgentUISession {
         guard isStreaming, let reqID = currentRequestID else { return }
         streamingTask?.cancel()
         streamingTask = nil
-        isStreaming = false
-        currentRequestID = nil
+        apply(.requestCancelled(requestID: reqID))
         Task { [runtime] in
             await runtime?.cancel(requestID: reqID)
         }

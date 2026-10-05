@@ -9,6 +9,8 @@ public struct ToolExecutionDisclosure: View {
     @Environment(\.agentToolSurfaces) private var registry
     @Environment(\.agentUIDesignTokens) private var tokens
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(execution: AgentToolExecution, isExpanded: Bool = false) {
         self.execution = execution
         self._isExpanded = State(initialValue: execution.isExpanded || isExpanded)
@@ -18,12 +20,17 @@ public struct ToolExecutionDisclosure: View {
         // ONE continuous surface containing header and inspection
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                let animation: Animation? = reduceMotion ? nil : .easeInOut(duration: 0.2)
+                withAnimation(animation) {
                     isExpanded.toggle()
                 }
             } label: {
                 HStack(spacing: 8) {
-                    registry.resolve(execution: execution)
+                    if let registry {
+                        registry.resolve(execution: execution)
+                    } else {
+                        DefaultToolPresentationView(execution: execution)
+                    }
 
                     Spacer(minLength: 4)
 
@@ -34,6 +41,10 @@ public struct ToolExecutionDisclosure: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(.orange)
+                    } else if execution.status == .cancelled {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
                     }
 
                     Image(systemName: "chevron.right")
@@ -44,6 +55,7 @@ public struct ToolExecutionDisclosure: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("agentui_tool_disclosure_header")
 
             if isExpanded {
                 ToolCallInspectionView(
@@ -51,7 +63,8 @@ public struct ToolExecutionDisclosure: View {
                     status: execution.status
                 )
                 .padding(.top, 8)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(reduceMotion ? .identity : .opacity.combined(with: .move(edge: .top)))
+                .accessibilityIdentifier("agentui_tool_disclosure_details")
             }
         }
         .padding(.horizontal, 12)
@@ -59,6 +72,7 @@ public struct ToolExecutionDisclosure: View {
         // Single continuous glass/material shape wrapper
         .agentGlassEffect(cornerRadius: tokens.toolDisclosureCornerRadius)
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("agentui_tool_disclosure")
         .accessibilityLabel("Tool execution: \(execution.inspection.toolName)")
         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
     }

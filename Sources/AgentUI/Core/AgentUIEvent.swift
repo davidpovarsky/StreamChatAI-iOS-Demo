@@ -17,6 +17,7 @@ public enum AgentUIEvent: Sendable, Equatable {
     case toolPresentationUpdated(messageID: AgentMessageID, execution: AgentToolExecution)
     case toolCompleted(messageID: AgentMessageID, toolCallID: AgentToolCallID, resultSummary: String?)
     case toolFailed(messageID: AgentMessageID, toolCallID: AgentToolCallID, errorMessage: String)
+    case toolCancelled(messageID: AgentMessageID, toolCallID: AgentToolCallID)
     case sourceDiscovered(messageID: AgentMessageID, source: AgentSource)
     case sectionSourcesUpdated(messageID: AgentMessageID, sectionID: String, sources: [AgentSource])
     case contentBlockAdded(messageID: AgentMessageID, block: AgentContentBlock)
@@ -24,4 +25,5 @@ public enum AgentUIEvent: Sendable, Equatable {
     case embeddedResultAdded(messageID: AgentMessageID, descriptor: AgentEmbeddedPresentationDescriptor)
     case requestCompleted(requestID: AgentRequestID)
     case requestFailed(requestID: AgentRequestID, error: AgentUIError)
+    case requestCancelled(requestID: AgentRequestID)
 }

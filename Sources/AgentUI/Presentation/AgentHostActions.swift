@@ -31,3 +31,11 @@ public protocol AgentHostActions: AnyObject, Sendable {
     func requestWindow(_ request: AgentPresentationRequest)
     func performAction(_ action: AgentHostAction)
 }
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+extension EnvironmentValues {
+    @Entry public var agentHostActions: (any AgentHostActions)? = nil
+}
+#endif

@@ -8,8 +8,18 @@ struct ShowcaseRootView: View {
     @State private var selectedScenarioID: String? = "chat.plain"
     @State private var isRTL: Bool = false
     @State private var mockRuntime = MockAgentRuntime()
+    @State private var toolRegistry: AgentToolSurfaceRegistry
+    @State private var embeddedRegistry: AgentEmbeddedSurfaceRegistry
+    @State private var hostActions = ShowcaseHostActions()
 
     init() {
+        let tools = AgentToolSurfaceRegistry()
+        let embedded = AgentEmbeddedSurfaceRegistry()
+        MockToolSurfaces.registerAll(in: tools)
+        MockEmbeddedSessions.registerAll(in: embedded)
+        _toolRegistry = State(initialValue: tools)
+        _embeddedRegistry = State(initialValue: embedded)
+
         let defaultScenario = ShowcaseCatalog.allScenarios.first!
         let initialSession = AgentUISession(
             runtime: MockAgentRuntime(),
@@ -33,8 +43,9 @@ struct ShowcaseRootView: View {
             AgentChatView(
                 session: session,
                 configuration: .init(title: currentScenarioTitle, showHeader: true),
-                surfaces: AgentToolSurfaceRegistry.shared,
-                embeddedSurfaces: AgentEmbeddedSurfaceRegistry.shared
+                surfaces: toolRegistry,
+                embeddedSurfaces: embeddedRegistry,
+                hostActions: hostActions
             )
             .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
             .toolbar {

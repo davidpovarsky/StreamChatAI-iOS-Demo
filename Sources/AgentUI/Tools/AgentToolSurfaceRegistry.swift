@@ -67,15 +67,7 @@ public struct DefaultToolPresentationView: View {
     }
 }
 
-private struct AgentToolSurfaceRegistryKey: EnvironmentKey {
-    static let defaultValue: AgentToolSurfaceRegistry? = nil
-}
-
 extension EnvironmentValues {
-    @MainActor
-    public var agentToolSurfaces: AgentToolSurfaceRegistry {
-        get { self[AgentToolSurfaceRegistryKey.self] ?? AgentToolSurfaceRegistry.shared }
-        set { self[AgentToolSurfaceRegistryKey.self] = newValue }
-    }
+    @Entry public var agentToolSurfaces: AgentToolSurfaceRegistry? = nil
 }
 #endif

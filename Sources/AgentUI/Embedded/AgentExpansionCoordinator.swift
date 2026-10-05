@@ -29,3 +29,11 @@ public final class AgentExpansionCoordinator {
         self.activeFullScreenSession = nil
     }
 }
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+extension EnvironmentValues {
+    @Entry public var agentExpansionCoordinator: AgentExpansionCoordinator? = nil
+}
+#endif

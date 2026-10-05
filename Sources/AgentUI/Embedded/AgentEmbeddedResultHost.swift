@@ -12,6 +12,9 @@ public struct AgentEmbeddedResultHost: View {
     @Environment(\.agentEmbeddedSurfaces) private var registry
     @Environment(\.agentUIDesignTokens) private var tokens
     @Environment(\.agentUITheme) private var theme
+    @Environment(\.agentHostActions) private var hostActions
+
+    @State private var hasTornDown = false
 
     public init(descriptor: AgentEmbeddedPresentationDescriptor) {
         self.descriptor = descriptor
@@ -30,9 +33,9 @@ public struct AgentEmbeddedResultHost: View {
                 Spacer()
 
                 // Expansion button
-                if descriptor.expansion.allowedModes.contains(.sheet) {
+                if !descriptor.expansion.allowedModes.isEmpty {
                     Button {
-                        isSheetPresented = true
+                        handleExpansion()
                     } label: {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 11, weight: .semibold))
@@ -40,7 +43,8 @@ public struct AgentEmbeddedResultHost: View {
                             .padding(4)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Expand to full sheet")
+                    .accessibilityLabel("Expand result")
+                    .accessibilityIdentifier("agentui_embedded_expand_button")
                 }
             }
 
@@ -60,7 +64,7 @@ public struct AgentEmbeddedResultHost: View {
                 HStack(spacing: 8) {
                     ForEach(descriptor.payload.actions) { action in
                         Button {
-                            // Action tap
+                            executeAction(action)
                         } label: {
                             HStack(spacing: 4) {
                                 if let icon = action.iconSystemName {
@@ -75,6 +79,8 @@ public struct AgentEmbeddedResultHost: View {
                             .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
+                        .disabled(hostActions == nil && !isSelfHandled(action))
+                        .accessibilityIdentifier("agentui_embedded_action_\(action.actionID)")
                     }
                 }
                 .padding(.top, 2)
@@ -90,11 +96,11 @@ public struct AgentEmbeddedResultHost: View {
         .padding(.vertical, 4)
         .onAppear {
             if session == nil {
-                session = registry.resolve(descriptor: descriptor)
+                session = registry?.resolve(descriptor: descriptor)
             }
         }
         .onDisappear {
-            session?.tearDown()
+            performTeardown()
         }
         .sheet(isPresented: $isSheetPresented) {
             if let session {
@@ -112,6 +118,97 @@ public struct AgentEmbeddedResultHost: View {
                 }
             }
         }
+        #if os(iOS)
+        .fullScreenCover(isPresented: $isFullScreenPresented) {
+            if let session {
+                NavigationStack {
+                    session.rootView
+                        .navigationTitle(descriptor.title ?? "Result")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { isFullScreenPresented = false }
+                            }
+                        }
+                }
+            }
+        }
+        #endif
+    }
+
+    private func handleExpansion() {
+        let preferred = descriptor.expansion.preferredMode
+        switch preferred {
+        case .window:
+            if let hostActions {
+                hostActions.requestWindow(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
+            } else if descriptor.expansion.allowedModes.contains(.fullScreen) {
+                #if os(iOS)
+                isFullScreenPresented = true
+                #else
+                isSheetPresented = true
+                #endif
+            } else if descriptor.expansion.allowedModes.contains(.sheet) {
+                isSheetPresented = true
+            }
+        case .fullScreen:
+            #if os(iOS)
+            if descriptor.expansion.allowedModes.contains(.fullScreen) {
+                isFullScreenPresented = true
+            } else if descriptor.expansion.allowedModes.contains(.sheet) {
+                isSheetPresented = true
+            }
+            #else
+            isSheetPresented = true
+            #endif
+        case .sheet:
+            if descriptor.expansion.allowedModes.contains(.sheet) {
+                isSheetPresented = true
+            } else if descriptor.expansion.allowedModes.contains(.fullScreen) {
+                #if os(iOS)
+                isFullScreenPresented = true
+                #else
+                isSheetPresented = true
+                #endif
+            }
+        }
+    }
+
+    private func isSelfHandled(_ action: AgentEmbeddedContentAction) -> Bool {
+        action.actionID.hasPrefix("http://") || action.actionID.hasPrefix("https://")
+    }
+
+    private func executeAction(_ action: AgentEmbeddedContentAction) {
+        if action.actionID.hasPrefix("http://") || action.actionID.hasPrefix("https://"),
+           let url = URL(string: action.actionID) {
+            hostActions?.openURL(url)
+            return
+        }
+
+        guard let hostActions else { return }
+
+        if action.actionID == "window" {
+            hostActions.requestWindow(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
+        } else if action.actionID == "sheet" {
+            isSheetPresented = true
+            hostActions.requestSheet(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
+        } else if action.actionID == "fullscreen" {
+            #if os(iOS)
+            isFullScreenPresented = true
+            #else
+            isSheetPresented = true
+            #endif
+            hostActions.requestFullScreen(AgentPresentationRequest(title: descriptor.title, targetIdentifier: descriptor.handlerID))
+        } else {
+            hostActions.performAction(AgentHostAction(actionID: action.actionID, payload: descriptor.payload.jsonString))
+        }
+    }
+
+    private func performTeardown() {
+        guard !hasTornDown else { return }
+        guard !isSheetPresented && !isFullScreenPresented else { return }
+        hasTornDown = true
+        session?.tearDown()
     }
 
     private var targetHeight: CGFloat {

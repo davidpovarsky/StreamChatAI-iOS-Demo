@@ -12,6 +12,7 @@ struct ShowcaseRootView: View {
     @State private var embeddedRegistry: AgentEmbeddedSurfaceRegistry
     @State private var hostActions = ShowcaseHostActions()
     @State private var mediaCoordinator = AgentMediaNavigationCoordinator()
+    @State private var preferredColumn: NavigationSplitViewColumn = .detail
     @Namespace private var zoomNamespace
 
     init() {
@@ -48,9 +49,10 @@ struct ShowcaseRootView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(preferredCompactColumn: $preferredColumn) {
             ScenarioSidebarView(selectedScenarioID: $selectedScenarioID) { scenario in
                 loadScenario(scenario)
+                preferredColumn = .detail
             }
         } detail: {
             NavigationStack {

@@ -108,4 +108,15 @@ final class AgentUITests: XCTestCase {
         let view = MinimalConsumerView()
         XCTAssertNotNil(view.body)
     }
+
+    @MainActor
+    func testAgentMessageViewInstantiates() {
+        let view = AgentMessageView(
+            id: "msg-123",
+            role: .assistant,
+            content: "Hello from **AgentUI**",
+            isDarkMode: false
+        )
+        XCTAssertNotNil(view.body)
+    }
 }

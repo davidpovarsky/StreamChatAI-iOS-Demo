@@ -24,8 +24,10 @@ public struct AgentMessageView: View {
     public let contentParts: [MessageContentPart]
     public let streamError: String?
     public let isRequestError: Bool
+    public let activitySession: AgentActivitySession?
 
     // Callbacks
+    public var onToggleActivity: (() -> Void)?
     public var onCopy: (() -> Void)?
     public var onRegenerate: (() -> Void)?
     public var onSelectImage: ((Attachment) -> Void)?
@@ -51,6 +53,8 @@ public struct AgentMessageView: View {
         contentParts: [MessageContentPart] = [],
         streamError: String? = nil,
         isRequestError: Bool = false,
+        activitySession: AgentActivitySession? = nil,
+        onToggleActivity: (() -> Void)? = nil,
         onCopy: (() -> Void)? = nil,
         onRegenerate: (() -> Void)? = nil,
         onSelectImage: ((Attachment) -> Void)? = nil
@@ -70,6 +74,8 @@ public struct AgentMessageView: View {
         self.contentParts = contentParts
         self.streamError = streamError
         self.isRequestError = isRequestError
+        self.activitySession = activitySession
+        self.onToggleActivity = onToggleActivity
         self.onCopy = onCopy
         self.onRegenerate = onRegenerate
         self.onSelectImage = onSelectImage
@@ -91,8 +97,10 @@ public struct AgentMessageView: View {
                 }
 
                 VStack(alignment: role == .user ? .trailing : .leading, spacing: 2) {
-                    if role == .assistant {
-                        AgentActivityTimelineView(messageID: id, isDarkMode: isDarkMode)
+                    if role == .assistant, let activitySession {
+                        AgentActivityTimelineView(session: activitySession, isDarkMode: isDarkMode) {
+                            onToggleActivity?()
+                        }
                     }
 
                     if role == .assistant && content.isEmpty && thoughts == nil && !isThinking && isLoading && isLastMessage {
@@ -200,7 +208,9 @@ public struct AgentMessageView: View {
                                         markdown: text,
                                         sources: part.sources,
                                         isDarkMode: isDarkMode
-                                    )
+                                    ) { markdownText in
+                                        LaTeXMarkdownView(content: markdownText, isDarkMode: isDarkMode, isStreaming: false)
+                                    }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                             }
@@ -292,7 +302,7 @@ public struct SourcesButton: View {
                 Text("Sources")
                     .font(.system(size: 13, weight: .medium))
 
-                SectionSourceClusterRenderer(
+                SourceFaviconStack(
                     sources: sources,
                     isDarkMode: isDarkMode,
                     iconSize: 18,

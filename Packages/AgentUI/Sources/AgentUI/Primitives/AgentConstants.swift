@@ -4,8 +4,14 @@
 //
 
 import Foundation
+import CoreGraphics
 
 public enum AgentConstants {
+    public enum Rendering {
+        public static let maxFullParsingCharacters = 20000
+        public static let maxMarkdownSegmentCharacters = 4000
+    }
+
     public enum UI {
         public static let scrollToBottomButtonSize: CGFloat = 27
         public static let scrollToBottomIconSize: CGFloat = 16
@@ -30,3 +36,5 @@ public enum AgentConstants {
         public static let defaultImageMimeType = "image/jpeg"
     }
 }
+
+public typealias Constants = AgentConstants

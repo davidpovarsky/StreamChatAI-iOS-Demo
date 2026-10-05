@@ -1,40 +1,30 @@
 import SwiftUI
+import AgentUI
 
 struct SelectedModelMenu: View {
     @ObservedObject var viewModel: ChatViewModel
     let isDarkMode: Bool
 
     var body: some View {
-        Menu {
-            ForEach(AppConfig.shared.filteredModelTypes()) { model in
-                Button {
+        AgentSelectedModelMenu(
+            currentModelId: viewModel.currentModel.id,
+            currentModelDisplayName: viewModel.currentModel.displayName,
+            availableModels: AppConfig.shared.filteredModelTypes().map {
+                AgentModelDescriptor(
+                    id: $0.id,
+                    displayName: $0.displayName,
+                    fullName: $0.fullName,
+                    iconName: $0.iconName,
+                    isMultimodal: $0.isMultimodal
+                )
+            },
+            isLoading: viewModel.isLoading,
+            isDarkMode: isDarkMode,
+            onSelectModel: { selected in
+                if let model = AppConfig.shared.filteredModelTypes().first(where: { $0.id == selected.id }) {
                     viewModel.changeModel(to: model)
-                } label: {
-                    if viewModel.currentModel.id == model.id {
-                        Label(model.displayName, systemImage: "checkmark")
-                    } else {
-                        Text(model.displayName)
-                    }
                 }
             }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "cpu")
-                    .font(.system(size: 14, weight: .semibold))
-                Text(viewModel.currentModel.displayName)
-                    .font(.system(size: 12, weight: .semibold))
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.secondary.opacity(0.15))
-            .clipShape(Capsule())
-            .foregroundColor(isDarkMode ? .white : .primary)
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: 168)
-        .disabled(viewModel.isLoading)
-        .padding(.leading, 8)
-        .accessibilityLabel("Selected model: \(viewModel.currentModel.displayName)")
+        )
     }
 }

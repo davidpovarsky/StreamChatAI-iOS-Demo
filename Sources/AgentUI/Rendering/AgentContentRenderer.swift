@@ -43,8 +43,8 @@ public struct AgentContentRenderer: View {
         case .nativeUI(_, let block):
             AgentNativeBlockRenderer(block: block)
 
-        case .image(_, let url, _, let caption):
-            AgentImageView(url: url, caption: caption)
+        case .image(let id, let url, let altText, let caption):
+            AgentImageView(id: id, url: url, altText: altText, caption: caption)
 
         case .video(_, let url, let title, let caption):
             AgentVideoView(url: url, title: title, caption: caption)

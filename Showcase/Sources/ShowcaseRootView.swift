@@ -11,6 +11,8 @@ struct ShowcaseRootView: View {
     @State private var toolRegistry: AgentToolSurfaceRegistry
     @State private var embeddedRegistry: AgentEmbeddedSurfaceRegistry
     @State private var hostActions = ShowcaseHostActions()
+    @State private var mediaCoordinator = AgentMediaNavigationCoordinator()
+    @Namespace private var zoomNamespace
 
     init() {
         let tools = AgentToolSurfaceRegistry()
@@ -40,14 +42,32 @@ struct ShowcaseRootView: View {
                 loadScenario(scenario)
             }
         } detail: {
-            AgentChatView(
-                session: session,
-                configuration: .init(title: currentScenarioTitle, showHeader: true),
-                surfaces: toolRegistry,
-                embeddedSurfaces: embeddedRegistry,
-                hostActions: hostActions
-            )
-            .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
+            NavigationStack {
+                AgentChatView(
+                    session: session,
+                    configuration: .init(title: currentScenarioTitle, showHeader: true),
+                    surfaces: toolRegistry,
+                    embeddedSurfaces: embeddedRegistry,
+                    hostActions: hostActions
+                )
+                .environment(\.agentMediaCoordinator, mediaCoordinator)
+                .environment(\.agentImageZoomNamespace, zoomNamespace)
+                .navigationDestination(isPresented: Binding(
+                    get: { mediaCoordinator.activeZoomImageID != nil },
+                    set: { if !$0 { mediaCoordinator.dismiss() } }
+                )) {
+                    if let imageID = mediaCoordinator.activeZoomImageID {
+                        AgentImageViewer(
+                            imageURL: mediaCoordinator.activeImageURL,
+                            altText: mediaCoordinator.activeAltText,
+                            onClose: { mediaCoordinator.dismiss() }
+                        )
+                        #if os(iOS)
+                        .navigationTransition(.zoom(sourceID: imageID, in: zoomNamespace))
+                        #endif
+                    }
+                }
+                .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -71,6 +91,7 @@ struct ShowcaseRootView: View {
                 }
             }
         }
+    }
     }
 
     private var currentScenarioTitle: String {

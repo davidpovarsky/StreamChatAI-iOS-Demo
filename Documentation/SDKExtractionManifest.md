@@ -42,7 +42,7 @@ This document is the migration ledger tracking the exact extraction of approved 
 | `SwiftChat/Views/URLFetchBox.swift` | None | `Packages/AgentUI/Sources/AgentUI/Message/URLFetchBox.swift` | Slice 10 (Messages) | Extracted (Package owned, app bridged) | Fetch box styling, URL label, status spinner | Yes |
 | `SwiftChat/Views/ChatListView.swift` | `MessageView`, ScrollViewReader | `Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageListView.swift` | Slice 11 (ChatList) | Extracted (Package owned, app bridged) | ScrollToBottom button, auto-scroll behavior, list padding | Yes |
 | `SwiftChat/Views/ChatSidebar.swift` | `ChatViewModel`, Conversations | `Packages/AgentUI/Sources/AgentUI/Sidebar/AgentChatSidebarView.swift` | Slice 11 (Sidebar) | Extracted (Package owned, app bridged) | Width = 300, iPad persistent / iPhone slide-over, toolbar toggle, drag thresholds | Yes |
-| `SwiftChat/Views/ChatView.swift` | `ChatSidebar`, `ChatListView`, `MessageInputView` | `Packages/AgentUI/Sources/AgentUI/Chat/AgentChatView.swift` | Slice 12 (ChatShell) | Planned | Full layout composition, navigation bar, dark/light styling | Yes (`ChatView` forwards to `AgentChatView`) |
+| `SwiftChat/Views/ChatView.swift` | `ChatSidebar`, `ChatListView`, `MessageInputView` | `Packages/AgentUI/Sources/AgentUI/Chat/AgentChatView.swift` | Slice 12 (ChatShell) | Extracted (Package owned, app bridged) | Full layout composition, navigation bar, dark/light styling | Yes (`ChatView` forwards to `AgentChatView`) |
 
 ---
 

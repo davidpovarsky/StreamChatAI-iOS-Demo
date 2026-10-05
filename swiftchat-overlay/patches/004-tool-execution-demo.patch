@@ -1,0 +1,22 @@
+diff --git a/SwiftChat/Views/MessageView.swift b/SwiftChat/Views/MessageView.swift
+--- a/SwiftChat/Views/MessageView.swift
++++ b/SwiftChat/Views/MessageView.swift
+@@ -54,6 +54,7 @@ struct MessageView: View {
+             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 2) {
+                 if message.role == .assistant {
+                     AgentActivityTimelineBridge(messageID: message.id, isDarkMode: isDarkMode)
++                    ToolExecutionDemoBridge(messageID: message.id, isDarkMode: isDarkMode)
+                 }
+ 
+                 // Show the loading dots for a fresh streaming assistant response (but not if we have thoughts or are thinking)
+diff --git a/SwiftChat/ViewModels/ChatViewModel.swift b/SwiftChat/ViewModels/ChatViewModel.swift
+--- a/SwiftChat/ViewModels/ChatViewModel.swift
++++ b/SwiftChat/ViewModels/ChatViewModel.swift
+@@ -458,6 +458,7 @@ class ChatViewModel: ObservableObject {
+         chats = [
+             liveStreamingChat,
+             researchChat,
++            ToolExecutionDemoStore.shared.createDemoChat(modelType: currentModel),
+             imagesChat,
+             videoChat,
+             richLinksChat,

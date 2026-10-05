@@ -64,8 +64,6 @@ public struct AgentMarkdownView: View {
         var inCodeBlock = false
         var codeLanguage: String? = nil
         var currentCode: [String] = []
-        var inMathBlock = false
-        var currentMath: [String] = []
 
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)

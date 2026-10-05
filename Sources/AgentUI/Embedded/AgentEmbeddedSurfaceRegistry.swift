@@ -23,14 +23,14 @@ public final class AgentEmbeddedSurfaceRegistry {
     }
 }
 
-@MainActor
 private struct AgentEmbeddedSurfaceRegistryKey: EnvironmentKey {
-    static let defaultValue = AgentEmbeddedSurfaceRegistry.shared
+    static let defaultValue: AgentEmbeddedSurfaceRegistry? = nil
 }
 
 extension EnvironmentValues {
+    @MainActor
     public var agentEmbeddedSurfaces: AgentEmbeddedSurfaceRegistry {
-        get { self[AgentEmbeddedSurfaceRegistryKey.self] }
+        get { self[AgentEmbeddedSurfaceRegistryKey.self] ?? AgentEmbeddedSurfaceRegistry.shared }
         set { self[AgentEmbeddedSurfaceRegistryKey.self] = newValue }
     }
 }

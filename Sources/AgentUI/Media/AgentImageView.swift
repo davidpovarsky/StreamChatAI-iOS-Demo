@@ -51,11 +51,19 @@ public struct AgentImageView: View {
                     .padding(.leading, 4)
             }
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: $isViewerPresented) {
             AgentImageViewer(imageURL: url) {
                 isViewerPresented = false
             }
         }
+        #else
+        .sheet(isPresented: $isViewerPresented) {
+            AgentImageViewer(imageURL: url) {
+                isViewerPresented = false
+            }
+        }
+        #endif
         .padding(.vertical, 4)
     }
 }

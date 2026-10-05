@@ -101,9 +101,11 @@ public struct AgentEmbeddedResultHost: View {
                 NavigationStack {
                     session.rootView
                         .navigationTitle(descriptor.title ?? "Result")
+                        #if os(iOS)
                         .navigationBarTitleDisplayMode(.inline)
+                        #endif
                         .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
+                            ToolbarItem(placement: .confirmationAction) {
                                 Button("Done") { isSheetPresented = false }
                             }
                         }

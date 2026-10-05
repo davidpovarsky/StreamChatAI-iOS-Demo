@@ -77,6 +77,8 @@ public struct AgentYouTubeView: View {
                 }
                 .aspectRatio(16 / 9, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: tokens.mediaCornerRadius))
+            }
+
             HStack {
                 Link(destination: URL(string: "https://www.youtube.com/watch?v=\(videoID)") ?? URL(string: "https://www.youtube.com")!) {
                     HStack(spacing: 4) {

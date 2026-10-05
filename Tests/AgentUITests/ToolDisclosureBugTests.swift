@@ -43,4 +43,27 @@ struct ToolDisclosureBugTests {
         #expect(inspection.prettyPrintedArguments.contains("SELECT * FROM users;"))
         #expect(inspection.resultSummary == "10 rows returned")
     }
+
+    @Test("Verify tool disclosure single surface structure contract")
+    func testSingleSurfaceStructureContract() {
+        let inspection = ToolCallInspection(
+            callID: "call_structural",
+            service: "GitHub",
+            toolName: "fetch_pull_request",
+            arguments: "{\"pr\": 42}",
+            resultSummary: "PR fetched"
+        )
+        let execution = AgentToolExecution(
+            id: AgentToolCallID("call_structural"),
+            handlerID: "github.pr",
+            inspection: inspection,
+            status: .completed,
+            isExpanded: true
+        )
+
+        #expect(execution.inspection.toolName == "fetch_pull_request")
+        #expect(execution.isExpanded == true)
+        #expect(execution.inspection.service == "GitHub")
+        #expect(execution.status == .completed)
+    }
 }

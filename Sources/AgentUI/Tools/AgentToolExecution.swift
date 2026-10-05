@@ -27,14 +27,32 @@ public struct ToolCallInspection: Sendable, Equatable, Hashable {
 
     public static func sanitize(arguments: String) -> String {
         var clean = arguments
-        let sensitiveKeys = ["api_key", "apikey", "token", "access_token", "secret", "password", "authorization"]
+        let sensitiveKeys = [
+            "api_key", "apikey", "token", "access_token", "auth_token",
+            "secret", "password", "authorization", "client_secret"
+        ]
         for key in sensitiveKeys {
-            let pattern = "\"\(key)\"\\s*:\\s*\"[^\"]+\""
+            let pattern = "(\"\(key)\")\\s*:\\s*\"[^\"]+\""
             if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
                 let range = NSRange(location: 0, length: clean.utf16.count)
-                clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "\"\(key)\": \"[REDACTED]\"")
+                clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "$1: \"[REDACTED]\"")
             }
         }
+
+        // Redact standalone sk-... API keys (e.g. OpenAI keys)
+        let skPattern = "sk-[a-zA-Z0-9_\\-]{16,}"
+        if let regex = try? NSRegularExpression(pattern: skPattern) {
+            let range = NSRange(location: 0, length: clean.utf16.count)
+            clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "sk-[REDACTED]")
+        }
+
+        // Redact Bearer tokens
+        let bearerPattern = "Bearer\\s+[a-zA-Z0-9_\\-\\.]+"
+        if let regex = try? NSRegularExpression(pattern: bearerPattern, options: .caseInsensitive) {
+            let range = NSRange(location: 0, length: clean.utf16.count)
+            clean = regex.stringByReplacingMatches(in: clean, options: [], range: range, withTemplate: "Bearer [REDACTED]")
+        }
+
         return clean
     }
 

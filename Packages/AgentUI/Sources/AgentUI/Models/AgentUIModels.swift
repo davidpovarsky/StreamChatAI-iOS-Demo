@@ -25,3 +25,51 @@ public struct WebSearchSource: Codable, Equatable, Identifiable, Hashable, Senda
         self.url = try container.decode(String.self, forKey: .url)
     }
 }
+
+public struct MessageContentPart: Identifiable, Codable, Equatable, Hashable, Sendable {
+    public enum Kind: String, Codable, Hashable, Sendable {
+        case markdown
+        case image
+        case video
+        case youtube
+        case linkPreview
+    }
+
+    public let id: String
+    public let kind: Kind
+
+    public var markdown: String?
+    public var sources: [WebSearchSource]
+
+    public var url: String?
+    public var title: String?
+    public var subtitle: String?
+    public var caption: String?
+    public var thumbnailURL: String?
+    public var youtubeVideoID: String?
+
+    public init(
+        id: String = UUID().uuidString.lowercased(),
+        kind: Kind,
+        markdown: String? = nil,
+        sources: [WebSearchSource] = [],
+        url: String? = nil,
+        title: String? = nil,
+        subtitle: String? = nil,
+        caption: String? = nil,
+        thumbnailURL: String? = nil,
+        youtubeVideoID: String? = nil
+    ) {
+        self.id = id
+        self.kind = kind
+        self.markdown = markdown
+        self.sources = sources
+        self.url = url
+        self.title = title
+        self.subtitle = subtitle
+        self.caption = caption
+        self.thumbnailURL = thumbnailURL
+        self.youtubeVideoID = youtubeVideoID
+    }
+}
+

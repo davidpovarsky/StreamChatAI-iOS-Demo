@@ -1,0 +1,108 @@
+name: AgentUI SDK & Showcase
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/agentui-sdk
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  package:
+    name: Package Build & Tests
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "Xcode 26 not found, falling back to default Xcode"
+          else
+            echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          fi
+          xcodebuild -version
+
+      - name: SwiftPM Build
+        run: swift build -v
+
+      - name: SwiftPM Test
+        run: swift test -v
+
+  showcase:
+    name: Showcase Device Build & Package IPA
+    runs-on: macos-15
+    timeout-minutes: 45
+    needs: package
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "Xcode 26 not found, falling back to default Xcode"
+          else
+            echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          fi
+          xcodebuild -version
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Showcase Xcode Project
+        run: |
+          cd Showcase
+          xcodegen generate
+
+      - name: Build Showcase App (device)
+        run: |
+          set -o pipefail
+          cd Showcase
+          xcodebuild \
+            -project AgentUIShowcase.xcodeproj \
+            -scheme AgentUIShowcase \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build | tee ../showcase-build.log
+
+      - name: Report Build Errors on Failure
+        if: failure()
+        run: |
+          grep -E 'error:|warning:' showcase-build.log | tail -100 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
+
+      - name: Package Unsigned IPA
+        run: |
+          APP=$(find Showcase/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry AgentUI-Showcase-unsigned.ipa Payload
+
+      - name: Upload Showcase IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgentUI-Showcase-IPA
+          path: AgentUI-Showcase-unsigned.ipa
+
+      - name: Run Showcase Simulator UI Tests (if available)
+        continue-on-error: true
+        run: |
+          cd Showcase
+          xcodebuild \
+            -project AgentUIShowcase.xcodeproj \
+            -scheme AgentUIShowcase \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            test || true

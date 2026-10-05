@@ -1,0 +1,6 @@
+/* AgentUI Hebrew strings */
+"Worked for %ds" = "עבד במשך %d שניות";
+"Working for %ds" = "עובד במשך %d שניות";
+"Sources" = "מקורות";
+"Copy" = "העתק";
+"Retry" = "נסה שוב";

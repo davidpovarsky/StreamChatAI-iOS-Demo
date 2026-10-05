@@ -5,6 +5,6 @@
 //  Compatibility alias forwarding to AgentUI.
 //
 
-import AgentUI
+@_exported import AgentUI
 
 public typealias ToolExecutionStatus = AgentUI.ToolExecutionStatus

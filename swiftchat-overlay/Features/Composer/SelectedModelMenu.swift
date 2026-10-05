@@ -1,5 +1,5 @@
 import SwiftUI
-import AgentUI
+@_exported import AgentUI
 
 struct SelectedModelMenu: View {
     @ObservedObject var viewModel: ChatViewModel

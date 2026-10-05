@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import AgentUI
 
 enum ToolDemoKind: Equatable {
     case gitHub(repo: String, count: Int)

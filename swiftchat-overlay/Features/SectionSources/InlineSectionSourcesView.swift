@@ -5,7 +5,7 @@
 //  Compatibility wrapper forwarding to AgentUI.AgentInlineSectionSourcesView.
 //
 
-import AgentUI
+@_exported import AgentUI
 import SwiftUI
 
 struct InlineSectionSourcesView: View {
@@ -22,7 +22,7 @@ struct InlineSectionSourcesView: View {
     var body: some View {
         AgentInlineSectionSourcesView(
             markdown: markdown,
-            sources: sources,
+            sources: sources.map { AgentUI.WebSearchSource(id: $0.id, title: $0.title, url: $0.url) },
             isDarkMode: isDarkMode
         ) { text in
             LaTeXMarkdownView(content: text, isDarkMode: isDarkMode, isStreaming: false)

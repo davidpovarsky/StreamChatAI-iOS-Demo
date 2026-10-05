@@ -5,7 +5,7 @@
 //  Compatibility bridge forwarding to AgentUI.AgentActivityTimelineView.
 //
 
-import AgentUI
+@_exported import AgentUI
 import SwiftUI
 
 struct AgentActivityTimelineBridge: View {

@@ -2,10 +2,17 @@
 //  InlineYouTubeMediaView.swift
 //  SwiftChat
 //
-//  Compatibility alias forwarding to AgentUI.
+//  Compatibility wrapper forwarding to AgentUI.SafeInlineYouTubeMediaView.
 //
 
-import AgentUI
+@_exported import AgentUI
 import SwiftUI
 
-typealias SafeInlineYouTubeMediaView = AgentUI.SafeInlineYouTubeMediaView
+struct SafeInlineYouTubeMediaView: View {
+    let part: MessageContentPart
+    let isDarkMode: Bool
+
+    var body: some View {
+        AgentUI.SafeInlineYouTubeMediaView(part: part.toAgentUIPart(), isDarkMode: isDarkMode)
+    }
+}

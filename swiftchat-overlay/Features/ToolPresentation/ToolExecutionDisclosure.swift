@@ -2,10 +2,11 @@
 //  ToolExecutionDisclosure.swift
 //  SwiftChat
 //
-//  Compatibility alias forwarding to AgentUI.
+//  Compatibility bridge forwarding to AgentUI.ToolExecutionDisclosure.
 //
 
-import AgentUI
+@_exported import AgentUI
 import SwiftUI
 
-public typealias ToolExecutionDisclosure = AgentUI.ToolExecutionDisclosure
+typealias ToolExecutionDisclosure = AgentUI.ToolExecutionDisclosure
+typealias ToolExecutionDisclosureData = AgentUI.ToolExecutionDisclosureData

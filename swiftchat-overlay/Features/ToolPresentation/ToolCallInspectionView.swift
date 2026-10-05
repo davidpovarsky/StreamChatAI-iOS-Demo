@@ -5,7 +5,7 @@
 //  Compatibility alias forwarding to AgentUI.
 //
 
-import AgentUI
+@_exported import AgentUI
 import SwiftUI
 
-public typealias ToolCallInspectionView = AgentUI.ToolCallInspectionView
+typealias ToolCallInspectionView = AgentUI.ToolCallInspectionView

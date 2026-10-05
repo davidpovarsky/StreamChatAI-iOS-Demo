@@ -5,7 +5,7 @@
 //  Compatibility aliases forwarding to AgentUI.
 //
 
-import AgentUI
+@_exported import AgentUI
 
 public typealias ToolCallField = AgentUI.ToolCallField
 public typealias ToolCallArguments = AgentUI.ToolCallArguments

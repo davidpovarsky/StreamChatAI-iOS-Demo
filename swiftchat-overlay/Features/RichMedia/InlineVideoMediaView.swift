@@ -2,10 +2,17 @@
 //  InlineVideoMediaView.swift
 //  SwiftChat
 //
-//  Compatibility alias forwarding to AgentUI.
+//  Compatibility wrapper forwarding to AgentUI.SafeInlineVideoMediaView.
 //
 
-import AgentUI
+@_exported import AgentUI
 import SwiftUI
 
-typealias SafeInlineVideoMediaView = AgentUI.SafeInlineVideoMediaView
+struct SafeInlineVideoMediaView: View {
+    let part: MessageContentPart
+    let isDarkMode: Bool
+
+    var body: some View {
+        AgentUI.SafeInlineVideoMediaView(part: part.toAgentUIPart(), isDarkMode: isDarkMode)
+    }
+}

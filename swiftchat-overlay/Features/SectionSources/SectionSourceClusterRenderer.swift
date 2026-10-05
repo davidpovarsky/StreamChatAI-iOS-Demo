@@ -5,7 +5,7 @@
 //  Compatibility alias forwarding to AgentUI.
 //
 
-import AgentUI
+@_exported import AgentUI
 import UIKit
 
 typealias SectionSourceClusterRenderer = AgentUI.SectionSourceClusterRenderer

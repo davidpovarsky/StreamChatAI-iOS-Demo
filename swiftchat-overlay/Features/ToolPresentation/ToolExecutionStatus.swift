@@ -2,14 +2,9 @@
 //  ToolExecutionStatus.swift
 //  SwiftChat
 //
-//  Presentation status for a single tool execution.
+//  Compatibility alias forwarding to AgentUI.
 //
 
-import Foundation
+import AgentUI
 
-public enum ToolExecutionStatus: String, Codable, Equatable, Sendable {
-    case pending
-    case running
-    case completed
-    case failed
-}
+public typealias ToolExecutionStatus = AgentUI.ToolExecutionStatus

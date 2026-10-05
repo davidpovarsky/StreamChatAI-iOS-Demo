@@ -14,12 +14,12 @@ FROZEN = [
     "SwiftChat/Views/LaTeXMarkdownView.swift",
     "SwiftChat/Views/WebSearchBox.swift",
     "SwiftChat/Extensions/Color.swift",
-    "SwiftChat.xcodeproj/project.pbxproj",
 ]
 ALLOWED_EXISTING = {
     "SwiftChat/Views/MessageView.swift",
     "SwiftChat/Views/MessageInputView.swift",
     "SwiftChat/ViewModels/ChatViewModel.swift",
+    "SwiftChat.xcodeproj/project.pbxproj",
 }
 
 
@@ -32,16 +32,9 @@ def git(*arguments: str) -> str:
     return result.stdout
 
 
-def fail(message: str) -> None:
-    raise SystemExit(f"SAFE OVERLAY VERIFICATION FAILED: {message}")
-
-
-def baseline_text(path: str) -> str:
-    return git("show", f"HEAD:{path}")
-
-
-def current_text(path: str) -> str:
-    return (UPSTREAM / path).read_text(encoding="utf-8")
+def fail(message: str) -> None: raise SystemExit(f"SAFE OVERLAY VERIFICATION FAILED: {message}")
+def baseline_text(path: str) -> str: return git("show", f"HEAD:{path}")
+def current_text(path: str) -> str: return (UPSTREAM / path).read_text(encoding="utf-8")
 
 
 def assert_frozen_files() -> None:
@@ -129,6 +122,20 @@ def assert_composer_invariants() -> None:
         fail("Web Search was not moved cleanly into both + menus")
 
 
+def assert_project_invariants() -> None:
+    diff = git("diff", "HEAD", "--", "SwiftChat.xcodeproj/project.pbxproj")
+    if not diff.strip():
+        return
+    allowed_tokens = {"AgentUI", "XCLocalSwiftPackageReference", "relativePath", "};", "isa = XCSwiftPackageProductDependency"}
+    for line in diff.splitlines():
+        if line.startswith("+") and not line.startswith("+++"):
+            stripped = line[1:].strip()
+            if stripped and not any(tok in stripped for tok in allowed_tokens):
+                fail(f"disallowed project.pbxproj addition: {line}")
+        elif line.startswith("-") and not line.startswith("---"):
+            fail(f"disallowed project.pbxproj deletion: {line}")
+
+
 def assert_overlay_files() -> None:
     files = list((SWIFTCHAT / "Features").rglob("*.swift"))
     if not files:
@@ -149,6 +156,7 @@ def main() -> None:
         fail(f"SwiftChat checkout not found: {UPSTREAM}")
     assert_frozen_files()
     names = assert_diff_scope()
+    assert_project_invariants()
     assert_message_invariants()
     assert_composer_invariants()
     assert_overlay_files()

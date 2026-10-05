@@ -45,3 +45,20 @@ targets:
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
         TEST_TARGET_NAME: AgentUIShowcase
+
+schemes:
+  AgentUIShowcase:
+    build:
+      targets:
+        AgentUIShowcase: all
+    run:
+      config: Release
+  AgentUIShowcaseUITests:
+    build:
+      targets:
+        AgentUIShowcase: all
+        AgentUIShowcaseUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - AgentUIShowcaseUITests

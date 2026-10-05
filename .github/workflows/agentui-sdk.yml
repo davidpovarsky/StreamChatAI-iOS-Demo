@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - agent/agentui-sdk-hardening-v2
       - agent/agentui-sdk
       - main
   pull_request:
@@ -18,11 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 26
+      - name: Select Xcode
         run: |
-          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          XCODE=$(find /Applications -maxdepth 1 -type d \( -name 'Xcode_26*.app' -o -name 'Xcode_16*.app' \) -print | sort | tail -1)
           if [ -z "$XCODE" ]; then
-            echo "Xcode 26 not found, falling back to default Xcode"
+            echo "Custom Xcode not found, using default Xcode"
           else
             echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           fi
@@ -42,11 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 26
+      - name: Select Xcode
         run: |
-          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          XCODE=$(find /Applications -maxdepth 1 -type d \( -name 'Xcode_26*.app' -o -name 'Xcode_16*.app' \) -print | sort | tail -1)
           if [ -z "$XCODE" ]; then
-            echo "Xcode 26 not found, falling back to default Xcode"
+            echo "Custom Xcode not found, using default Xcode"
           else
             echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           fi
@@ -97,12 +98,55 @@ jobs:
           name: AgentUI-Showcase-IPA
           path: AgentUI-Showcase-unsigned.ipa
 
-      - name: Run Showcase Simulator UI Tests (if available)
-        continue-on-error: true
+      - name: Discover Available Simulators
+        id: simulators
         run: |
+          IPHONE_SIM=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | sed -E 's/.* \(([0-9A-F-]+)\).*/\1/')
+          IPAD_SIM=$(xcrun simctl list devices available | grep -E "iPad" | head -1 | sed -E 's/.* \(([0-9A-F-]+)\).*/\1/')
+          
+          if [ -z "$IPHONE_SIM" ]; then
+            echo "::error::No available iPhone simulator found"
+            exit 1
+          fi
+          if [ -z "$IPAD_SIM" ]; then
+            echo "::error::No available iPad simulator found"
+            exit 1
+          fi
+          
+          echo "iphone_id=$IPHONE_SIM" >> "$GITHUB_OUTPUT"
+          echo "ipad_id=$IPAD_SIM" >> "$GITHUB_OUTPUT"
+          echo "Selected iPhone Simulator: $IPHONE_SIM"
+          echo "Selected iPad Simulator: $IPAD_SIM"
+
+      - name: Run Showcase iPhone UI Tests
+        run: |
+          set -o pipefail
           cd Showcase
           xcodebuild \
             -project AgentUIShowcase.xcodeproj \
-            -scheme AgentUIShowcase \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-            test || true
+            -scheme AgentUIShowcaseUITests \
+            -destination "id=${{ steps.simulators.outputs.iphone_id }}" \
+            -derivedDataPath DerivedData \
+            -resultBundlePath DerivedData/iPhone-UITests.xcresult \
+            test
+
+      - name: Run Showcase iPad UI Tests
+        run: |
+          set -o pipefail
+          cd Showcase
+          xcodebuild \
+            -project AgentUIShowcase.xcodeproj \
+            -scheme AgentUIShowcaseUITests \
+            -destination "id=${{ steps.simulators.outputs.ipad_id }}" \
+            -derivedDataPath DerivedData \
+            -resultBundlePath DerivedData/iPad-UITests.xcresult \
+            test
+
+      - name: Upload UI Test Result Bundles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgentUI-UITest-Results
+          path: |
+            Showcase/DerivedData/iPhone-UITests.xcresult
+            Showcase/DerivedData/iPad-UITests.xcresult

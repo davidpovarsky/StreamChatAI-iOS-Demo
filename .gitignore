@@ -3,3 +3,4 @@ DerivedData/
 *.ipa
 Payload/
 *.log
+.build/

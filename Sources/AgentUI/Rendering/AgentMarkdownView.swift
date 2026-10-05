@@ -66,7 +66,7 @@ public struct AgentMarkdownView: View {
             switch level {
             case 1: return .title.bold()
             case 2: return .title2.bold()
-            case 3: return .title3.semibold()
+            case 3: return .title3.weight(.semibold)
             case 4: return .headline
             default: return .subheadline.bold()
             }

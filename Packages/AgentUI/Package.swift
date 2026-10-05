@@ -10,6 +10,10 @@ let package = Package(
         .library(
             name: "AgentUI",
             targets: ["AgentUI"]
+        ),
+        .library(
+            name: "MinimalConsumer",
+            targets: ["MinimalConsumer"]
         )
     ],
     dependencies: [
@@ -24,9 +28,13 @@ let package = Package(
                 .product(name: "SwiftMath", package: "SwiftMath")
             ]
         ),
+        .target(
+            name: "MinimalConsumer",
+            dependencies: ["AgentUI"]
+        ),
         .testTarget(
             name: "AgentUITests",
-            dependencies: ["AgentUI"]
+            dependencies: ["AgentUI", "MinimalConsumer"]
         )
     ]
 )

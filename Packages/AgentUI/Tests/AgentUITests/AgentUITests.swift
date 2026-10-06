@@ -214,4 +214,39 @@ final class AgentUITests: XCTestCase {
         )
         XCTAssertNotNil(tableView)
     }
+
+    @MainActor
+    func testAgentMessageListViewInstantiates() {
+        let view = AgentMessageListView(
+            messages: [AgentMessage(role: .user, content: "Hello")],
+            isDarkMode: false,
+            isLoading: false
+        ) {
+            Text("Composer")
+        }
+        XCTAssertNotNil(view.body)
+    }
+
+    @MainActor
+    func testAgentChatSidebarViewInstantiates() {
+        let session = AgentChatSessionDescriptor(id: "1", title: "Chat 1", createdAt: Date(), isBlankChat: false)
+        let sidebar = AgentChatSidebarView(
+            sessions: [session],
+            currentSessionId: "1",
+            onSelectSession: { _ in },
+            onDeleteSession: { _ in },
+            onRenameSession: { _, _ in },
+            onCreateNewSession: { }
+        )
+        XCTAssertNotNil(sidebar.body)
+    }
+
+    @MainActor
+    func testAgentChatViewInstantiates() {
+        let chatView = AgentChatView(
+            sidebar: { Text("Sidebar") },
+            detail: { Text("Detail") }
+        )
+        XCTAssertNotNil(chatView.body)
+    }
 }

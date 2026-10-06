@@ -34,13 +34,13 @@ public struct AgentMessageListView<ComposerContent: View, AccessoryContent: View
     @State private var tableOpacity = 1.0
 
     public init(
-        messages: [AgentMessage],
+        messages: [AgentMessage] = [],
         currentChatId: String? = nil,
         currentChatCreatedAt: Date? = nil,
         isCurrentChatBlank: Bool = false,
         archivedMessagesStartIndex: Int = 0,
-        isDarkMode: Bool,
-        isLoading: Bool,
+        isDarkMode: Bool = false,
+        isLoading: Bool = false,
         driver: (any AgentMessageDriving)? = nil,
         scrollToBottomTrigger: UUID? = nil,
         scrollToUserMessageTrigger: UUID? = nil,
@@ -221,13 +221,13 @@ public struct AgentMessageListView<ComposerContent: View, AccessoryContent: View
 
 extension AgentMessageListView where AccessoryContent == EmptyView {
     public init(
-        messages: [AgentMessage],
+        messages: [AgentMessage] = [],
         currentChatId: String? = nil,
         currentChatCreatedAt: Date? = nil,
         isCurrentChatBlank: Bool = false,
         archivedMessagesStartIndex: Int = 0,
-        isDarkMode: Bool,
-        isLoading: Bool,
+        isDarkMode: Bool = false,
+        isLoading: Bool = false,
         driver: (any AgentMessageDriving)? = nil,
         scrollToBottomTrigger: UUID? = nil,
         scrollToUserMessageTrigger: UUID? = nil,
@@ -249,6 +249,39 @@ extension AgentMessageListView where AccessoryContent == EmptyView {
             onScrollInteractionChanged: onScrollInteractionChanged,
             onIsAtBottomChanged: onIsAtBottomChanged,
             composer: composer,
+            accessory: { _ in EmptyView() }
+        )
+    }
+
+    public init(
+        messages: [AgentMessage] = [],
+        currentChatId: String? = nil,
+        currentChatCreatedAt: Date? = nil,
+        isCurrentChatBlank: Bool = false,
+        archivedMessagesStartIndex: Int = 0,
+        isDarkMode: Bool = false,
+        isLoading: Bool = false,
+        driver: (any AgentMessageDriving)? = nil,
+        scrollToBottomTrigger: UUID? = nil,
+        scrollToUserMessageTrigger: UUID? = nil,
+        onScrollInteractionChanged: ((Bool) -> Void)? = nil,
+        onIsAtBottomChanged: ((Bool) -> Void)? = nil,
+        @ViewBuilder composer: @escaping () -> ComposerContent
+    ) {
+        self.init(
+            messages: messages,
+            currentChatId: currentChatId,
+            currentChatCreatedAt: currentChatCreatedAt,
+            isCurrentChatBlank: isCurrentChatBlank,
+            archivedMessagesStartIndex: archivedMessagesStartIndex,
+            isDarkMode: isDarkMode,
+            isLoading: isLoading,
+            driver: driver,
+            scrollToBottomTrigger: scrollToBottomTrigger,
+            scrollToUserMessageTrigger: scrollToUserMessageTrigger,
+            onScrollInteractionChanged: onScrollInteractionChanged,
+            onIsAtBottomChanged: onIsAtBottomChanged,
+            composer: { _ in composer() },
             accessory: { _ in EmptyView() }
         )
     }

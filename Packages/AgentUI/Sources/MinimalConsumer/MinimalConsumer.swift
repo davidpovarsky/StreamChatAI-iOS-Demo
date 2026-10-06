@@ -28,17 +28,20 @@ public struct MinimalConsumerView: View {
             },
             detail: {
                 AgentMessageListView(
+                    messages: [
+                        AgentMessage(
+                            role: .assistant,
+                            content: "Minimal Consumer Chat"
+                        )
+                    ],
                     isDarkMode: false,
-                    messageCount: 0,
-                    messageContent: {
-                        Text("Minimal Consumer Chat")
-                            .font(.headline)
-                            .padding()
-                    },
-                    composerContent: {
+                    isLoading: false,
+                    driver: controller,
+                    composer: { isKeyboardVisible in
                         AgentComposerView(
                             messageText: $messageText,
-                            driver: controller
+                            driver: controller,
+                            isKeyboardVisible: isKeyboardVisible
                         )
                     }
                 )

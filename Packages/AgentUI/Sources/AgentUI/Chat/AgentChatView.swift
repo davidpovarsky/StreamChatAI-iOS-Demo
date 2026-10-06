@@ -56,13 +56,13 @@ public struct AgentChatView<SidebarContent: View, DetailContent: View>: View {
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
             appearance.shadowColor = .clear
-            updateAllNavigationBars(with: appearance)
+            updateAllNavigationBars(with: appearance, isDarkMode: isDarkMode)
         } else {
             let appearance = UINavigationBarAppearance()
             appearance.configureWithOpaqueBackground()
             appearance.backgroundColor = isDarkMode ? UIColor(Color.agentBrandDark) : .white
             appearance.shadowColor = .clear
-            updateAllNavigationBars(with: appearance)
+            updateAllNavigationBars(with: appearance, isDarkMode: isDarkMode)
         }
     }
 
@@ -70,14 +70,15 @@ public struct AgentChatView<SidebarContent: View, DetailContent: View>: View {
         Self.setupNavigationBarAppearance(isDarkMode: colorScheme == .dark)
     }
 
-    private static func updateAllNavigationBars(with appearance: UINavigationBarAppearance) {
-        let tintColor: UIColor = colorScheme == .dark ? .white : .black
+    private static func updateAllNavigationBars(with appearance: UINavigationBarAppearance, isDarkMode: Bool) {
+        let tintColor: UIColor = isDarkMode ? .white : .black
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         if #available(iOS 15.0, *) {
             UINavigationBar.appearance().compactScrollEdgeAppearance = appearance
         }
+        UINavigationBar.appearance().tintColor = tintColor
     }
 }
 

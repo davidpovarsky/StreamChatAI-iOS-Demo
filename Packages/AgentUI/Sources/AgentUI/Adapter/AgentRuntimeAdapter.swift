@@ -45,6 +45,7 @@ public final class MockAgentRuntimeController: ObservableObject, AgentChatRuntim
     @Published public var isProcessingAttachment: Bool = false
     @Published public var attachmentError: String? = nil
     @Published public var pendingAttachments: [Attachment] = []
+    public var composerPendingAttachments: [Attachment] { pendingAttachments }
     @Published public var pendingImageThumbnails: [String: String] = [:]
     @Published public var isWebSearchEnabled: Bool = false
     @Published public var currentModel: AgentModelDescriptor

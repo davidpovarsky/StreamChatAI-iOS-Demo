@@ -42,6 +42,28 @@ extension ChatViewModel: AgentComposerDriving {
         AudioRecordingService.shared.isTranscribing
     }
 
+    public var composerPendingAttachments: [AgentUI.Attachment] {
+        pendingAttachments.map { att in
+            AgentUI.Attachment(
+                id: att.id,
+                type: att.type == .image ? .image : .document,
+                fileName: att.fileName,
+                mimeType: att.mimeType,
+                base64: att.base64,
+                thumbnailBase64: att.thumbnailBase64,
+                textContent: att.textContent,
+                description: att.description,
+                fileSize: att.fileSize,
+                encryptionKey: att.encryptionKey,
+                processingState: att.processingState == .completed ? .completed : (att.processingState == .processing ? .processing : (att.processingState == .failed ? .failed : .pending))
+            )
+        }
+    }
+
+    public func toggleAudioRecording() {
+        // Fallback for parameterless toggle
+    }
+
     public func toggleAudioRecording(text: Binding<String>) {
         let audioService = AudioRecordingService.shared
         if audioService.isRecording {

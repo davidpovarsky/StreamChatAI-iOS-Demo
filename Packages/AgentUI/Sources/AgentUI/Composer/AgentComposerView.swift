@@ -90,9 +90,9 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
         if #available(iOS 26, *) {
             VStack(spacing: 4) {
                 VStack(spacing: 0) {
-                    if !driver.pendingAttachments.isEmpty {
+                    if !driver.composerPendingAttachments.isEmpty {
                         AttachmentPreviewBar(
-                            attachments: driver.pendingAttachments,
+                            attachments: driver.composerPendingAttachments,
                             thumbnails: driver.pendingImageThumbnails,
                             onRemove: { id in driver.removePendingAttachment(id: id) }
                         )
@@ -148,9 +148,9 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
         } else {
             VStack(spacing: 4) {
                 VStack(spacing: 0) {
-                    if !driver.pendingAttachments.isEmpty {
+                    if !driver.composerPendingAttachments.isEmpty {
                         AttachmentPreviewBar(
-                            attachments: driver.pendingAttachments,
+                            attachments: driver.composerPendingAttachments,
                             thumbnails: driver.pendingImageThumbnails,
                             onRemove: { id in driver.removePendingAttachment(id: id) }
                         )
@@ -334,7 +334,7 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
     private func sendOrCancelMessage() {
         if driver.isLoading {
             driver.cancelGeneration()
-        } else if !messageText.isEmpty || !driver.pendingAttachments.isEmpty {
+        } else if !messageText.isEmpty || !driver.composerPendingAttachments.isEmpty {
             driver.sendMessage(text: messageText)
             messageText = ""
             textHeight = AgentComposerLayout.defaultHeight

@@ -37,7 +37,7 @@ public protocol AgentComposerDriving: AnyObject, ObservableObject {
     var attachmentError: String? { get set }
     var shouldFocusInput: Bool { get set }
 
-    var pendingAttachments: [Attachment] { get }
+    var composerPendingAttachments: [Attachment] { get }
     var pendingImageThumbnails: [String: String] { get }
     func removePendingAttachment(id: String)
     func addDocumentAttachment(url: URL, fileName: String)

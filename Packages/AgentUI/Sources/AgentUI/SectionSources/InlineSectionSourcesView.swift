@@ -141,3 +141,17 @@ public struct SectionSourcesTextView: UIViewRepresentable {
         }
     }
 }
+
+extension AgentInlineSectionSourcesView where MarkdownContent == LaTeXMarkdownView {
+    public init(
+        markdown: String,
+        sources: [WebSearchSource],
+        isDarkMode: Bool
+    ) {
+        self.init(markdown: markdown, sources: sources, isDarkMode: isDarkMode) { text in
+            LaTeXMarkdownView(content: text, isDarkMode: isDarkMode, isStreaming: false)
+        }
+    }
+}
+
+public typealias InlineSectionSourcesView = AgentInlineSectionSourcesView

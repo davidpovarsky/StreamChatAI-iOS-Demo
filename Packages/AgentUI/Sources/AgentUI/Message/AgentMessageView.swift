@@ -1532,7 +1532,7 @@ public struct AgentMessageToolPresentationView: View {
             HStack(spacing: 6) {
                 Image(systemName: "wrench.and.screwdriver")
                     .font(.system(size: 12))
-                Text(call.functionName)
+                Text(call.toolName)
                     .font(.system(size: 13, weight: .medium))
             }
         }

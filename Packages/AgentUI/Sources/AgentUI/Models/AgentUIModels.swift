@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public struct WebSearchSource: Codable, Equatable, Identifiable, Hashable, Sendable {
     public let id: String

@@ -117,7 +117,7 @@ final class AgentUITests: XCTestCase {
             content: "Hello from **AgentUI**",
             isDarkMode: false
         )
-        XCTAssertEqual(view.id, "msg-123")
+        XCTAssertEqual(view.message.id, "msg-123")
     }
 
     @MainActor

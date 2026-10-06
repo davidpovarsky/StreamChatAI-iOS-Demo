@@ -4,6 +4,7 @@
 //
 
 import XCTest
+import SwiftUI
 @testable import AgentUI
 @testable import MinimalConsumer
 
@@ -39,40 +40,39 @@ final class AgentUITests: XCTestCase {
 
     func testToolExecutionStatus() {
         XCTAssertEqual(ToolExecutionStatus.running.label, "Running")
-        XCTAssertEqual(ToolExecutionStatus.succeeded.label, "Completed")
+        XCTAssertEqual(ToolExecutionStatus.completed.label, "Completed")
         XCTAssertEqual(ToolExecutionStatus.failed.label, "Failed")
     }
 
     func testToolCallInspection() {
         let inspection = ToolCallInspection(
-            serviceName: "GitHub API",
-            functionName: "fetch_pull_request",
-            rawArguments: "{\"pr\": 999}",
-            rawResult: nil,
-            errorMessage: "Not found",
-            duration: 1.25
+            service: "GitHub API",
+            toolName: "fetch_pull_request",
+            arguments: .json("{\"pr\": 999}"),
+            resultSummary: nil,
+            errorMessage: "Not found"
         )
-        XCTAssertEqual(inspection.serviceName, "GitHub API")
-        XCTAssertEqual(inspection.functionName, "fetch_pull_request")
+        XCTAssertEqual(inspection.service, "GitHub API")
+        XCTAssertEqual(inspection.toolName, "fetch_pull_request")
         XCTAssertEqual(inspection.errorMessage, "Not found")
-        XCTAssertEqual(inspection.duration, 1.25)
     }
 
+    @MainActor
     func testActivityStore() {
         let store = AgentActivityStore()
         XCTAssertTrue(store.sessions.isEmpty)
 
-        store.record(
+        store.begin(messageID: "msg-1")
+        store.addStatus(
             messageID: "msg-1",
-            type: .search,
             title: "Searching documentation",
-            detail: "Query: swiftui"
+            summary: "Query: swiftui"
         )
 
         let session = store.session(for: "msg-1")
         XCTAssertNotNil(session)
-        XCTAssertEqual(session?.steps.count, 1)
-        XCTAssertEqual(session?.steps.first?.title, "Searching documentation")
+        XCTAssertEqual(session?.items.count, 1)
+        XCTAssertEqual(session?.items.first?.title, "Searching documentation")
     }
 
     @MainActor

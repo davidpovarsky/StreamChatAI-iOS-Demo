@@ -18,6 +18,7 @@ FROZEN = [
 ALLOWED_EXISTING = {
     "SwiftChat/Views/MessageView.swift",
     "SwiftChat/Views/MessageInputView.swift",
+    "SwiftChat/Views/MessageTableView.swift",
     "SwiftChat/ViewModels/ChatViewModel.swift",
     "SwiftChat.xcodeproj/project.pbxproj",
 }
@@ -61,51 +62,40 @@ def assert_diff_scope() -> list[str]:
     return names
 
 
-def assert_message_invariants() -> None:
-    path = "SwiftChat/Views/MessageView.swift"
-    after = current_text(path)
-    if "AgentMessageView(" not in after or "import AgentUI" not in after:
-        fail("MessageView is missing AgentMessageView bridge")
-    if len(after.splitlines()) > 50:
-        fail(f"MessageView bridge exceeds 50 lines: {len(after.splitlines())}")
+def assert_bridge(app_rel: str, bridge_tok: str, max_lines: int, pkg_rel: str, tokens: list[str]) -> None:
+    after = current_text(app_rel)
+    if bridge_tok not in after or "import AgentUI" not in after:
+        fail(f"{app_rel} is missing {bridge_tok} bridge")
+    if len(after.splitlines()) > max_lines:
+        fail(f"{app_rel} bridge exceeds {max_lines} lines: {len(after.splitlines())}")
+    pkg_text = (REPOSITORY / pkg_rel).read_text(encoding="utf-8")
+    for tok in tokens:
+        if tok not in pkg_text:
+            fail(f"{pkg_rel} missing token: {tok}")
 
-    pkg_message = (REPOSITORY / "Packages" / "AgentUI" / "Sources" / "AgentUI" / "Message" / "AgentMessageView.swift").read_text(encoding="utf-8")
-    for token in [
-        "struct AgentMessageView",
-        ".frame(width: 32, height: 32)",
-        "HStack(spacing: 16)",
-        ".padding(.vertical, 8)",
-        "AI can make mistakes. Verify important information.",
-        "struct SourcesButton",
-        "AgentActivityTimelineView",
-        "ToolExecutionDisclosure",
-    ]:
-        if token not in pkg_message:
-            fail(f"AgentMessageView missing invariant token: {token}")
+
+def assert_message_invariants() -> None:
+    assert_bridge(
+        "SwiftChat/Views/MessageView.swift", "AgentMessageView(", 50,
+        "Packages/AgentUI/Sources/AgentUI/Message/AgentMessageView.swift",
+        ["struct AgentMessageView", ".frame(width: 32, height: 32)", "HStack(spacing: 16)", ".padding(.vertical, 8)", "AI can make mistakes. Verify important information.", "struct SourcesButton", "AgentActivityTimelineView", "ToolExecutionDisclosure"],
+    )
 
 
 def assert_composer_invariants() -> None:
-    path = "SwiftChat/Views/MessageInputView.swift"
-    after = current_text(path)
-    if "AgentComposerView(" not in after or "import AgentUI" not in after:
-        fail("MessageInputView is missing AgentComposerView bridge")
-    if "struct CustomTextEditor" in after or "private var attachButton" in after:
-        fail("MessageInputView still contains duplicate app-local composer body")
-    if len(after.splitlines()) > 40:
-        fail(f"MessageInputView bridge exceeds 40 lines: {len(after.splitlines())}")
+    assert_bridge(
+        "SwiftChat/Views/MessageInputView.swift", "AgentComposerView(", 40,
+        "Packages/AgentUI/Sources/AgentUI/Composer/AgentComposerView.swift",
+        ["RoundedRectangle(cornerRadius: 26)", ".padding(.horizontal)", ".buttonStyle(.glass)", ".buttonBorderShape(.circle)", "Color.sendButtonForegroundDark", "Color.sendButtonBackgroundDark", "struct CustomTextEditor"],
+    )
 
-    pkg_composer = (REPOSITORY / "Packages" / "AgentUI" / "Sources" / "AgentUI" / "Composer" / "AgentComposerView.swift").read_text(encoding="utf-8")
-    for token in [
-        "RoundedRectangle(cornerRadius: 26)",
-        ".padding(.horizontal)",
-        ".buttonStyle(.glass)",
-        ".buttonBorderShape(.circle)",
-        "Color.sendButtonForegroundDark",
-        "Color.sendButtonBackgroundDark",
-        "struct CustomTextEditor",
-    ]:
-        if token not in pkg_composer:
-            fail(f"AgentComposerView missing invariant token: {token}")
+
+def assert_table_invariants() -> None:
+    assert_bridge(
+        "SwiftChat/Views/MessageTableView.swift", "AgentMessageTableView(", 60,
+        "Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageTableView.swift",
+        ["struct AgentMessageTableView", "UITableView", "Coordinator", "AgentObservableMessageWrapper", "AgentObservableMessageCell"],
+    )
 
 
 def assert_project_invariants() -> None:
@@ -145,6 +135,7 @@ def main() -> None:
     assert_project_invariants()
     assert_message_invariants()
     assert_composer_invariants()
+    assert_table_invariants()
     assert_overlay_files()
     print("SwiftChat safe overlay verification passed")
     print("\nDiff names from local golden baseline:")

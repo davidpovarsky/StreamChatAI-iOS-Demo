@@ -19,6 +19,7 @@ ALLOWED_EXISTING = {
     "SwiftChat/Views/MessageView.swift",
     "SwiftChat/Views/MessageInputView.swift",
     "SwiftChat/Views/MessageTableView.swift",
+    "SwiftChat/Views/ChatListView.swift",
     "SwiftChat/ViewModels/ChatViewModel.swift",
     "SwiftChat.xcodeproj/project.pbxproj",
 }
@@ -98,6 +99,14 @@ def assert_table_invariants() -> None:
     )
 
 
+def assert_list_invariants() -> None:
+    assert_bridge(
+        "SwiftChat/Views/ChatListView.swift", "AgentMessageListView(", 60,
+        "Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageListView.swift",
+        ["struct AgentMessageListView", "AgentMessageTableView", "scrollToBottomButtonSize"],
+    )
+
+
 def assert_project_invariants() -> None:
     diff = git("diff", "HEAD", "--", "SwiftChat.xcodeproj/project.pbxproj")
     if not diff.strip():
@@ -136,6 +145,7 @@ def main() -> None:
     assert_message_invariants()
     assert_composer_invariants()
     assert_table_invariants()
+    assert_list_invariants()
     assert_overlay_files()
     print("SwiftChat safe overlay verification passed")
     print("\nDiff names from local golden baseline:")

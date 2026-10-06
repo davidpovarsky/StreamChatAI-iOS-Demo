@@ -708,7 +708,7 @@ index 2af0a23..0f597ad 100644
 -            }
 -        }
 +        AgentComposerView(
-+            messageText: ,
++            messageText: $messageText,
 +            driver: viewModel,
 +            isKeyboardVisible: isKeyboardVisible
 +        )

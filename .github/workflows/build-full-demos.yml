@@ -3,7 +3,7 @@ name: Build Full Chat SDK Demos
 on:
   workflow_dispatch:
   push:
-    branches: [agent/swiftchat-safe-overlay-v3, agent/tool-execution-disclosure-ui, agent/swiftchat-exact-ui-sdk-v1]
+    branches: [agent/swiftchat-safe-overlay-v3, agent/tool-execution-disclosure-ui, agent/swiftchat-exact-ui-sdk-v1, agent/swiftchat-exact-ui-sdk-v2-core-extraction]
 
 jobs:
   full-demo:

@@ -119,4 +119,16 @@ final class AgentUITests: XCTestCase {
         )
         XCTAssertNotNil(view.body)
     }
+
+    @MainActor
+    func testAgentComposerViewInstantiates() {
+        let controller = MockAgentRuntimeController()
+        var text = ""
+        let view = AgentComposerView(
+            messageText: Binding(get: { text }, set: { text = $0 }),
+            driver: controller,
+            isKeyboardVisible: false
+        )
+        XCTAssertNotNil(view.body)
+    }
 }

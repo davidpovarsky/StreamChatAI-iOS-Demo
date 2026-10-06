@@ -195,4 +195,23 @@ final class AgentUITests: XCTestCase {
         }
         XCTAssertNotNil(view.body)
     }
+
+    @MainActor
+    func testAgentMessageTableViewInstantiates() {
+        var isAtBottom = true
+        var userHasScrolled = false
+        var tableOpacity = 1.0
+        let tableView = AgentMessageTableView(
+            messages: [AgentMessage(role: .user, content: "Hello")],
+            isDarkMode: false,
+            isLoading: false,
+            isAtBottom: Binding(get: { isAtBottom }, set: { isAtBottom = $0 }),
+            userHasScrolled: Binding(get: { userHasScrolled }, set: { userHasScrolled = $0 }),
+            scrollTrigger: UUID(),
+            scrollToUserTrigger: UUID(),
+            tableOpacity: Binding(get: { tableOpacity }, set: { tableOpacity = $0 }),
+            keyboardHeight: 0
+        )
+        XCTAssertNotNil(tableView)
+    }
 }

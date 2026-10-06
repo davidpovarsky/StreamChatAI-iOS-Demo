@@ -212,4 +212,186 @@ extension Attachment: Codable {
     }
 }
 
+// MARK: - Streaming Content Chunks
+
+public enum ContentChunkType: Codable, Equatable, Hashable, Sendable {
+    case paragraph
+    case codeBlock(language: String?)
+    case heading
+    case list
+    case blockquote
+    case table
+    case other
+}
+
+public struct ContentChunk: Codable, Equatable, Identifiable, Hashable, Sendable {
+    public let id: String
+    public let type: ContentChunkType
+    public let content: String
+    public let isComplete: Bool
+
+    public init(id: String = UUID().uuidString, type: ContentChunkType, content: String, isComplete: Bool) {
+        self.id = id
+        self.type = type
+        self.content = content
+        self.isComplete = isComplete
+    }
+}
+
+public struct ThinkingChunk: Identifiable, Equatable, Hashable, Sendable {
+    public let id: String
+    public let content: String
+    public let isComplete: Bool
+
+    public init(id: String, content: String, isComplete: Bool) {
+        self.id = id
+        self.content = content
+        self.isComplete = isComplete
+    }
+}
+
+// MARK: - Citations and Annotations
+
+public struct URLCitation: Codable, Equatable, Hashable, Sendable {
+    public let title: String
+    public let url: String
+    public let start_index: Int?
+    public let end_index: Int?
+
+    public init(title: String, url: String, start_index: Int? = nil, end_index: Int? = nil) {
+        self.title = title
+        self.url = url
+        self.start_index = start_index
+        self.end_index = end_index
+    }
+}
+
+public struct Annotation: Codable, Equatable, Hashable, Sendable {
+    public let type: String
+    public let url_citation: URLCitation
+
+    public init(type: String, url_citation: URLCitation) {
+        self.type = type
+        self.url_citation = url_citation
+    }
+}
+
+// MARK: - Canonical Message Presentation Model
+
+public struct AgentMessage: Identifiable, Codable, Equatable, Sendable {
+    public let id: String
+    public let role: MessageRole
+    public var content: String
+    public var thoughts: String?
+    public var isThinking: Bool
+    public var timestamp: Date
+    public var isCollapsed: Bool
+    public var isStreaming: Bool
+    public var streamError: String?
+    public var isRequestError: Bool
+    public var generationTimeSeconds: Double?
+    public var contentChunks: [ContentChunk]
+    public var thinkingChunks: [ThinkingChunk]
+    public var webSearchState: WebSearchState?
+    public var urlFetches: [URLFetchState]
+    public var attachments: [Attachment]
+    public var contentParts: [MessageContentPart]
+    public var annotations: [Annotation]?
+
+    public static let longMessageAttachmentThreshold = 1200
+    public var shouldDisplayAsAttachment: Bool {
+        role == .user && content.count >= Self.longMessageAttachmentThreshold
+    }
+
+    public init(
+        id: String = UUID().uuidString.lowercased(),
+        role: MessageRole,
+        content: String,
+        thoughts: String? = nil,
+        isThinking: Bool = false,
+        timestamp: Date = Date(),
+        isCollapsed: Bool = true,
+        isStreaming: Bool = false,
+        streamError: String? = nil,
+        isRequestError: Bool = false,
+        generationTimeSeconds: Double? = nil,
+        contentChunks: [ContentChunk] = [],
+        thinkingChunks: [ThinkingChunk] = [],
+        webSearchState: WebSearchState? = nil,
+        urlFetches: [URLFetchState] = [],
+        attachments: [Attachment] = [],
+        contentParts: [MessageContentPart] = [],
+        annotations: [Annotation]? = nil
+    ) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.thoughts = thoughts
+        self.isThinking = isThinking
+        self.timestamp = timestamp
+        self.isCollapsed = isCollapsed
+        self.isStreaming = isStreaming
+        self.streamError = streamError
+        self.isRequestError = isRequestError
+        self.generationTimeSeconds = generationTimeSeconds
+        self.contentChunks = contentChunks
+        self.thinkingChunks = thinkingChunks
+        self.webSearchState = webSearchState
+        self.urlFetches = urlFetches
+        self.attachments = attachments
+        self.contentParts = contentParts
+        self.annotations = annotations
+    }
+}
+
+// MARK: - Message Driving Interface
+
+@MainActor
+public protocol AgentMessageDriving: AnyObject {
+    var drivingWebSearchSummary: String? { get }
+    var drivingThinkingSummary: String? { get }
+    var isMessageLoading: Bool { get }
+    var editRequestedForMessageIndex: Int? { get set }
+
+    func editMessage(at messageIndex: Int, newContent: String)
+    func regenerateLastResponse()
+    func regenerateMessage(at messageIndex: Int)
+}
+
+extension AgentMessageDriving {
+    public var drivingWebSearchSummary: String? { nil }
+    public var drivingThinkingSummary: String? { nil }
+    public var isMessageLoading: Bool { false }
+    public var editRequestedForMessageIndex: Int? {
+        get { nil }
+        set { }
+    }
+    public func editMessage(at messageIndex: Int, newContent: String) {}
+    public func regenerateLastResponse() {}
+    public func regenerateMessage(at messageIndex: Int) {}
+}
+
+// MARK: - Haptic Feedback Primitives
+
+public enum HapticFeedback {
+    public enum FeedbackType {
+        case error
+        case success
+    }
+
+    public static func trigger(_ type: FeedbackType) {
+        let hapticEnabled = UserDefaults.standard.object(forKey: "hapticFeedbackEnabled") as? Bool ?? true
+        guard hapticEnabled else { return }
+
+        let generator = UINotificationFeedbackGenerator()
+        switch type {
+        case .error:
+            generator.notificationOccurred(.error)
+        case .success:
+            generator.notificationOccurred(.success)
+        }
+    }
+}
+
+
 

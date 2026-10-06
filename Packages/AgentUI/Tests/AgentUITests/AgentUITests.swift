@@ -131,4 +131,68 @@ final class AgentUITests: XCTestCase {
         )
         XCTAssertNotNil(view.body)
     }
+
+    func testAgentMessageFullPayload() {
+        let msg = AgentMessage(
+            id: "msg-canonical",
+            role: .assistant,
+            content: "Full canonical response",
+            thoughts: "Initial thinking process",
+            isThinking: false,
+            timestamp: Date(),
+            isCollapsed: false,
+            isStreaming: false,
+            streamError: nil,
+            isRequestError: false,
+            generationTimeSeconds: 1.45,
+            contentChunks: [
+                ContentChunk(id: "chunk-1", type: .paragraph, content: "Hello", isComplete: true)
+            ],
+            thinkingChunks: [
+                ThinkingChunk(id: "tchunk-1", content: "Let's think", isComplete: true)
+            ],
+            webSearchState: WebSearchState(
+                query: "SwiftUI architecture",
+                status: .completed,
+                sources: [WebSearchSource(id: "src-1", title: "Apple Docs", url: "https://apple.com")],
+                reason: "User requested docs"
+            ),
+            urlFetches: [
+                URLFetchState(id: "f-1", url: "https://apple.com", status: .completed)
+            ],
+            attachments: [
+                Attachment(id: "att-1", type: .image, fileName: "test.png")
+            ],
+            contentParts: [
+                MessageContentPart(id: "part-1", kind: .markdown, markdown: "Hello")
+            ],
+            annotations: [
+                Annotation(type: "url", url_citation: URLCitation(title: "Source", url: "https://apple.com"))
+            ]
+        )
+        XCTAssertEqual(msg.id, "msg-canonical")
+        XCTAssertEqual(msg.contentChunks.count, 1)
+        XCTAssertEqual(msg.thinkingChunks.count, 1)
+        XCTAssertEqual(msg.webSearchState?.sources.count, 1)
+        XCTAssertEqual(msg.urlFetches.count, 1)
+        XCTAssertEqual(msg.attachments.count, 1)
+        XCTAssertEqual(msg.contentParts.count, 1)
+        XCTAssertEqual(msg.annotations?.count, 1)
+        XCTAssertFalse(msg.shouldDisplayAsAttachment)
+    }
+
+    @MainActor
+    func testAgentMessageViewWithDriverAndAccessory() {
+        let controller = MockAgentRuntimeController()
+        let msg = AgentMessage(role: .assistant, content: "Message with accessory")
+        let view = AgentMessageView(
+            message: msg,
+            isDarkMode: true,
+            isLastMessage: true,
+            driver: controller
+        ) {
+            Text("Accessory View")
+        }
+        XCTAssertNotNil(view.body)
+    }
 }

@@ -68,6 +68,10 @@ extension Color {
     public static var chatBackgroundLight: Color { agentChatBackgroundLight }
     public static var accentPrimary: Color { agentAccentPrimary }
     public static var backgroundPrimary: Color { agentBackgroundPrimary }
+    public static var brandDark: Color { agentBrandDark }
+    public static var brandLight: Color { agentBrandLight }
+    public static var brandAccentDark: Color { agentBrandAccentDark }
+    public static var brandAccentLight: Color { agentBrandAccentLight }
 
     public static func chatSurface(isDarkMode: Bool) -> Color {
         agentChatSurface(isDarkMode: isDarkMode)

@@ -34,6 +34,13 @@ jobs:
           cd Packages/AgentUI
           xcodebuild -scheme MinimalConsumer -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 
+      - name: Run AgentUI Package Tests
+        run: |
+          cd Packages/AgentUI
+          SIM_ID=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
+          echo "Using simulator ID: $SIM_ID"
+          xcodebuild test -scheme AgentUI -destination "id=$SIM_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
       - name: Clone SwiftChat
         run: |
           mkdir -p upstream
@@ -51,6 +58,7 @@ jobs:
             commit -m "local golden baseline after existing patches"
           python3 scripts/apply_swiftchat_safe_overlay.py
           python3 scripts/verify_swiftchat_safe_overlay.py
+          python3 scripts/verify_agentui_core_ownership.py
 
       - name: Build device app
         run: |
@@ -73,6 +81,8 @@ jobs:
           mkdir Payload
           cp -R "$APP" Payload/
           zip -qry SwiftChat-Full-Demo-unsigned.ipa Payload
+          ls -lh SwiftChat-Full-Demo-unsigned.ipa
+          stat -f "IPA Size: %z bytes" SwiftChat-Full-Demo-unsigned.ipa || stat -c "IPA Size: %s bytes" SwiftChat-Full-Demo-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
         with:

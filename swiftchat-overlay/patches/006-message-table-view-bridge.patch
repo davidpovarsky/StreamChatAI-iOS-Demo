@@ -1,5 +1,5 @@
 diff --git a/SwiftChat/Views/MessageTableView.swift b/SwiftChat/Views/MessageTableView.swift
-index efacbfe..7b854fd 100644
+index efacbfe..ee4c157 100644
 --- a/SwiftChat/Views/MessageTableView.swift
 +++ b/SwiftChat/Views/MessageTableView.swift
 @@ -2,14 +2,13 @@
@@ -712,16 +712,16 @@ index efacbfe..7b854fd 100644
 -            } else {
 -                hasAppeared = true
 +        AgentMessageTableView(
-+            messages: viewModel.messages.map { .toAgentMessage() },
++            messages: viewModel.messages.map { $0.toAgentMessage() },
 +            currentChatId: viewModel.currentChat?.id,
 +            archivedMessagesStartIndex: archivedMessagesStartIndex,
 +            isDarkMode: isDarkMode,
 +            isLoading: isLoading,
-+            isAtBottom: ,
-+            userHasScrolled: ,
++            isAtBottom: $isAtBottom,
++            userHasScrolled: $userHasScrolled,
 +            scrollTrigger: scrollTrigger,
 +            scrollToUserTrigger: scrollToUserTrigger,
-+            tableOpacity: ,
++            tableOpacity: $tableOpacity,
 +            keyboardHeight: keyboardHeight,
 +            driver: viewModel,
 +            onScrollInteractionChanged: { active in

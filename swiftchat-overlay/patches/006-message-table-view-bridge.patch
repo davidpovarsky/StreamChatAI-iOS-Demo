@@ -1,5 +1,5 @@
 diff --git a/SwiftChat/Views/MessageTableView.swift b/SwiftChat/Views/MessageTableView.swift
-index efacbfe..ee4c157 100644
+index efacbfe..035aac4 100644
 --- a/SwiftChat/Views/MessageTableView.swift
 +++ b/SwiftChat/Views/MessageTableView.swift
 @@ -2,14 +2,13 @@
@@ -20,7 +20,7 @@ index efacbfe..ee4c157 100644
      let archivedMessagesStartIndex: Int
      let isDarkMode: Bool
      let isLoading: Bool
-@@ -21,695 +20,30 @@ struct MessageTableView: UIViewRepresentable {
+@@ -21,695 +20,33 @@ struct MessageTableView: UIViewRepresentable {
      @Binding var tableOpacity: Double
      let keyboardHeight: CGFloat
  
@@ -428,7 +428,30 @@ index efacbfe..ee4c157 100644
 -                if isUserMessageScrollMode {
 -                    let userMessageInset = insetForUserMessageAtTop(tableView)
 -                    targetInset = max(streamingInset, userMessageInset)
--                } else {
++    var body: some View {
++        AgentMessageTableView(
++            messages: viewModel.messages.map { $0.toAgentMessage() },
++            currentChatId: viewModel.currentChat?.id,
++            archivedMessagesStartIndex: archivedMessagesStartIndex,
++            isDarkMode: isDarkMode,
++            isLoading: isLoading,
++            isAtBottom: $isAtBottom,
++            userHasScrolled: $userHasScrolled,
++            scrollTrigger: scrollTrigger,
++            scrollToUserTrigger: scrollToUserTrigger,
++            tableOpacity: $tableOpacity,
++            keyboardHeight: keyboardHeight,
++            driver: viewModel,
++            onScrollInteractionChanged: { active in
++                viewModel.isScrollInteractionActive = active
++            },
++            onIsAtBottomChanged: { atBottom in
++                viewModel.isAtBottom = atBottom
++            },
++            messageAccessory: { message in
++                if message.role == .assistant {
++                    AnyView(ToolExecutionDemoBridge(messageID: message.id, isDarkMode: isDarkMode))
+                 } else {
 -                    targetInset = streamingInset
 -                }
 -            } else if parent.isLoading && isUserMessageScrollMode {
@@ -536,8 +559,9 @@ index efacbfe..ee4c157 100644
 -                    if isVisible {
 -                        self.parent.userHasScrolled = false
 -                    }
--                }
--            }
++                    AnyView(EmptyView())
+                 }
+             }
 -        }
 -    }
 -}
@@ -649,10 +673,10 @@ index efacbfe..ee4c157 100644
 -        return min(
 -            screenHeight * wrapper.bufferMultiplier,
 -            Constants.StreamingBuffer.maxCellHeight
--        )
--    }
+         )
+     }
 -
-     var body: some View {
+-    var body: some View {
 -        VStack(spacing: 0) {
 -            if wrapper.showArchiveSeparator {
 -                HStack(spacing: 8) {
@@ -711,30 +735,8 @@ index efacbfe..ee4c157 100644
 -                }
 -            } else {
 -                hasAppeared = true
-+        AgentMessageTableView(
-+            messages: viewModel.messages.map { $0.toAgentMessage() },
-+            currentChatId: viewModel.currentChat?.id,
-+            archivedMessagesStartIndex: archivedMessagesStartIndex,
-+            isDarkMode: isDarkMode,
-+            isLoading: isLoading,
-+            isAtBottom: $isAtBottom,
-+            userHasScrolled: $userHasScrolled,
-+            scrollTrigger: scrollTrigger,
-+            scrollToUserTrigger: scrollToUserTrigger,
-+            tableOpacity: $tableOpacity,
-+            keyboardHeight: keyboardHeight,
-+            driver: viewModel,
-+            onScrollInteractionChanged: { active in
-+                viewModel.isScrollInteractionActive = active
-+            },
-+            onIsAtBottomChanged: { atBottom in
-+                viewModel.isAtBottom = atBottom
-+            }
-+        ) { message in
-+            if message.role == .assistant {
-+                ToolExecutionDemoBridge(messageID: message.id, isDarkMode: isDarkMode)
-             }
-         }
-     }
+-            }
+-        }
+-    }
  }
 -

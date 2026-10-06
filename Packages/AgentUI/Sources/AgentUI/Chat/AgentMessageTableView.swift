@@ -95,6 +95,44 @@ public struct AgentMessageTableView: UIViewRepresentable {
         self.messageAccessory = messageAccessory
     }
 
+    public init<Accessory: View>(
+        messages: [AgentMessage],
+        currentChatId: String? = nil,
+        archivedMessagesStartIndex: Int = 0,
+        isDarkMode: Bool,
+        isLoading: Bool,
+        isAtBottom: Binding<Bool>,
+        userHasScrolled: Binding<Bool>,
+        scrollTrigger: UUID,
+        scrollToUserTrigger: UUID,
+        tableOpacity: Binding<Double>,
+        keyboardHeight: CGFloat = 0,
+        driver: (any AgentMessageDriving)? = nil,
+        onScrollInteractionChanged: ((Bool) -> Void)? = nil,
+        onIsAtBottomChanged: ((Bool) -> Void)? = nil,
+        welcomeContent: (() -> AnyView)? = nil,
+        @ViewBuilder messageAccessory: @escaping (AgentMessage) -> Accessory
+    ) {
+        self.init(
+            messages: messages,
+            currentChatId: currentChatId,
+            archivedMessagesStartIndex: archivedMessagesStartIndex,
+            isDarkMode: isDarkMode,
+            isLoading: isLoading,
+            isAtBottom: isAtBottom,
+            userHasScrolled: userHasScrolled,
+            scrollTrigger: scrollTrigger,
+            scrollToUserTrigger: scrollToUserTrigger,
+            tableOpacity: tableOpacity,
+            keyboardHeight: keyboardHeight,
+            driver: driver,
+            onScrollInteractionChanged: onScrollInteractionChanged,
+            onIsAtBottomChanged: onIsAtBottomChanged,
+            welcomeContent: welcomeContent,
+            messageAccessory: { AnyView(messageAccessory($0)) }
+        )
+    }
+
     public func makeUIView(context: Context) -> UITableView {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.backgroundColor = .clear

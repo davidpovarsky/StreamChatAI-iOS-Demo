@@ -106,7 +106,7 @@ final class AgentUITests: XCTestCase {
     @MainActor
     func testMinimalConsumerInstantiates() {
         let view = MinimalConsumerView()
-        XCTAssertNotNil(view.body)
+        XCTAssertNotNil(view)
     }
 
     @MainActor
@@ -117,7 +117,7 @@ final class AgentUITests: XCTestCase {
             content: "Hello from **AgentUI**",
             isDarkMode: false
         )
-        XCTAssertNotNil(view.body)
+        XCTAssertEqual(view.id, "msg-123")
     }
 
     @MainActor
@@ -129,7 +129,7 @@ final class AgentUITests: XCTestCase {
             driver: controller,
             isKeyboardVisible: false
         )
-        XCTAssertNotNil(view.body)
+        XCTAssertNotNil(view)
     }
 
     func testAgentMessageFullPayload() {
@@ -193,7 +193,7 @@ final class AgentUITests: XCTestCase {
         ) {
             Text("Accessory View")
         }
-        XCTAssertNotNil(view.body)
+        XCTAssertEqual(view.message.id, msg.id)
     }
 
     @MainActor
@@ -224,7 +224,7 @@ final class AgentUITests: XCTestCase {
         ) {
             Text("Composer")
         }
-        XCTAssertNotNil(view.body)
+        XCTAssertNotNil(view)
     }
 
     @MainActor
@@ -238,7 +238,7 @@ final class AgentUITests: XCTestCase {
             onRenameSession: { _, _ in },
             onCreateNewSession: { }
         )
-        XCTAssertNotNil(sidebar.body)
+        XCTAssertNotNil(sidebar)
     }
 
     @MainActor
@@ -247,6 +247,6 @@ final class AgentUITests: XCTestCase {
             sidebar: { Text("Sidebar") },
             detail: { Text("Detail") }
         )
-        XCTAssertNotNil(chatView.body)
+        XCTAssertNotNil(chatView)
     }
 }

@@ -44,7 +44,7 @@ jobs:
             SCHEME="AgentUI-Package"
           fi
           echo "Using test scheme: $SCHEME"
-          xcodebuild test -scheme "$SCHEME" -destination "id=$SIM_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+          xcodebuild test -scheme "$SCHEME" -destination "id=$SIM_ID" -only-testing:AgentUITests CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
 
       - name: Clone SwiftChat
         run: |

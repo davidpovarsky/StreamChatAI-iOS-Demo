@@ -304,6 +304,7 @@ public struct AgentMessageTableView: UIViewRepresentable {
         Coordinator(self)
     }
 
+    @MainActor
     public class Coordinator: NSObject, UITableViewDelegate, UITableViewDataSource {
         public var parent: AgentMessageTableView
         public weak var tableView: UITableView?
@@ -623,6 +624,7 @@ public struct AgentMessageTableView: UIViewRepresentable {
     }
 }
 
+@MainActor
 public final class AgentObservableMessageWrapper: ObservableObject {
     @Published public var message: AgentMessage
     @Published public var isDarkMode: Bool

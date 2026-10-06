@@ -278,7 +278,7 @@ public struct Annotation: Codable, Equatable, Hashable, Sendable {
 
 // MARK: - Canonical Message Presentation Model
 
-public struct AgentMessage: Identifiable, Codable, Equatable, Sendable {
+public struct AgentMessage: Identifiable, Equatable, Sendable {
     public let id: String
     public let role: MessageRole
     public var content: String

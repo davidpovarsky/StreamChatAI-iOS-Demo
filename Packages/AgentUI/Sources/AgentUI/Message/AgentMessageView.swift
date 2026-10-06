@@ -1133,7 +1133,7 @@ public struct ThinkingChunkView: View, Equatable {
         self.isDarkMode = isDarkMode
     }
 
-    public static func == (lhs: ThinkingChunkView, rhs: ThinkingChunkView) -> Bool {
+    nonisolated public static func == (lhs: ThinkingChunkView, rhs: ThinkingChunkView) -> Bool {
         if lhs.chunk.isComplete && rhs.chunk.isComplete {
             return lhs.chunk.id == rhs.chunk.id && lhs.isDarkMode == rhs.isDarkMode
         }
@@ -1191,39 +1191,6 @@ public struct InlineLoadingDotsView: View {
     }
 }
 
-public struct NoHighlightButtonStyle: ButtonStyle {
-    public init() {}
-    public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-    }
-}
-
-public struct PulsingAnimation: ViewModifier {
-    public let delay: Double
-    @State private var isPulsing = false
-
-    public init(delay: Double) {
-        self.delay = delay
-    }
-
-    public func body(content: Content) -> some View {
-        content
-            .scaleEffect(isPulsing ? 1.0 : 0.6)
-            .opacity(isPulsing ? 1.0 : 0.3)
-            .animation(
-                Animation.easeInOut(duration: 0.6)
-                    .repeatForever(autoreverses: true)
-                    .delay(delay),
-                value: isPulsing
-            )
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isPulsing = true
-                }
-            }
-    }
-}
-
 public struct TextPulseAnimation: ViewModifier {
     @State private var offset: CGFloat = -1.0
 
@@ -1273,7 +1240,7 @@ public struct ChunkedContentView: View, Equatable {
         self.isStreaming = isStreaming
     }
 
-    public static func == (lhs: ChunkedContentView, rhs: ChunkedContentView) -> Bool {
+    nonisolated public static func == (lhs: ChunkedContentView, rhs: ChunkedContentView) -> Bool {
         lhs.chunks == rhs.chunks &&
         lhs.isDarkMode == rhs.isDarkMode &&
         lhs.isStreaming == rhs.isStreaming
@@ -1299,7 +1266,7 @@ public struct ChunkView: View, Equatable {
         self.isStreaming = isStreaming
     }
 
-    public static func == (lhs: ChunkView, rhs: ChunkView) -> Bool {
+    nonisolated public static func == (lhs: ChunkView, rhs: ChunkView) -> Bool {
         if lhs.chunk.isComplete && rhs.chunk.isComplete {
             return lhs.chunk.id == rhs.chunk.id && lhs.isDarkMode == rhs.isDarkMode
         }

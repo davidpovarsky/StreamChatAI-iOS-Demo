@@ -93,71 +93,89 @@ This audit assesses all core visual views in the materialized SwiftChat full dem
 ---
 
 ### 8. MessageInputView (`SwiftChat/Views/MessageInputView.swift`)
-- **Line Count**: 663 lines
+- **Original Line Count**: 663 lines
 - **Visual Dependencies**: `CustomTextEditor`, `AttachmentPreviewBar`, `SelectedModelMenu`, `CameraPickerView`, `DocumentPickerView`, Liquid Glass button style, `RoundedRectangle(cornerRadius: 26)`
-- **App/Runtime Dependencies**: `ChatViewModel` (text binding, attachments, model switching, web search toggle, audio recording, message sending, streaming cancellation)
-- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Composer/AgentComposerView.swift` (510 lines)
-- **Status**: **PROVISIONAL / DIVERGENT** (Current package composer is simplified and missing exact layout branches)
-- **Extraction Strategy**: Mechanically extract the complete 663-line materialized `MessageInputView` into `Packages/AgentUI` as the definitive `AgentComposerView`. Define comprehensive `AgentComposerDriving` protocol exposing all required driver actions.
-- **Host Bridge Required**: `SwiftChat/Views/MessageInputView.swift` becomes a thin bridge adapting `ChatViewModel` to `AgentComposerDriving` and rendering `AgentComposerView`.
+- **App/Runtime Dependencies**: Decoupled via `AgentComposerDriving` protocol
+- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Composer/AgentComposerView.swift` (691 lines)
+- **Status**: **EXTRACTED - FULL PACKAGE OWNERSHIP**
+- **Extraction Strategy**: Mechanically extracted complete `MessageInputView` into `Packages/AgentUI` as `AgentComposerView`.
+- **Host Bridge**: `SwiftChat/Views/MessageInputView.swift` (23 lines) adapts `ChatViewModel` to `AgentComposerDriving` and renders `AgentComposerView`.
 - **Visual Invariants**: Corner radius 26, iPad max width 600, editor min/default/max heights (36/120), pulse animation for mic recording, Send/Stop icon transition, + menu actions (Camera, Photos, Files, Web Search toggle).
 
 ---
 
 ### 9. MessageView (`SwiftChat/Views/MessageView.swift`)
-- **Line Count**: 1859 lines
+- **Original Line Count**: 1859 lines
 - **Visual Dependencies**: `LaTeXMarkdownView`, `WebSearchBox`, `URLFetchBox`, `MessageAttachmentIndicator`, `SourcesButton`/`SourcesSheetView`, `CollapsibleThinkingBox`, `AgentActivityTimelineBridge`, `ToolExecutionDemoBridge`, `InlineSectionSourcesView`, `SafeInlineImageMediaView`, `SafeInlineVideoMediaView`, `SafeInlineYouTubeMediaView`, `InlineLinkPreviewView`, `LoadingDotsView`, error banners, raw content modal
-- **App/Runtime Dependencies**: `Message`, `ChatViewModel` (regenerate, thinking summary, sheets)
-- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Message/AgentMessageView.swift` (421 lines)
-- **Status**: **PROVISIONAL / DIVERGENT** (Current package message view is only 421 lines, has `EmptyView` for link previews, and lacks full sheets and states)
-- **Extraction Strategy**: Mechanically extract the full 1859-line materialized `MessageView` into `Packages/AgentUI` as `AgentMessageView`. Ensure package models losslessly support all message fields. Wire leaf components (`ToolPresentation`, `AgentActivity`, `SectionSources`, `RichMedia`).
-- **Host Bridge Required**: Upstream `SwiftChat/Views/MessageView.swift` becomes a thin bridge adapting host `Message` and `ChatViewModel` to `AgentMessageView`.
+- **App/Runtime Dependencies**: Decoupled via `AgentMessageDriving` protocol and `AgentMessage` model
+- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Message/AgentMessageView.swift` (1540 lines)
+- **Status**: **EXTRACTED - FULL PACKAGE OWNERSHIP**
+- **Extraction Strategy**: Mechanically extracted complete `MessageView` into `Packages/AgentUI` as `AgentMessageView` with all presentation sheets and leaf views.
+- **Host Bridge**: `SwiftChat/Views/MessageView.swift` (33 lines) maps host `Message` to `AgentMessage` and renders `AgentMessageView`.
 - **Visual Invariants**: 32x32 action buttons with 16pt spacing, user/assistant alignment, thinking disclosure box, section sources cluster, rich link previews, image/video/YouTube containers, disclaimer footer.
 
 ---
 
 ### 10. MessageTableView (`SwiftChat/Views/MessageTableView.swift`)
-- **Line Count**: 715 lines
-- **Visual Dependencies**: `UITableView`, `UITableViewCell`, `UIHostingController` wrapping `MessageView`, scrolling indicators, keyboard offset calculations
-- **App/Runtime Dependencies**: `ChatViewModel` (messages array, currentChat ID, `isScrollInteractionActive`)
-- **Current Package Counterpart**: **MISSING** (Package currently uses `ScrollView` + `LazyVStack` which breaks streaming performance and height caching)
-- **Status**: **PROVISIONAL / MISSING IN PACKAGE**
-- **Extraction Strategy**: Extract the full 715-line `UITableView`-backed `MessageTableView` into `Packages/AgentUI` as `AgentMessageTableView`. Use driver protocol `AgentMessageTableDriving`.
-- **Host Bridge Required**: Upstream `MessageTableView` becomes a thin bridge forwarding to `AgentMessageTableView`.
+- **Original Line Count**: 715 lines
+- **Visual Dependencies**: `UITableView`, `UITableViewCell`, `UIHostingController` wrapping `AgentMessageView`, scrolling indicators, keyboard offset calculations
+- **App/Runtime Dependencies**: Decoupled via `AgentMessageDriving` protocol
+- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageTableView.swift` (887 lines)
+- **Status**: **EXTRACTED - FULL PACKAGE OWNERSHIP**
+- **Extraction Strategy**: Complete `UITableView`-backed `MessageTableView` extracted into `Packages/AgentUI` as `AgentMessageTableView` maintaining 120fps streaming performance and height caching.
+- **Host Bridge**: `SwiftChat/Views/MessageTableView.swift` (52 lines) delegates directly to `AgentMessageTableView`.
 - **Visual Invariants**: Message wrapper caching, row height caching, single-cell updates during streaming without reloading the whole table, scroll-to-user-message, scroll-to-bottom, keyboard show/hide inset handling.
 
 ---
 
 ### 11. ChatListView (`SwiftChat/Views/ChatListView.swift`)
-- **Line Count**: 167 lines
-- **Visual Dependencies**: `MessageTableView`, `MessageInputView`, scroll-to-bottom floating button (glass circle), keyboard observers
-- **App/Runtime Dependencies**: `ChatViewModel`, `SettingsManager`
-- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageListView.swift` (92 lines)
-- **Status**: **PROVISIONAL / DIVERGENT**
-- **Extraction Strategy**: Extract the complete `ChatListView` orchestration into `Packages/AgentUI` as `AgentMessageListView` (backed by `AgentMessageTableView` and `AgentComposerView`).
-- **Host Bridge Required**: Upstream `ChatListView` bridges to `AgentMessageListView`.
+- **Original Line Count**: 167 lines
+- **Visual Dependencies**: `AgentMessageTableView`, `AgentComposerView`, scroll-to-bottom floating button (glass circle), keyboard observers
+- **App/Runtime Dependencies**: Decoupled via `AgentMessageDriving` and `AgentComposerDriving`
+- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageListView.swift` (288 lines)
+- **Status**: **EXTRACTED - FULL PACKAGE OWNERSHIP**
+- **Extraction Strategy**: Extracted complete `ChatListView` orchestration into `Packages/AgentUI` as `AgentMessageListView`.
+- **Host Bridge**: `SwiftChat/Views/ChatListView.swift` (55 lines) bridges to `AgentMessageListView`.
 - **Visual Invariants**: Safe area bottom inset, iPad 600pt composer max width, scroll-to-bottom button visibility condition and animation, keyboard notification handling.
 
 ---
 
 ### 12. ChatSidebar (`SwiftChat/Views/ChatSidebar.swift`)
-- **Line Count**: 172 lines
+- **Original Line Count**: 172 lines
 - **Visual Dependencies**: SwiftUI `List`, `ContentUnavailableView`, swipe actions (Rename, Delete), Alerts
-- **App/Runtime Dependencies**: `ChatViewModel` (`chats`, `currentChat`, `selectChat`, `deleteChat`, `updateChatTitle`, `createNewChat`)
-- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Sidebar/AgentChatSidebarView.swift` (193 lines)
-- **Status**: **PROVISIONAL / DIVERGENT**
-- **Extraction Strategy**: Extract the exact `ChatSidebar` visual implementation into `Packages/AgentUI` as `AgentChatSidebarView` driven by `AgentSidebarDriving`.
-- **Host Bridge Required**: Upstream `ChatSidebar` delegates to `AgentChatSidebarView`.
+- **App/Runtime Dependencies**: Decoupled via `AgentChatSessionDescriptor`
+- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Sidebar/AgentChatSidebarView.swift` (210 lines)
+- **Status**: **EXTRACTED - FULL PACKAGE OWNERSHIP**
+- **Extraction Strategy**: Extracted exact `ChatSidebar` visual implementation into `Packages/AgentUI` as `AgentChatSidebarView`.
+- **Host Bridge**: `SwiftChat/Views/ChatSidebar.swift` (55 lines) bridges host `Chat` models to `AgentChatSidebarView`.
 - **Visual Invariants**: Search filter by title and message content, session list row appearance, delete alert message text, rename alert binding.
 
 ---
 
 ### 13. ChatView (`SwiftChat/Views/ChatView.swift`) / ChatContainer
-- **Line Count**: 257 lines
-- **Visual Dependencies**: `NavigationSplitView` with compact column fallback, custom toolbar items, `ImageViewerOverlay`, `WelcomeView`, `MenuToXButton`
-- **App/Runtime Dependencies**: `ChatViewModel`, `SettingsManager`
-- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Chat/AgentChatView.swift` (81 lines)
-- **Status**: **PROVISIONAL / DIVERGENT**
-- **Extraction Strategy**: Move the complete materialized `ChatContainer` and helper types into `Packages/AgentUI` as `AgentChatView`. Preserve navigation column management, toolbar item placement, and appearance setup.
-- **Host Bridge Required**: Upstream `ContentView` and `ChatView` delegate to `AgentChatView`.
+- **Original Line Count**: 257 lines
+- **Visual Dependencies**: `NavigationSplitView` with compact column fallback, custom toolbar items, `ImageViewerOverlay`, `AgentWelcomeView`, `MenuToXButton`
+- **App/Runtime Dependencies**: Pure presentation shell hosting sidebar and detail content
+- **Current Package Counterpart**: `Packages/AgentUI/Sources/AgentUI/Chat/AgentChatView.swift` (169 lines)
+- **Status**: **EXTRACTED - FULL PACKAGE OWNERSHIP**
+- **Extraction Strategy**: Extracted complete `ChatContainer` shell into `Packages/AgentUI` as `AgentChatView`.
+- **Host Bridge**: `SwiftChat/Views/ChatView.swift` (118 lines) hosts `AgentChatView` wiring app-level image viewer and settings sheets.
 - **Visual Invariants**: Compact column toggle behavior, "New Chat" toolbar and sidebar buttons, custom navigation bar appearance (transparent on iOS 26, opaque fallback), image viewer presentation.
+
+---
+
+## 14. Core UI Ownership Verification Summary
+
+| Component | Package Path | Package Lines | App Bridge Path | App Bridge Lines | Reimplementation? | Sole Owner Verified |
+| :--- | :--- | :---: | :--- | :---: | :---: | :---: |
+| **Composer** | `Sources/AgentUI/Composer/AgentComposerView.swift` | 691 | `SwiftChat/Views/MessageInputView.swift` | 23 | **NO** | **YES** |
+| **MessageView** | `Sources/AgentUI/Message/AgentMessageView.swift` | 1540 | `SwiftChat/Views/MessageView.swift` | 33 | **NO** | **YES** |
+| **MessageTableView** | `Sources/AgentUI/Chat/AgentMessageTableView.swift` | 887 | `SwiftChat/Views/MessageTableView.swift` | 52 | **NO** | **YES** |
+| **ChatListView** | `Sources/AgentUI/Chat/AgentMessageListView.swift` | 288 | `SwiftChat/Views/ChatListView.swift` | 55 | **NO** | **YES** |
+| **ChatSidebar** | `Sources/AgentUI/Sidebar/AgentChatSidebarView.swift` | 210 | `SwiftChat/Views/ChatSidebar.swift` | 55 | **NO** | **YES** |
+| **ChatShell** | `Sources/AgentUI/Chat/AgentChatView.swift` | 169 | `SwiftChat/Views/ChatView.swift` | 118 | **NO** | **YES** |
+
+Total extracted package core lines: **3,785 lines** across the 6 major surfaces.
+Total bridge code in host app: **336 lines** total across all 6 bridge files (all strictly under their respective limits).
+Safe overlay patches: **9 clean patches** against the upstream golden baseline.
+Frozen files preserved: `ContentView.swift`, `LaTeXMarkdownView.swift`, `WebSearchBox.swift`, `Color.swift`.

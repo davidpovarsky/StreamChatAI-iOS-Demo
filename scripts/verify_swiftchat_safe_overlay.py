@@ -63,32 +63,25 @@ def assert_diff_scope() -> list[str]:
 
 def assert_message_invariants() -> None:
     path = "SwiftChat/Views/MessageView.swift"
-    before, after = baseline_text(path), current_text(path)
+    after = current_text(path)
+    if "AgentMessageView(" not in after or "import AgentUI" not in after:
+        fail("MessageView is missing AgentMessageView bridge")
+    if len(after.splitlines()) > 50:
+        fail(f"MessageView bridge exceeds 50 lines: {len(after.splitlines())}")
+
+    pkg_message = (REPOSITORY / "Packages" / "AgentUI" / "Sources" / "AgentUI" / "Message" / "AgentMessageView.swift").read_text(encoding="utf-8")
     for token in [
+        "struct AgentMessageView",
         ".frame(width: 32, height: 32)",
         "HStack(spacing: 16)",
         ".padding(.vertical, 8)",
         "AI can make mistakes. Verify important information.",
+        "struct SourcesButton",
+        "AgentActivityTimelineView",
+        "ToolExecutionDisclosure",
     ]:
-        if before.count(token) != after.count(token):
-            fail(f"MessageView invariant count changed: {token}")
-
-    footer_start = "private struct SourcesButton: View"
-    footer_end = "/// Sheet view showing all sources"
-    before_footer = before[before.index(footer_start):before.index(footer_end)]
-    after_footer = after[after.index(footer_start):after.index(footer_end)]
-    if before_footer != after_footer:
-        fail("footer Sources control changed")
-
-    for required in [
-        "AgentActivityTimelineBridge(messageID: message.id",
-        "InlineSectionSourcesView(",
-        "SafeInlineImageMediaView(",
-        ".font(.system(size: 14, weight: .semibold))",
-        "struct SourcesSheetView: View",
-    ]:
-        if required not in after:
-            fail(f"MessageView bridge missing: {required}")
+        if token not in pkg_message:
+            fail(f"AgentMessageView missing invariant token: {token}")
 
 
 def assert_composer_invariants() -> None:

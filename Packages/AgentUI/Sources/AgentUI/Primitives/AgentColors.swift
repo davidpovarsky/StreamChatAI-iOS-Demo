@@ -69,6 +69,30 @@ extension Color {
     public static var accentPrimary: Color { agentAccentPrimary }
     public static var backgroundPrimary: Color { agentBackgroundPrimary }
 
+    public static func chatSurface(isDarkMode: Bool) -> Color {
+        agentChatSurface(isDarkMode: isDarkMode)
+    }
+
+    public static func chatBackground(isDarkMode: Bool) -> Color {
+        agentChatBackground(isDarkMode: isDarkMode)
+    }
+
+    public static func thinkingBackground(isDarkMode: Bool) -> Color {
+        agentThinkingBackground(isDarkMode: isDarkMode)
+    }
+
+    public static func userMessageBackground(isDarkMode: Bool) -> Color {
+        agentUserMessageBackground(isDarkMode: isDarkMode)
+    }
+
+    public static func userMessageForeground(isDarkMode: Bool) -> Color {
+        agentUserMessageForeground(isDarkMode: isDarkMode)
+    }
+
+    public static func actionButtonBackground(isDarkMode: Bool) -> Color {
+        agentActionButtonBackground(isDarkMode: isDarkMode)
+    }
+
     public static let agentThinkingBackgroundDark = agentChatSurfaceDark
     public static let agentThinkingBackgroundLight = agentChatSurfaceLight
     public static let agentUserMessageBackgroundDark = agentChatSurfaceDark

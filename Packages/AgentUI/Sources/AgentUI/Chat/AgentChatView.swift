@@ -81,30 +81,6 @@ public struct AgentChatView<SidebarContent: View, DetailContent: View>: View {
     }
 }
 
-// MARK: - AgentWelcomeView
-
-public struct AgentWelcomeView: View {
-    public let isDarkMode: Bool
-
-    public init(isDarkMode: Bool = false) {
-        self.isDarkMode = isDarkMode
-    }
-
-    public var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 16) {
-                Text("Start a conversation")
-                    .font(.title)
-                    .fontWeight(.semibold)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 32)
-        }
-        .padding(.top, 24)
-        .padding(.bottom, 4)
-    }
-}
-
 // MARK: - AgentMenuToXButton
 
 public struct AgentMenuToXButton: View {

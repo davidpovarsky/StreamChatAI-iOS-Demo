@@ -22,7 +22,7 @@ public enum StreamingBufferConstants {
 public struct AgentWelcomeView: View {
     public let isDarkMode: Bool
 
-    public init(isDarkMode: Bool) {
+    public init(isDarkMode: Bool = false) {
         self.isDarkMode = isDarkMode
     }
 

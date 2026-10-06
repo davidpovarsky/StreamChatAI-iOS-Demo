@@ -95,7 +95,7 @@ def assert_table_invariants() -> None:
     assert_bridge(
         "SwiftChat/Views/MessageTableView.swift", "AgentMessageTableView(", 60,
         "Packages/AgentUI/Sources/AgentUI/Chat/AgentMessageTableView.swift",
-        ["struct AgentMessageTableView", "UITableView", "Coordinator", "AgentObservableMessageWrapper", "AgentObservableMessageCell"],
+        ["struct AgentMessageTableView", "UITableView", "Coordinator", "AgentObservableMessageWrapper", "AgentObservableMessageCell", "AgentWelcomeView"],
     )
 
 
@@ -119,7 +119,7 @@ def assert_shell_invariants() -> None:
     assert_bridge(
         "SwiftChat/Views/ChatView.swift", "AgentChatView(", 120,
         "Packages/AgentUI/Sources/AgentUI/Chat/AgentChatView.swift",
-        ["struct AgentChatView", "AgentWelcomeView", "AgentMenuToXButton"],
+        ["struct AgentChatView", "AgentMenuToXButton", "AgentRoundedCorner"],
     )
 
 

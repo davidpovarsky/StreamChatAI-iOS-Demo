@@ -2,7 +2,7 @@
 //  AgentChatSidebarView.swift
 //  AgentUI
 //
-//  Extracted existing sidebar implementation preserving exact geometry and interactions.
+//  Authoritative session list matching ManifoldKit Advanced SessionListView architecture.
 //
 
 import SwiftUI
@@ -28,6 +28,7 @@ public struct AgentChatSidebarView: View {
     public let onDeleteSession: (String) -> Void
     public let onRenameSession: (String, String) -> Void
     public let onCreateNewSession: (() -> Void)?
+    public let searchFilter: ((AgentChatSessionDescriptor, String) -> Bool)?
 
     @State private var sessionToDelete: AgentChatSessionDescriptor?
     @State private var sessionToRename: AgentChatSessionDescriptor?
@@ -40,7 +41,8 @@ public struct AgentChatSidebarView: View {
         onSelectSession: @escaping (AgentChatSessionDescriptor) -> Void,
         onDeleteSession: @escaping (String) -> Void,
         onRenameSession: @escaping (String, String) -> Void,
-        onCreateNewSession: (() -> Void)? = nil
+        onCreateNewSession: (() -> Void)? = nil,
+        searchFilter: ((AgentChatSessionDescriptor, String) -> Bool)? = nil
     ) {
         self.sessions = sessions
         self.currentSessionId = currentSessionId
@@ -48,12 +50,29 @@ public struct AgentChatSidebarView: View {
         self.onDeleteSession = onDeleteSession
         self.onRenameSession = onRenameSession
         self.onCreateNewSession = onCreateNewSession
+        self.searchFilter = searchFilter
     }
 
     private var filteredSessions: [AgentChatSessionDescriptor] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmed.isEmpty else { return sessions }
-        return sessions.filter { $0.title.lowercased().contains(trimmed) }
+        return sessions.filter { session in
+            if let customFilter = searchFilter {
+                return customFilter(session, trimmed)
+            }
+            return session.title.lowercased().contains(trimmed)
+        }
+    }
+
+    private var selectionBinding: Binding<AgentChatSessionDescriptor?> {
+        Binding(
+            get: { sessions.first { $0.id == currentSessionId } },
+            set: { newSession in
+                if let newSession = newSession {
+                    onSelectSession(newSession)
+                }
+            }
+        )
     }
 
     private var isRenamePresented: Binding<Bool> {
@@ -86,6 +105,9 @@ public struct AgentChatSidebarView: View {
             .alert("Delete Chat?", isPresented: isDeletePresented, presenting: sessionToDelete) { session in
                 Button("Delete", role: .destructive) {
                     onDeleteSession(session.id)
+                    if sessions.count <= 1 {
+                        onCreateNewSession?()
+                    }
                     sessionToDelete = nil
                 }
                 Button("Cancel", role: .cancel) { sessionToDelete = nil }
@@ -123,27 +145,22 @@ public struct AgentChatSidebarView: View {
     }
 
     private var sessionList: some View {
-        List {
+        List(selection: selectionBinding) {
             Section {
                 ForEach(filteredSessions) { session in
-                    Button {
-                        onSelectSession(session)
-                    } label: {
-                        rowContent(for: session)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(currentSessionId == session.id ? Color.secondary.opacity(0.15) : Color.clear)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        deleteButton(for: session)
-                    }
-                    .swipeActions(edge: .leading) {
-                        renameButton(for: session)
-                            .tint(.blue)
-                    }
-                    .contextMenu {
-                        renameButton(for: session)
-                        deleteButton(for: session)
-                    }
+                    rowContent(for: session)
+                        .tag(session)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            deleteButton(for: session)
+                        }
+                        .swipeActions(edge: .leading) {
+                            renameButton(for: session)
+                                .tint(.blue)
+                        }
+                        .contextMenu {
+                            renameButton(for: session)
+                            deleteButton(for: session)
+                        }
                 }
             }
         }

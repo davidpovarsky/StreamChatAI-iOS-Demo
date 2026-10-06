@@ -32,7 +32,7 @@ public protocol AgentChatRuntimeControlling: AnyObject, ObservableObject {
 
 /// Standalone in-memory runtime controller for sample hosts, tests, and previewing without LLM dependencies.
 @MainActor
-public final class MockAgentRuntimeController: ObservableObject, AgentChatRuntimeControlling, AgentComposerDriving {
+public final class MockAgentRuntimeController: ObservableObject, AgentChatRuntimeControlling, AgentComposerDriving, AgentMessageDriving {
     @Published public var sessions: [AgentChatSessionDescriptor] = []
     @Published public var currentSession: AgentChatSessionDescriptor?
     @Published public var isLoading: Bool = false

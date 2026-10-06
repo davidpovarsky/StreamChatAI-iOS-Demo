@@ -58,6 +58,17 @@ extension Color {
     public static let agentSendButtonForegroundDark = Color.white
     public static let agentSendButtonForegroundLight = Color.black
 
+    public static var sendButtonBackgroundDark: Color { agentSendButtonBackgroundDark }
+    public static var sendButtonBackgroundLight: Color { agentSendButtonBackgroundLight }
+    public static var sendButtonForegroundDark: Color { agentSendButtonForegroundDark }
+    public static var sendButtonForegroundLight: Color { agentSendButtonForegroundLight }
+    public static var chatSurfaceDark: Color { agentChatSurfaceDark }
+    public static var chatSurfaceLight: Color { agentChatSurfaceLight }
+    public static var chatBackgroundDark: Color { agentChatBackgroundDark }
+    public static var chatBackgroundLight: Color { agentChatBackgroundLight }
+    public static var accentPrimary: Color { agentAccentPrimary }
+    public static var backgroundPrimary: Color { agentBackgroundPrimary }
+
     public static let agentThinkingBackgroundDark = agentChatSurfaceDark
     public static let agentThinkingBackgroundLight = agentChatSurfaceLight
     public static let agentUserMessageBackgroundDark = agentChatSurfaceDark

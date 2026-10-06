@@ -48,6 +48,7 @@ public final class MockAgentRuntimeController: ObservableObject, AgentChatRuntim
     @Published public var pendingImageThumbnails: [String: String] = [:]
     @Published public var isWebSearchEnabled: Bool = false
     @Published public var currentModel: AgentModelDescriptor
+    public var currentModelDescriptor: AgentModelDescriptor { currentModel }
     @Published public var availableModels: [AgentModelDescriptor]
 
     public var isConversationEmpty: Bool {

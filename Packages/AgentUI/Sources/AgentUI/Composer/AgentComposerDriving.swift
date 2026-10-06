@@ -46,7 +46,7 @@ public protocol AgentComposerDriving: AnyObject, ObservableObject {
     var isConversationEmpty: Bool { get }
     var isWebSearchEnabled: Bool { get set }
 
-    var currentModel: AgentModelDescriptor { get }
+    var currentModelDescriptor: AgentModelDescriptor { get }
     var availableModels: [AgentModelDescriptor] { get }
     func selectModel(_ model: AgentModelDescriptor)
 
@@ -55,11 +55,15 @@ public protocol AgentComposerDriving: AnyObject, ObservableObject {
 
     var isAudioRecording: Bool { get }
     var isAudioTranscribing: Bool { get }
+    func toggleAudioRecording(text: Binding<String>)
     func toggleAudioRecording()
 }
 
 extension AgentComposerDriving {
     public var isAudioRecording: Bool { false }
     public var isAudioTranscribing: Bool { false }
+    public func toggleAudioRecording(text: Binding<String>) {
+        toggleAudioRecording()
+    }
     public func toggleAudioRecording() {}
 }

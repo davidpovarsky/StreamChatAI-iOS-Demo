@@ -115,8 +115,8 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
                     HStack {
                         attachButton
                         AgentSelectedModelMenu(
-                            currentModelId: driver.currentModel.id,
-                            currentModelDisplayName: driver.currentModel.displayName,
+                            currentModelId: driver.currentModelDescriptor.id,
+                            currentModelDisplayName: driver.currentModelDescriptor.displayName,
                             availableModels: driver.availableModels,
                             isLoading: driver.isLoading,
                             isDarkMode: isDarkMode,
@@ -130,13 +130,13 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
                             Image(systemName: driver.isLoading ? "stop.fill" : "arrow.up")
                                 .font(.system(size: 16, weight: .semibold))
                                 .frame(width: 24, height: 24)
-                                .foregroundColor(isDarkMode ? Color.agentSendButtonForegroundDark : Color.agentSendButtonForegroundLight)
+                                .foregroundColor(isDarkMode ? Color.sendButtonForegroundDark : Color.sendButtonForegroundLight)
                         }
                         .buttonStyle(.borderedProminent)
                         .buttonBorderShape(.circle)
                         .glassEffect(.regular.interactive(), in: .circle)
                         .clipShape(.circle)
-                        .tint(isDarkMode ? Color.agentSendButtonBackgroundDark : Color.agentSendButtonBackgroundLight)
+                        .tint(isDarkMode ? Color.sendButtonBackgroundDark : Color.sendButtonBackgroundLight)
                         .padding(.trailing, 8)
                     }
                     .padding(.vertical, 8)
@@ -173,8 +173,8 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
                     HStack {
                         attachButton
                         AgentSelectedModelMenu(
-                            currentModelId: driver.currentModel.id,
-                            currentModelDisplayName: driver.currentModel.displayName,
+                            currentModelId: driver.currentModelDescriptor.id,
+                            currentModelDisplayName: driver.currentModelDescriptor.displayName,
                             availableModels: driver.availableModels,
                             isLoading: driver.isLoading,
                             isDarkMode: isDarkMode,
@@ -187,11 +187,11 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
                         Button(action: sendOrCancelMessage) {
                             ZStack {
                                 Circle()
-                                    .fill(isDarkMode ? Color.agentSendButtonBackgroundDark : Color.agentSendButtonBackgroundLight)
+                                    .fill(isDarkMode ? Color.sendButtonBackgroundDark : Color.sendButtonBackgroundLight)
                                     .frame(width: 32, height: 32)
                                 Image(systemName: driver.isLoading ? "stop.fill" : "arrow.up")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(isDarkMode ? Color.agentSendButtonForegroundDark : Color.agentSendButtonForegroundLight)
+                                    .foregroundColor(isDarkMode ? Color.sendButtonForegroundDark : Color.sendButtonForegroundLight)
                             }
                         }
                         .padding(.trailing, 8)
@@ -212,7 +212,7 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
     private var attachButton: some View {
         if #available(iOS 26, *) {
             Menu {
-                if driver.currentModel.isMultimodal {
+                if driver.currentModelDescriptor.isMultimodal {
                     if UIImagePickerController.isSourceTypeAvailable(.camera) {
                         Button {
                             showCamera = true
@@ -253,7 +253,7 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
             .padding(.leading, 8)
         } else {
             Menu {
-                if driver.currentModel.isMultimodal {
+                if driver.currentModelDescriptor.isMultimodal {
                     if UIImagePickerController.isSourceTypeAvailable(.camera) {
                         Button {
                             showCamera = true
@@ -296,7 +296,7 @@ public struct AgentComposerView<Driver: AgentComposerDriving>: View {
 
     @ViewBuilder
     private var micButton: some View {
-        Button(action: { driver.toggleAudioRecording() }) {
+        Button(action: { driver.toggleAudioRecording(text: $messageText) }) {
             ZStack {
                 if driver.isAudioRecording {
                     Circle()
@@ -443,7 +443,7 @@ public struct CustomTextEditor: UIViewRepresentable {
         uiView.isEditable = true
 
         let size = uiView.sizeThatFits(CGSize(width: uiView.frame.width, height: CGFloat.greatestFiniteMagnitude))
-        let newHeight = min(180, max(72, size.height))
+        let newHeight = min(AgentComposerLayout.maximumHeight, max(AgentComposerLayout.minimumHeight, size.height))
         if textHeight != newHeight {
             DispatchQueue.main.async { self.textHeight = newHeight }
         }
@@ -468,7 +468,7 @@ public struct CustomTextEditor: UIViewRepresentable {
                         parent.onSendMessage(trimmedText)
                         textView.text = ""
                         parent.text = ""
-                        parent.textHeight = 72
+                        parent.textHeight = AgentComposerLayout.defaultHeight
                         textView.text = parent.placeholderText
                         textView.textColor = .lightGray
                         textView.resignFirstResponder()
@@ -486,7 +486,7 @@ public struct CustomTextEditor: UIViewRepresentable {
             if textView.textColor != .lightGray {
                 parent.text = textView.text
                 let size = textView.sizeThatFits(CGSize(width: textView.frame.width, height: CGFloat.greatestFiniteMagnitude))
-                let newHeight = min(180, max(72, size.height))
+                let newHeight = min(AgentComposerLayout.maximumHeight, max(AgentComposerLayout.minimumHeight, size.height))
                 if parent.textHeight != newHeight { parent.textHeight = newHeight }
             }
         }
@@ -506,5 +506,186 @@ public struct CustomTextEditor: UIViewRepresentable {
                 textView.textColor = .lightGray
             }
         }
+    }
+}
+
+/// Bottom sheet presented from the "+" button with attachment options and model selector
+public struct AddToSheetView: View {
+    public let availableModels: [AgentModelDescriptor]
+    public let currentModelId: String
+    public let isMultimodal: Bool
+    public let isDarkMode: Bool
+    public let onCamera: () -> Void
+    public let onPhotos: () -> Void
+    public let onFiles: () -> Void
+    public let onSelectModel: (AgentModelDescriptor) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    public init(
+        availableModels: [AgentModelDescriptor],
+        currentModelId: String,
+        isMultimodal: Bool,
+        isDarkMode: Bool,
+        onCamera: @escaping () -> Void,
+        onPhotos: @escaping () -> Void,
+        onFiles: @escaping () -> Void,
+        onSelectModel: @escaping (AgentModelDescriptor) -> Void
+    ) {
+        self.availableModels = availableModels
+        self.currentModelId = currentModelId
+        self.isMultimodal = isMultimodal
+        self.isDarkMode = isDarkMode
+        self.onCamera = onCamera
+        self.onPhotos = onPhotos
+        self.onFiles = onFiles
+        self.onSelectModel = onSelectModel
+    }
+
+    public var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                // Attachment buttons
+                HStack(spacing: 12) {
+                    if isMultimodal {
+                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                            attachmentButton(icon: "camera", label: "Camera") { onCamera() }
+                        }
+                        attachmentButton(icon: "photo.on.rectangle", label: "Photos") { onPhotos() }
+                    }
+                    attachmentButton(icon: "doc.badge.arrow.up", label: "Files") { onFiles() }
+                }
+                .padding(.horizontal, 20)
+
+                Divider()
+                    .padding(.horizontal, 20)
+
+                // Model selector
+                Text("Select a Model")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, -12)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(availableModels) { model in
+                            ModelCard(
+                                model: model,
+                                isSelected: currentModelId == model.id,
+                                isDarkMode: isDarkMode
+                            ) {
+                                onSelectModel(model)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+            .padding(.top, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background((isDarkMode ? Color(hex: "161616") : Color(UIColor.systemGroupedBackground)).ignoresSafeArea())
+            .navigationTitle("Add to Chat")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func attachmentButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 72)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
+        }
+    }
+}
+
+/// Simple model card for the model selector
+public struct ModelCard: View {
+    public let model: AgentModelDescriptor
+    public let isSelected: Bool
+    public let isDarkMode: Bool
+    public let onTap: () -> Void
+
+    public init(model: AgentModelDescriptor, isSelected: Bool, isDarkMode: Bool, onTap: @escaping () -> Void) {
+        self.model = model
+        self.isSelected = isSelected
+        self.isDarkMode = isDarkMode
+        self.onTap = onTap
+    }
+
+    public var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 8) {
+                Image(model.iconName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 36, height: 36)
+
+                Text(model.displayName)
+                    .font(.system(size: 13, weight: .medium))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundColor(isSelected ? .primary : .secondary)
+            .frame(width: 120, height: 110)
+            .background(
+                ZStack {
+                    if #available(iOS 26, *) {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.thickMaterial)
+                    } else {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.chatSurface(isDarkMode: isDarkMode))
+                    }
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.accentPrimary.opacity(0.15))
+                    }
+                    if !isSelected {
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(Color.gray.opacity(0.2), lineWidth: 1)
+                    }
+                    if isSelected {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Circle()
+                                    .fill(Color.accentPrimary)
+                                    .frame(width: 16, height: 16)
+                                    .overlay(
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundColor(.white)
+                                    )
+                            }
+                            Spacer()
+                        }
+                        .padding(8)
+                    }
+                }
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }

@@ -93,7 +93,15 @@ def assert_message_invariants() -> None:
 
 def assert_composer_invariants() -> None:
     path = "SwiftChat/Views/MessageInputView.swift"
-    before, after = baseline_text(path), current_text(path)
+    after = current_text(path)
+    if "AgentComposerView(" not in after or "import AgentUI" not in after:
+        fail("MessageInputView is missing AgentComposerView bridge")
+    if "struct CustomTextEditor" in after or "private var attachButton" in after:
+        fail("MessageInputView still contains duplicate app-local composer body")
+    if len(after.splitlines()) > 40:
+        fail(f"MessageInputView bridge exceeds 40 lines: {len(after.splitlines())}")
+
+    pkg_composer = (REPOSITORY / "Packages" / "AgentUI" / "Sources" / "AgentUI" / "Composer" / "AgentComposerView.swift").read_text(encoding="utf-8")
     for token in [
         "RoundedRectangle(cornerRadius: 26)",
         ".padding(.horizontal)",
@@ -101,25 +109,10 @@ def assert_composer_invariants() -> None:
         ".buttonBorderShape(.circle)",
         "Color.sendButtonForegroundDark",
         "Color.sendButtonBackgroundDark",
+        "struct CustomTextEditor",
     ]:
-        if before.count(token) != after.count(token):
-            fail(f"composer invariant count changed: {token}")
-    input_start = "private var inputContent: some View"
-    input_end = "private var attachButton: some View"
-    expected_input = before[before.index(input_start):before.index(input_end)].replace(
-        "webSearchButton", "SelectedModelMenu(viewModel: viewModel, isDarkMode: isDarkMode)"
-    )
-    actual_input = after[after.index(input_start):after.index(input_end)]
-    if expected_input != actual_input:
-        fail("composer container changed outside the selected-model slot")
-    mic_start = "private var micButton: some View"
-    mic_end = "private func toggleRecording()"
-    if before[before.index(mic_start):before.index(mic_end)] != after[after.index(mic_start):after.index(mic_end)]:
-        fail("microphone block changed")
-    if after.count("SelectedModelMenu(viewModel: viewModel") != 2:
-        fail("selected model menu is not in both composer variants")
-    if after.count("Enable Web Search") != 2 or "private var webSearchButton" in after:
-        fail("Web Search was not moved cleanly into both + menus")
+        if token not in pkg_composer:
+            fail(f"AgentComposerView missing invariant token: {token}")
 
 
 def assert_project_invariants() -> None:

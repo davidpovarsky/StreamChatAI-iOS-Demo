@@ -1,0 +1,185 @@
+diff --git a/SwiftChat/Views/ChatView.swift b/SwiftChat/Views/ChatView.swift
+index 4f2fc2d..1bfb3ad 100644
+--- a/SwiftChat/Views/ChatView.swift
++++ b/SwiftChat/Views/ChatView.swift
+@@ -1,18 +1,11 @@
+ //
+ //  ChatView.swift
+-//  SwiftChat
++//  Thin compatibility bridge delegating shell container layout to AgentUI.
+ //
+-//  Created on 03/25/26.
+-//  Copyright © 2026 Sacha Servan-Schreiber. All rights reserved.
+-//
+-
+ 
+ import SwiftUI
++import AgentUI
+ 
+-
+-// MARK: - ChatContainer
+-
+-/// The primary SwiftUI container that holds the main chat interface and sidebar navigation using NavigationSplitView.
+ struct ChatContainer: View {
+     @Environment(\.colorScheme) var colorScheme
+     @EnvironmentObject private var viewModel: SwiftChat.ChatViewModel
+@@ -28,7 +21,7 @@ struct ChatContainer: View {
+     }
+ 
+     var body: some View {
+-        NavigationSplitView(
++        AgentChatView(
+             columnVisibility: $columnVisibility,
+             preferredCompactColumn: $preferredCompactColumn
+         ) {
+@@ -37,22 +30,6 @@ struct ChatContainer: View {
+             detailColumn
+         }
+         .environmentObject(viewModel)
+-        .onAppear {
+-            if horizontalSizeClass == .compact {
+-                columnVisibility = .detailOnly
+-                preferredCompactColumn = .detail
+-            }
+-            setupNavigationBarAppearance()
+-        }
+-        .onChange(of: colorScheme) { _, _ in
+-            setupNavigationBarAppearance()
+-        }
+-        .onChange(of: viewModel.currentChat?.id) { _, _ in
+-            if horizontalSizeClass == .compact {
+-                columnVisibility = .detailOnly
+-                preferredCompactColumn = .detail
+-            }
+-        }
+         .fullScreenCover(isPresented: $viewModel.showImageViewer) {
+             ImageViewerOverlay(
+                 images: viewModel.imageViewerImages,
+@@ -134,124 +111,8 @@ struct ChatContainer: View {
+             preferredCompactColumn = .detail
+         }
+     }
+-
+-    private func setupNavigationBarAppearance() {
+-        if #available(iOS 26, *) {
+-            let appearance = UINavigationBarAppearance()
+-            appearance.configureWithTransparentBackground()
+-            appearance.shadowColor = .clear
+-            updateAllNavigationBars(with: appearance)
+-        } else {
+-            let appearance = UINavigationBarAppearance()
+-            appearance.configureWithOpaqueBackground()
+-            appearance.backgroundColor = colorScheme == .dark ? UIColor(Color.backgroundPrimary) : .white
+-            appearance.shadowColor = .clear
+-            updateAllNavigationBars(with: appearance)
+-        }
+-    }
+-
+-    private func updateAllNavigationBars(with appearance: UINavigationBarAppearance) {
+-        let tintColor: UIColor = colorScheme == .dark ? .white : .black
+-        UINavigationBar.appearance().standardAppearance = appearance
+-        UINavigationBar.appearance().compactAppearance = appearance
+-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+-        UINavigationBar.appearance().tintColor = tintColor
+-    }
+-}
+-
+-// MARK: - WelcomeView
+-
+-struct WelcomeView: View {
+-    let isDarkMode: Bool
+-
+-    var body: some View {
+-        VStack(spacing: 24) {
+-            VStack(spacing: 16) {
+-                Text("Start a conversation")
+-                    .font(.title)
+-                    .fontWeight(.semibold)
+-                    .multilineTextAlignment(.center)
+-            }
+-            .padding(.horizontal, 32)
+-        }
+-        .padding(.top, 24)
+-        .padding(.bottom, 4)
+-    }
+ }
+ 
+-// MARK: - Helper Views
+-
+-/// Animated button that transforms between a menu icon and an X
+-struct MenuToXButton: View {
+-    let isX: Bool
+-
+-    var body: some View {
+-        ZStack {
+-            Rectangle()
+-                .frame(width: 18, height: 2)
+-                .rotationEffect(.degrees(isX ? 45 : 0))
+-                .offset(y: isX ? 0 : -6)
+-            Rectangle()
+-                .frame(width: 18, height: 2)
+-                .opacity(isX ? 0 : 1)
+-            Rectangle()
+-                .frame(width: 18, height: 2)
+-                .rotationEffect(.degrees(isX ? -45 : 0))
+-                .offset(y: isX ? 0 : 6)
+-        }
+-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isX)
+-    }
+-}
+-
+-/// A shape for custom corner rounding
+-struct RoundedCorner: Shape {
+-    var radius: CGFloat = .infinity
+-    var corners: UIRectCorner = .allCorners
+-
+-    func path(in rect: CGRect) -> Path {
+-        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+-        return Path(path.cgPath)
+-    }
+-}
+-
+-/// Extension for applying rounded corners to views
+-extension View {
+-    func corners(_ corners: UIRectCorner) -> some View {
+-        clipShape(RoundedCorner(radius: 15, corners: corners))
+-    }
+-
+-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+-        if condition {
+-            transform(self)
+-        } else {
+-            self
+-        }
+-    }
+-
+-    @ViewBuilder
+-    func applyTransparentToolbarIfAvailable() -> some View {
+-        if #available(iOS 26, *) {
+-            self.toolbarBackground(.hidden, for: .navigationBar)
+-        } else {
+-            self
+-        }
+-    }
+-}
+-
+-// Helper extension to convert UIView.AnimationCurve to SwiftUI Animation
+-extension Animation {
+-    init(curve: UIView.AnimationCurve, duration: Double) {
+-        switch curve {
+-        case .easeInOut:
+-            self = .easeInOut(duration: duration)
+-        case .easeIn:
+-            self = .easeIn(duration: duration)
+-        case .easeOut:
+-            self = .easeOut(duration: duration)
+-        case .linear:
+-            self = .linear(duration: duration)
+-        @unknown default:
+-            self = .easeInOut(duration: duration)
+-        }
+-    }
+-}
++typealias WelcomeView = AgentWelcomeView
++typealias MenuToXButton = AgentMenuToXButton
++typealias RoundedCorner = AgentRoundedCorner

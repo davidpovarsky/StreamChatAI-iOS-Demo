@@ -8,7 +8,6 @@ UPSTREAM = REPOSITORY / "upstream" / "SwiftChat"
 SWIFTCHAT = UPSTREAM / "SwiftChat"
 
 FROZEN = [
-    "SwiftChat/Views/ChatView.swift",
     "SwiftChat/ContentView.swift",
     "SwiftChat/Views/LaTeXMarkdownView.swift",
     "SwiftChat/Views/WebSearchBox.swift",
@@ -20,6 +19,7 @@ ALLOWED_EXISTING = {
     "SwiftChat/Views/MessageTableView.swift",
     "SwiftChat/Views/ChatListView.swift",
     "SwiftChat/Views/ChatSidebar.swift",
+    "SwiftChat/Views/ChatView.swift",
     "SwiftChat/ViewModels/ChatViewModel.swift",
     "SwiftChat.xcodeproj/project.pbxproj",
 }
@@ -115,6 +115,14 @@ def assert_sidebar_invariants() -> None:
     )
 
 
+def assert_shell_invariants() -> None:
+    assert_bridge(
+        "SwiftChat/Views/ChatView.swift", "AgentChatView(", 120,
+        "Packages/AgentUI/Sources/AgentUI/Chat/AgentChatView.swift",
+        ["struct AgentChatView", "AgentWelcomeView", "AgentMenuToXButton"],
+    )
+
+
 def assert_project_invariants() -> None:
     diff = git("diff", "HEAD", "--", "SwiftChat.xcodeproj/project.pbxproj")
     if not diff.strip():
@@ -139,8 +147,7 @@ def assert_overlay_files() -> None:
             fail(f"new file exceeds 350 lines: {path.relative_to(UPSTREAM)} ({line_count})")
     if len(Path(__file__).read_text(encoding="utf-8").splitlines()) > 180:
         fail("verification script exceeds 180 lines")
-    installer = REPOSITORY / "scripts" / "apply_swiftchat_safe_overlay.py"
-    if len(installer.read_text(encoding="utf-8").splitlines()) > 180:
+    if len((REPOSITORY / "scripts" / "apply_swiftchat_safe_overlay.py").read_text(encoding="utf-8").splitlines()) > 180:
         fail("overlay installer exceeds 180 lines")
 
 
@@ -155,6 +162,7 @@ def main() -> None:
     assert_table_invariants()
     assert_list_invariants()
     assert_sidebar_invariants()
+    assert_shell_invariants()
     assert_overlay_files()
     print("SwiftChat safe overlay verification passed")
     print("\nDiff names from local golden baseline:")

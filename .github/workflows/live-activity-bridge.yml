@@ -10,7 +10,6 @@ on:
       - "Build mobileLLM iOS"
       - "Build Open Relay Offline Demo"
     types:
-      - requested
       - in_progress
       - completed
 

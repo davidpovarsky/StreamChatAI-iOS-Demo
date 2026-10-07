@@ -4,7 +4,7 @@ This document tracks all external dependencies used in the **AgentChatSDK** arch
 
 | Library | SDK Module | Purpose | Runtime/Test | Optional | Notes |
 |---|---|---|---|---|---|
-| **swift-markdown** | `AgentChatRendering` | Markdown AST parsing and block decomposition | Runtime | No | Official Swift AST parser used inside `AgentMarkdownParser` without exposing types to host apps. |
+| **AgentMarkdownParser / Foundation Markdown** | `AgentChatRendering` | Markdown AST parsing and block decomposition | Runtime | No | Implements `AgentMarkdownParsing` / `SwiftMarkdownParser`. Uses Foundation / AttributedString rendering without linking external `swift-cmark`, preventing SPM target duplicate collisions with `StreamChatAI`'s `cmark-gfm`. |
 | **Highlightr** | `AgentChatRendering` | Native syntax highlighting for fenced code blocks | Runtime | Yes (graceful fallback) | Wrapped in `AgentCodeBlockView`. Provides syntax themes (Atom One Dark, GitHub, etc.). |
 | **iosMath** | `AgentChatRendering` | Native LaTeX mathematical formula rendering | Runtime | Yes (graceful fallback) | Wraps `MTMathUILabel` in `AgentMathView`. No WebView or JS overhead. |
 | **Kingfisher** | `AgentChatMedia` | Remote image downloading, disk/memory caching, and placeholders | Runtime | Yes (graceful fallback) | Wrapped in `AgentRemoteImageView`. `KFImage` is never exposed in public API. |

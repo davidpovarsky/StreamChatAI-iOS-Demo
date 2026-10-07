@@ -8,6 +8,11 @@ import Markdown
 
 public struct AgentMarkdownParser: AgentMarkdownParsing, Sendable {
     public init() {}
+}
+
+public typealias SwiftMarkdownParser = AgentMarkdownParser
+
+extension AgentMarkdownParser {
 
     public func parse(markdown: String) -> [AgentMessageBlock] {
         let trimmed = markdown.trimmingCharacters(in: .whitespacesAndNewlines)

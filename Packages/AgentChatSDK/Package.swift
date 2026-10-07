@@ -36,7 +36,6 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.0"),
-        .package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.4.0"),
         .package(url: "https://github.com/raspu/Highlightr.git", from: "2.1.2"),
         .package(url: "https://github.com/kostub/iosMath.git", from: "2.3.0"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.10.0"),
@@ -82,7 +81,6 @@ let package = Package(
             name: "AgentChatRendering",
             dependencies: [
                 "AgentChatCore",
-                .product(name: "Markdown", package: "swift-markdown"),
                 .product(name: "Highlightr", package: "Highlightr"),
                 .product(name: "iosMath", package: "iosMath"),
                 .product(name: "SVGView", package: "SVGView"),

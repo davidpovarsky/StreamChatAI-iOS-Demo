@@ -1,110 +1,162 @@
-import SwiftUI
+import AgentChatSDK
 import StreamChatAI
-
-struct DemoMessage: Identifiable, Equatable {
-    enum Role { case user, assistant }
-    let id = UUID()
-    let role: Role
-    var text: String
-    var isGenerating = false
-}
+import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var composer = ComposerViewModel()
-    @State private var messages: [DemoMessage] = [
-        DemoMessage(role: .assistant, text: "# StreamChatAI 👋\n\nThis is the **real GetStream AI UI package** running natively on iOS.\n\nSend a message below to see streamed Markdown, code highlighting, the AI typing indicator, and the built-in composer.")
-    ]
-    @State private var isGenerating = false
-    @State private var generationTask: Task<Void, Never>?
+    @StateObject private var session: AgentChatSession
+    @StateObject private var demoDriver: DeterministicDemoDriver
+    @State private var showingSettings = false
+    @State private var showingScenarios = false
+
+    init() {
+        let newSession = AgentChatSession(
+            initialMessages: [
+                AgentMessage(
+                    role: .assistant,
+                    blocks: [
+                        .markdown(
+                            id: UUID().uuidString,
+                            text: """
+                            # StreamChatAI Agent Chat SDK 👋
+
+                            Welcome to the **AgentChatSDK** ChatGPT-style UI demo.
+
+                            The SDK provides a complete multimodal agent stack:
+                            - 🧠 **Agent Activity Timeline**: thinking, web search, URL fetching
+                            - 🛠️ **Tool Execution Disclosures**: Liquid Glass expandable cards
+                            - 💻 **Syntax Highlighting**: Highlightr code blocks with copy
+                            - 📐 **LaTeX Mathematics**: Native iosMath formulas
+                            - 🌐 **Rich Citations & Sources**: Interactive chips and sheets
+                            - 🖼️ **Cached Remote Media & SVG**: Kingfisher & SVGView
+                            - 🎙️ **Realtime Voice Interface**: Glowing animated orb
+                            """
+                        )
+                    ],
+                    rawText: "Welcome to AgentChatSDK!",
+                    generationState: .completed
+                )
+            ]
+        )
+        _session = StateObject(wrappedValue: newSession)
+        _demoDriver = StateObject(wrappedValue: DeterministicDemoDriver(session: newSession))
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 18) {
-                            ForEach(messages) { message in
-                                messageRow(message).id(message.id)
-                            }
-                            if isGenerating && messages.last?.role == .user {
-                                HStack {
-                                    AITypingIndicatorView(text: "Thinking")
-                                    Spacer()
-                                }.padding(.horizontal)
-                            }
-                        }.padding(.vertical)
-                    }
-                    .onChange(of: messages) { _ in
-                        if let id = messages.last?.id {
-                            withAnimation { proxy.scrollTo(id, anchor: .bottom) }
+            AgentChatView(
+                session: session,
+                configuration: session.configuration
+            )
+            .navigationTitle("AgentChat SDK")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button {
+                            demoDriver.startWebResearchScenario()
+                        } label: {
+                            Label("Scenario A: Web Research", systemImage: "magnifyingglass")
+                        }
+
+                        Button {
+                            demoDriver.startToolExecutionScenario()
+                        } label: {
+                            Label("Scenario B: Tool Execution", systemImage: "wrench.and.screwdriver")
+                        }
+
+                        Button {
+                            demoDriver.startRichContentScenario()
+                        } label: {
+                            Label("Scenario C: Multimodal Rich Content", systemImage: "sparkles.rectangle.stack")
+                        }
+
+                        Button {
+                            demoDriver.startVoiceScenario()
+                        } label: {
+                            Label("Scenario D: Realtime Voice", systemImage: "waveform")
+                        }
+
+                        Button {
+                            demoDriver.startFailureRetryScenario()
+                        } label: {
+                            Label("Scenario E: Failure & Retry", systemImage: "arrow.clockwise")
+                        }
+
+                        Divider()
+
+                        Button(role: .destructive) {
+                            session.clearMessages()
+                        } label: {
+                            Label("Clear Chat", systemImage: "trash")
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.circle.fill")
+                            Text("Scenarios")
+                                .font(.system(size: 14, weight: .medium))
                         }
                     }
                 }
-                Divider()
-                ComposerView(
-                    viewModel: composer,
-                    isGenerating: isGenerating,
-                    onMessageSend: { message in send(message.text) },
-                    onStopGenerating: { stopGenerating() }
-                )
-            }
-            .navigationTitle("StreamChatAI")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
 
-    @ViewBuilder
-    private func messageRow(_ message: DemoMessage) -> some View {
-        if message.role == .user {
-            HStack {
-                Spacer(minLength: 48)
-                Text(message.text)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(.secondary.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
-            }.padding(.horizontal)
-        } else {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "sparkles").font(.title3).frame(width: 28, height: 28)
-                StreamingMessageView(content: message.text, isGenerating: message.isGenerating)
-                Spacer(minLength: 8)
-            }.padding(.horizontal)
-        }
-    }
-
-    private func stopGenerating() {
-        generationTask?.cancel()
-        generationTask = nil
-        isGenerating = false
-        if let index = messages.indices.last, messages[index].role == .assistant {
-            messages[index].isGenerating = false
-        }
-    }
-
-    private func send(_ rawText: String) {
-        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isGenerating else { return }
-        messages.append(DemoMessage(role: .user, text: text))
-        isGenerating = true
-        generationTask?.cancel()
-        generationTask = Task {
-            try? await Task.sleep(nanoseconds: 850_000_000)
-            guard !Task.isCancelled else { return }
-            await MainActor.run { messages.append(DemoMessage(role: .assistant, text: "", isGenerating: true)) }
-            let reply = "## Streaming reply\n\nYou wrote:\n\n> \(text)\n\nThis response is being fed into GetStream's **StreamingMessageView** a little at a time.\n\n```swift\nStreamingMessageView(\n    content: text,\n    isGenerating: true\n)\n```\n\nThe composer below is also GetStream's real **ComposerView**. No AI API is being called in this demo; the reply is generated locally so you can test the UI safely."
-            for character in reply {
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    guard let index = messages.indices.last else { return }
-                    messages[index].text.append(character)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .accessibilityLabel("SDK Settings")
                 }
-                try? await Task.sleep(nanoseconds: 12_000_000)
             }
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                if let index = messages.indices.last { messages[index].isGenerating = false }
-                isGenerating = false
-                generationTask = nil
+            .sheet(isPresented: $showingSettings) {
+                SDKConfigurationSheet(configuration: $session.configuration)
+            }
+        }
+    }
+}
+
+struct SDKConfigurationSheet: View {
+    @Binding var configuration: AgentChatConfiguration
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("SDK Capabilities") {
+                    Toggle("Markdown Rendering", isOn: $configuration.capabilities.supportsMarkdown)
+                    Toggle("Syntax Highlighting", isOn: $configuration.capabilities.supportsCodeHighlighting)
+                    Toggle("LaTeX Math (iosMath)", isOn: $configuration.capabilities.supportsLaTeXMath)
+                    Toggle("Remote Images (Kingfisher)", isOn: $configuration.capabilities.supportsRemoteImages)
+                    Toggle("Vector SVG (SVGView)", isOn: $configuration.capabilities.supportsSVG)
+                    Toggle("Source Citations", isOn: $configuration.capabilities.supportsCitations)
+                    Toggle("Tool Disclosures", isOn: $configuration.capabilities.supportsToolExecution)
+                    Toggle("Voice Mode", isOn: $configuration.capabilities.supportsVoice)
+                    Toggle("Emoji Picker (EmojiKit)", isOn: $configuration.capabilities.supportsEmoji)
+                    Toggle("Attachments", isOn: $configuration.capabilities.supportsAttachments)
+                }
+
+                Section("Appearance & Layout") {
+                    LabeledContent("Adaptive Max Width", value: "\(Int(configuration.appearance.adaptiveMaxWidth)) pt")
+                    LabeledContent("User Bubble Radius", value: "\(Int(configuration.appearance.userBubbleCornerRadius)) pt")
+                    Toggle("Show Bottom Divider", isOn: $configuration.appearance.showDividers)
+                }
+
+                Section("Rendering Options") {
+                    Toggle("Code Line Wrapping", isOn: $configuration.rendering.codeLineWrapping)
+                    Toggle("Enable Animations", isOn: $configuration.rendering.enableAnimations)
+                    Toggle("Respect Reduce Motion", isOn: $configuration.rendering.respectReduceMotion)
+                }
+
+                Section("About AgentChatSDK") {
+                    LabeledContent("Version", value: AgentChatSDKInfo.version)
+                    LabeledContent("Package", value: AgentChatSDKInfo.identifier)
+                }
+            }
+            .navigationTitle("SDK Capabilities")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
             }
         }
     }

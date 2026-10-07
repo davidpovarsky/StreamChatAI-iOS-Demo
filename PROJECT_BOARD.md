@@ -10,38 +10,39 @@ Quick captures that still need classification.
 
 ## Ideas & Opportunities
 
-Potential improvements, features, optimizations, or architectural ideas.
+- Pluggable WebRTC/LiveKit voice transport adapter (`AgentChatVoiceLiveKit`) for zero-latency bidirectional voice duplex.
+- Multi-column canvas / artifact inspector for iPad Stage Manager.
+- Streaming math token parser that incrementally closes LaTeX math blocks (`$$...$$`) during active generation.
 
 ## Discoveries & Tips
 
-Useful technical discoveries, undocumented behavior, shortcuts, implementation tricks, platform behavior, or reusable knowledge discovered while working.
+- `swift-markdown` and `iosMath` require careful encapsulation to avoid forcing transitive framework imports on host applications.
+- Wrapping `MTMathUILabel` in a `UIViewRepresentable` provides smooth LaTeX rendering without needing WebViews or JavaScript engines.
+- Using `#if canImport(SwiftUI)` and `#if canImport(UIKit)` across SDK targets allows pure Swift domain models and parsers to type-check and run cross-platform while compiling full UI surfaces on iOS/macOS.
+- Liquid Glass effects (`.glassEffect(.regular)`) on iOS 26+ gracefully degrade to `.ultraThinMaterial` and borders on iOS 16-18.
 
 ## Experiments / Investigations
 
-Things worth testing or researching before deciding whether to implement them.
+- Compare `Highlightr` vs. custom regex syntax parser for memory efficiency on high-frequency streaming token updates.
+- Test `Pow` physics transitions for live tool execution state changes.
 
 ## Open Questions
 
-Important unresolved questions or uncertainties.
+- What is the optimal debounce interval for incoming stream chunks when rendering dynamic Markdown ASTs?
 
 ## Planned / Todo
 
-Concrete work that is worth doing but is not part of the current task.
-
-Use Markdown checkboxes where useful:
-
-- [ ] Example item
+- [ ] Add interactive charts/graph block renderer to `AgentChatRendering`.
+- [ ] Add vision/camera live stream analyzer block to `AgentChatMedia`.
 
 ## Done
 
-Completed items that are still useful to retain because they document an important decision, discovery, or implementation.
+- [x] Extraction and implementation of modular `AgentChatSDK` (`Packages/AgentChatSDK`)
+  - Implemented: 2026-10-07
+  - Modules: `AgentChatCore`, `AgentChatActivity`, `AgentChatRichResults`, `AgentChatRendering`, `AgentChatMedia`, `AgentChatVoice`, `AgentChatVoiceLiveKit`, `AgentChatUI`, `AgentChatIntegrations`, `AgentChatSDK`
+  - Integration: `StreamChatAIDemo` consumes `AgentChatSDK` as a Swift Package with 5 deterministic scenarios.
+  - Docs: `docs/SDK_DEPENDENCIES.md`, `docs/AGENT_CHAT_SDK_ARCHITECTURE.md`, `docs/OVERLAY_TO_SDK_MIGRATION.md`
 
-Example:
-
-- [x] Example improvement
-  - Implemented: YYYY-MM-DD
-  - Commit/PR: ...
-  - Notes: ...
 
 ## Archive
 

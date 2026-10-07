@@ -7,6 +7,8 @@ packages:
   StreamChatAI:
     url: https://github.com/GetStream/stream-chat-swift-ai.git
     from: 0.10.0
+  AgentChatSDK:
+    path: Packages/AgentChatSDK
 targets:
   StreamChatAIDemo:
     type: application
@@ -16,6 +18,8 @@ targets:
     dependencies:
       - package: StreamChatAI
         product: StreamChatAI
+      - package: AgentChatSDK
+        product: AgentChatSDK
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.davidpovarsky.StreamChatAIDemo

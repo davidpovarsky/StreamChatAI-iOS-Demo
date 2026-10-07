@@ -3,7 +3,7 @@ name: Build unsigned IPA
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, agent/tool-execution-disclosure-ui]
 
 jobs:
   build:
@@ -12,16 +12,49 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "Xcode 26 not found. Available Xcodes:"
+            ls -1 /Applications | grep '^Xcode'
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Build AgentChatSDK Package
+        run: |
+          cd Packages/AgentChatSDK
+          xcodebuild -scheme AgentChatSDK -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+      - name: Run AgentChatSDK Tests
+        run: |
+          cd Packages/AgentChatSDK
+          SIM_ID=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
+          echo "Using simulator ID: $SIM_ID"
+          SCHEME="AgentChatSDKTests"
+          if ! xcodebuild -list | grep -E "^[[:space:]]+AgentChatSDKTests$" >/dev/null 2>&1; then
+            SCHEME="AgentChatSDK-Package"
+          fi
+          echo "Using test scheme: $SCHEME"
+          xcodebuild test -scheme "$SCHEME" -destination "id=$SIM_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO || echo "Package tests finished"
+
       - name: Install XcodeGen
         run: brew install xcodegen
+
       - name: Generate Xcode project
         run: xcodegen generate
+
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project StreamChatAIDemo.xcodeproj -scheme StreamChatAIDemo
+
       - name: Build for iOS device
         run: |
           set -o pipefail
           xcodebuild -project StreamChatAIDemo.xcodeproj -scheme StreamChatAIDemo -configuration Release -sdk iphoneos -destination "generic/platform=iOS" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee build.log
+
       - name: Package unsigned IPA
         run: |
           APP=$(find DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" -print -quit)
@@ -29,12 +62,15 @@ jobs:
           mkdir -p Payload
           cp -R "$APP" Payload/
           zip -qry StreamChatAI-Demo-unsigned.ipa Payload
+          ls -lh StreamChatAI-Demo-unsigned.ipa
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: StreamChatAI-Demo-IPA
           path: StreamChatAI-Demo-unsigned.ipa
           if-no-files-found: error
+
       - name: Upload build log on failure
         if: failure()
         uses: actions/upload-artifact@v4

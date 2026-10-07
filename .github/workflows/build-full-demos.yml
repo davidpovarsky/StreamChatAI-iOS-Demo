@@ -7,7 +7,7 @@ on:
 
 jobs:
   swiftchat:
-    name: SwiftChat Full Demo
+    name: SwiftChat Full Demo & AgentChatSDK Verification
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -23,6 +23,12 @@ jobs:
           fi
           echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Build AgentChatSDK Package
+        run: |
+          cd Packages/AgentChatSDK
+          xcodebuild -scheme AgentChatSDK -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
       - name: Clone SwiftChat
         run: |
           mkdir -p upstream
@@ -62,4 +68,3 @@ jobs:
         with:
           name: SwiftChat-Full-Demo-IPA
           path: SwiftChat-Full-Demo-unsigned.ipa
-

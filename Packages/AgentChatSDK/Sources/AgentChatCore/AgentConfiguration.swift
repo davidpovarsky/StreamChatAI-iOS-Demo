@@ -1,164 +1,73 @@
 import Foundation
 
-public struct AgentChatAppearance: Sendable, Equatable {
+public struct AgentChatAppearanceConfiguration: Sendable, Equatable {
+    public var assistantName: String
     public var assistantAvatarSystemName: String
-    public var userBubbleCornerRadius: Double
-    public var cardCornerRadius: Double
+    public var userAvatarSystemName: String
     public var adaptiveMaxWidth: Double
-    public var showDividers: Bool
+    public var showModelSelector: Bool
+    public var showAddPopover: Bool
 
     public init(
-        assistantAvatarSystemName: String = "sparkles",
-        userBubbleCornerRadius: Double = 18.0,
-        cardCornerRadius: Double = 14.0,
-        adaptiveMaxWidth: Double = 768.0,
-        showDividers: Bool = true
+        assistantName: String = "Assistant",
+        assistantAvatarSystemName: String = "sparkle",
+        userAvatarSystemName: String = "person.fill",
+        adaptiveMaxWidth: Double = 760.0,
+        showModelSelector: Bool = true,
+        showAddPopover: Bool = true
     ) {
+        self.assistantName = assistantName
         self.assistantAvatarSystemName = assistantAvatarSystemName
-        self.userBubbleCornerRadius = userBubbleCornerRadius
-        self.cardCornerRadius = cardCornerRadius
+        self.userAvatarSystemName = userAvatarSystemName
         self.adaptiveMaxWidth = adaptiveMaxWidth
-        self.showDividers = showDividers
+        self.showModelSelector = showModelSelector
+        self.showAddPopover = showAddPopover
     }
 }
 
-public struct AgentChatCapabilities: Sendable, Equatable {
-    public var supportsMarkdown: Bool
-    public var supportsCodeHighlighting: Bool
-    public var supportsLaTeXMath: Bool
-    public var supportsRemoteImages: Bool
-    public var supportsSVG: Bool
-    public var supportsCitations: Bool
-    public var supportsToolExecution: Bool
-    public var supportsRichResults: Bool
-    public var supportsVoice: Bool
-    public var supportsAttachments: Bool
-    public var supportsEmoji: Bool
+public struct AgentChatFeaturesConfiguration: Sendable, Equatable {
+    public var enableWebSearch: Bool
+    public var enableVoiceMode: Bool
+    public var enableEmojiPicker: Bool
+    public var enableToolExecutionDisclosure: Bool
+    public var enableActivityTimeline: Bool
+    public var enableInlineSources: Bool
+    public var enableRichMedia: Bool
 
     public init(
-        supportsMarkdown: Bool = true,
-        supportsCodeHighlighting: Bool = true,
-        supportsLaTeXMath: Bool = true,
-        supportsRemoteImages: Bool = true,
-        supportsSVG: Bool = true,
-        supportsCitations: Bool = true,
-        supportsToolExecution: Bool = true,
-        supportsRichResults: Bool = true,
-        supportsVoice: Bool = true,
-        supportsAttachments: Bool = true,
-        supportsEmoji: Bool = true
+        enableWebSearch: Bool = true,
+        enableVoiceMode: Bool = true,
+        enableEmojiPicker: Bool = true,
+        enableToolExecutionDisclosure: Bool = true,
+        enableActivityTimeline: Bool = true,
+        enableInlineSources: Bool = true,
+        enableRichMedia: Bool = true
     ) {
-        self.supportsMarkdown = supportsMarkdown
-        self.supportsCodeHighlighting = supportsCodeHighlighting
-        self.supportsLaTeXMath = supportsLaTeXMath
-        self.supportsRemoteImages = supportsRemoteImages
-        self.supportsSVG = supportsSVG
-        self.supportsCitations = supportsCitations
-        self.supportsToolExecution = supportsToolExecution
-        self.supportsRichResults = supportsRichResults
-        self.supportsVoice = supportsVoice
-        self.supportsAttachments = supportsAttachments
-        self.supportsEmoji = supportsEmoji
-    }
-}
-
-public struct AgentModelItem: Identifiable, Sendable, Equatable, Hashable {
-    public let id: String
-    public var displayName: String
-    public var description: String?
-
-    public init(id: String, displayName: String, description: String? = nil) {
-        self.id = id
-        self.displayName = displayName
-        self.description = description
-    }
-}
-
-public struct AgentComposerConfiguration: Sendable, Equatable {
-    public var placeholder: String
-    public var maxLines: Int
-    public var allowAttachments: Bool
-    public var allowVoiceInput: Bool
-    public var allowEmojiPicker: Bool
-    public var availableModels: [AgentModelItem]
-    public var selectedModel: AgentModelItem?
-
-    public init(
-        placeholder: String = "Ask anything or type a prompt...",
-        maxLines: Int = 6,
-        allowAttachments: Bool = true,
-        allowVoiceInput: Bool = true,
-        allowEmojiPicker: Bool = true,
-        availableModels: [AgentModelItem] = [
-            AgentModelItem(id: "gpt-4o", displayName: "GPT-4o"),
-            AgentModelItem(id: "claude-3-7-sonnet", displayName: "Claude 3.7 Sonnet"),
-            AgentModelItem(id: "gemini-2-5-pro", displayName: "Gemini 2.5 Pro")
-        ],
-        selectedModel: AgentModelItem? = nil
-    ) {
-        self.placeholder = placeholder
-        self.maxLines = maxLines
-        self.allowAttachments = allowAttachments
-        self.allowVoiceInput = allowVoiceInput
-        self.allowEmojiPicker = allowEmojiPicker
-        self.availableModels = availableModels
-        self.selectedModel = selectedModel ?? availableModels.first
-    }
-}
-
-public struct AgentRenderingConfiguration: Sendable, Equatable {
-    public var syntaxTheme: String
-    public var codeLineWrapping: Bool
-    public var enableAnimations: Bool
-    public var respectReduceMotion: Bool
-
-    public init(
-        syntaxTheme: String = "atom-one-dark",
-        codeLineWrapping: Bool = false,
-        enableAnimations: Bool = true,
-        respectReduceMotion: Bool = true
-    ) {
-        self.syntaxTheme = syntaxTheme
-        self.codeLineWrapping = codeLineWrapping
-        self.enableAnimations = enableAnimations
-        self.respectReduceMotion = respectReduceMotion
-    }
-}
-
-public struct AgentVoiceConfiguration: Sendable, Equatable {
-    public var autoStartListening: Bool
-    public var silenceDetectionDuration: TimeInterval
-    public var speechThreshold: Float
-
-    public init(
-        autoStartListening: Bool = false,
-        silenceDetectionDuration: TimeInterval = 1.5,
-        speechThreshold: Float = 0.5
-    ) {
-        self.autoStartListening = autoStartListening
-        self.silenceDetectionDuration = silenceDetectionDuration
-        self.speechThreshold = speechThreshold
+        self.enableWebSearch = enableWebSearch
+        self.enableVoiceMode = enableVoiceMode
+        self.enableEmojiPicker = enableEmojiPicker
+        self.enableToolExecutionDisclosure = enableToolExecutionDisclosure
+        self.enableActivityTimeline = enableActivityTimeline
+        self.enableInlineSources = enableInlineSources
+        self.enableRichMedia = enableRichMedia
     }
 }
 
 public struct AgentChatConfiguration: Sendable, Equatable {
-    public var appearance: AgentChatAppearance
-    public var capabilities: AgentChatCapabilities
-    public var composer: AgentComposerConfiguration
-    public var rendering: AgentRenderingConfiguration
-    public var voice: AgentVoiceConfiguration
+    public var appearance: AgentChatAppearanceConfiguration
+    public var features: AgentChatFeaturesConfiguration
+    public var availableModels: [ModelType]
+    public var defaultModel: ModelType
 
     public init(
-        appearance: AgentChatAppearance = AgentChatAppearance(),
-        capabilities: AgentChatCapabilities = AgentChatCapabilities(),
-        composer: AgentComposerConfiguration = AgentComposerConfiguration(),
-        rendering: AgentRenderingConfiguration = AgentRenderingConfiguration(),
-        voice: AgentVoiceConfiguration = AgentVoiceConfiguration()
+        appearance: AgentChatAppearanceConfiguration = AgentChatAppearanceConfiguration(),
+        features: AgentChatFeaturesConfiguration = AgentChatFeaturesConfiguration(),
+        availableModels: [ModelType] = [.gpt4o, .gpt4oMini, .o1, .o3Mini],
+        defaultModel: ModelType = .gpt4o
     ) {
         self.appearance = appearance
-        self.capabilities = capabilities
-        self.composer = composer
-        self.rendering = rendering
-        self.voice = voice
+        self.features = features
+        self.availableModels = availableModels
+        self.defaultModel = defaultModel
     }
 }

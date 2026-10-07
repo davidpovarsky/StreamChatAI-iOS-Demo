@@ -1,211 +1,87 @@
 #if canImport(SwiftUI)
-import AgentChatCore
-import Combine
 import SwiftUI
+import AgentChatCore
 
 public struct AgentVoiceOrbView: View {
     public let state: AgentVoiceSessionState
     public let audioLevel: Float
+    public let size: CGFloat
 
-    @State private var pulseScale: CGFloat = 1.0
+    @State private var phase: Double = 0.0
 
-    public init(state: AgentVoiceSessionState, audioLevel: Float = 0.0) {
+    public init(
+        state: AgentVoiceSessionState,
+        audioLevel: Float = 0.0,
+        size: CGFloat = 160
+    ) {
         self.state = state
         self.audioLevel = audioLevel
+        self.size = size
     }
 
     public var body: some View {
         ZStack {
-            // Outer glow
+            // Background glow
             Circle()
-                .fill(orbColor.opacity(0.2))
-                .frame(width: 140, height: 140)
-                .scaleEffect(1.0 + CGFloat(audioLevel) * 0.4)
-                .blur(radius: 12)
-
-            // Mid circle
-            Circle()
-                .fill(orbColor.opacity(0.5))
-                .frame(width: 100, height: 100)
-                .scaleEffect(1.0 + CGFloat(audioLevel) * 0.25)
-
-            // Core circle
-            Circle()
-                .fill(orbColor)
-                .frame(width: 76, height: 76)
-                .overlay(
-                    Image(systemName: iconName)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
+                .fill(
+                    RadialGradient(
+                        colors: [glowColor.opacity(0.4), Color.clear],
+                        center: .center,
+                        startRadius: size * 0.2,
+                        endRadius: size * 0.65
+                    )
                 )
-                .shadow(color: orbColor.opacity(0.6), radius: 10)
+                .scaleEffect(1.0 + CGFloat(audioLevel) * 0.25)
+                .animation(.easeInOut(duration: 0.15), value: audioLevel)
+
+            // Inner core orb
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: coreColors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size * 0.7, height: size * 0.7)
+                .scaleEffect(coreScale)
+                .shadow(color: glowColor.opacity(0.5), radius: 20, x: 0, y: 0)
+                .animation(.spring(response: 0.35, dampingFraction: 0.6), value: audioLevel)
         }
-        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: audioLevel)
+        .frame(width: size, height: size)
     }
 
-    private var orbColor: Color {
+    private var glowColor: Color {
         switch state {
-        case .idle:
-            return .gray
-        case .listening:
-            return .blue
-        case .speechDetected:
-            return .teal
-        case .processing:
-            return .purple
-        case .speaking:
-            return .cyan
-        case .failed:
-            return .red
+        case .disconnected: return .gray
+        case .connecting: return .orange
+        case .connected, .listening: return .blue
+        case .thinking: return .purple
+        case .speaking: return .cyan
+        case .error: return .red
         }
     }
 
-    private var iconName: String {
+    private var coreColors: [Color] {
         switch state {
-        case .idle:
-            return "mic"
-        case .listening, .speechDetected:
-            return "waveform"
-        case .processing:
-            return "sparkles"
-        case .speaking:
-            return "speaker.wave.2.fill"
-        case .failed:
-            return "exclamationmark.triangle"
-        }
-    }
-}
-
-public struct AgentVoiceOverlayView: View {
-    @ObservedObject private var viewModel: VoiceOverlayViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    public init(provider: AgentVoiceSessionProvider) {
-        self.viewModel = VoiceOverlayViewModel(provider: provider)
-    }
-
-    public var body: some View {
-        ZStack {
-            Color.black.opacity(0.92)
-                .ignoresSafeArea()
-
-            VStack(spacing: 36) {
-                HStack {
-                    Spacer()
-                    Button {
-                        Task {
-                            await viewModel.stop()
-                            dismiss()
-                        }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                    .buttonStyle(.plain)
-                    .padding()
-                }
-
-                Spacer()
-
-                AgentVoiceOrbView(state: viewModel.state, audioLevel: viewModel.audioLevel)
-
-                VStack(spacing: 8) {
-                    Text(statusTitle)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(.white)
-
-                    Text(statusSubtitle)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.white.opacity(0.6))
-                }
-
-                Spacer()
-
-                HStack(spacing: 32) {
-                    Button {
-                        Task {
-                            if viewModel.state == .idle {
-                                try? await viewModel.start()
-                            } else {
-                                await viewModel.stop()
-                            }
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.15))
-                                .frame(width: 64, height: 64)
-                            Image(systemName: viewModel.state == .idle ? "play.fill" : "stop.fill")
-                                .font(.system(size: 24))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.bottom, 48)
-            }
-        }
-        .task {
-            try? await viewModel.start()
+        case .disconnected: return [.gray, .secondary]
+        case .connecting: return [.orange, .yellow]
+        case .connected, .listening: return [.blue, .indigo]
+        case .thinking: return [.purple, .pink]
+        case .speaking: return [.cyan, .blue]
+        case .error: return [.red, .orange]
         }
     }
 
-    private var statusTitle: String {
-        switch viewModel.state {
-        case .idle: return "Ready"
-        case .listening: return "Listening..."
-        case .speechDetected: return "Hearing you..."
-        case .processing: return "Thinking..."
-        case .speaking: return "Speaking..."
-        case .failed(let msg): return "Error: \(msg)"
+    private var coreScale: CGFloat {
+        switch state {
+        case .thinking:
+            return 0.95
+        case .speaking, .listening:
+            return 1.0 + CGFloat(audioLevel) * 0.3
+        default:
+            return 1.0
         }
-    }
-
-    private var statusSubtitle: String {
-        switch viewModel.state {
-        case .idle: return "Tap play to start speaking"
-        case .listening, .speechDetected: return "Speak naturally to the assistant"
-        case .processing: return "Synthesizing answer"
-        case .speaking: return "Tap orb or stop to interrupt"
-        case .failed: return "Please retry"
-        }
-    }
-}
-
-@MainActor
-private final class VoiceOverlayViewModel: ObservableObject {
-    @Published var state: AgentVoiceSessionState = .idle
-    @Published var audioLevel: Float = 0.0
-
-    private let provider: AgentVoiceSessionProvider
-    private var cancellables = Set<AnyCancellable>()
-
-    init(provider: AgentVoiceSessionProvider) {
-        self.provider = provider
-        self.state = provider.currentState
-
-        provider.statePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] newState in
-                self?.state = newState
-            }
-            .store(in: &cancellables)
-
-        provider.audioLevelPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] level in
-                self?.audioLevel = level
-            }
-            .store(in: &cancellables)
-    }
-
-    func start() async throws {
-        try await provider.startSession()
-    }
-
-    func stop() async {
-        await provider.stopSession()
     }
 }
 #endif

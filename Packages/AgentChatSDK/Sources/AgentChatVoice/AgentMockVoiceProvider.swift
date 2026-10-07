@@ -1,115 +1,93 @@
-#if canImport(AgentChatCore)
-import AgentChatCore
-#endif
-#if canImport(Combine)
-import Combine
-#endif
 import Foundation
+import AgentChatCore
 
 public final class AgentMockVoiceProvider: AgentVoiceSessionProvider, @unchecked Sendable {
-    #if canImport(Combine)
-    private let stateSubject = CurrentValueSubject<AgentVoiceSessionState, Never>(.idle)
-    private let audioLevelSubject = PassthroughSubject<Float, Never>()
-    #endif
+    private let lock = NSLock()
+    private var _state: AgentVoiceSessionState = .disconnected
+    private var _audioLevel: Float = 0.0
     private var simulationTask: Task<Void, Never>?
-    private var stateValue: AgentVoiceSessionState = .idle
+    private var continuation: AsyncStream<AgentVoiceSessionState>.Continuation?
 
-    #if canImport(Combine)
-    public var statePublisher: AnyPublisher<AgentVoiceSessionState, Never> {
-        stateSubject.eraseToAnyPublisher()
+    public var state: AgentVoiceSessionState {
+        lock.lock()
+        defer { lock.unlock() }
+        return _state
     }
 
-    public var audioLevelPublisher: AnyPublisher<Float, Never> {
-        audioLevelSubject.eraseToAnyPublisher()
+    public var audioLevel: Float {
+        lock.lock()
+        defer { lock.unlock() }
+        return _audioLevel
     }
-    #endif
 
-    public var currentState: AgentVoiceSessionState {
-        #if canImport(Combine)
-        return stateSubject.value
-        #else
-        return stateValue
-        #endif
-    }
+    public lazy var statePublisher: AsyncStream<AgentVoiceSessionState> = {
+        AsyncStream { [weak self] cont in
+            self?.lock.lock()
+            self?.continuation = cont
+            cont.yield(self?._state ?? .disconnected)
+            self?.lock.unlock()
+        }
+    }()
 
     public init() {}
 
     public func startSession() async throws {
         simulationTask?.cancel()
-        sendState(.listening)
+        updateState(.connecting)
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        updateState(.listening)
 
         simulationTask = Task { [weak self] in
             guard let self = self else { return }
 
-            // Phase 1: Listening
-            for _ in 0..<8 {
-                guard !Task.isCancelled else { return }
-                self.sendAudioLevel(Float.random(in: 0.1...0.3))
-                try? await Task.sleep(nanoseconds: 100_000_000)
-            }
+            while !Task.isCancelled {
+                // Listening with mild ambient level
+                for _ in 0..<15 {
+                    guard !Task.isCancelled else { return }
+                    self.setLevel(Float.random(in: 0.05...0.25))
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
 
-            // Phase 2: Speech detected
-            guard !Task.isCancelled else { return }
-            self.sendState(.speechDetected)
-            for _ in 0..<12 {
+                // Speaking detected
                 guard !Task.isCancelled else { return }
-                self.sendAudioLevel(Float.random(in: 0.4...0.9))
-                try? await Task.sleep(nanoseconds: 100_000_000)
-            }
+                self.updateState(.thinking)
+                self.setLevel(0.0)
+                try? await Task.sleep(nanoseconds: 800_000_000)
 
-            // Phase 3: Processing
-            guard !Task.isCancelled else { return }
-            self.sendState(.processing)
-            for _ in 0..<8 {
+                // Assistant speaking
                 guard !Task.isCancelled else { return }
-                self.sendAudioLevel(0.15)
-                try? await Task.sleep(nanoseconds: 100_000_000)
-            }
+                self.updateState(.speaking)
+                for _ in 0..<25 {
+                    guard !Task.isCancelled else { return }
+                    self.setLevel(Float.random(in: 0.3...0.85))
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
 
-            // Phase 4: Speaking
-            guard !Task.isCancelled else { return }
-            self.sendState(.speaking)
-            for _ in 0..<20 {
+                // Return to listening
                 guard !Task.isCancelled else { return }
-                self.sendAudioLevel(Float.random(in: 0.3...0.85))
-                try? await Task.sleep(nanoseconds: 100_000_000)
+                self.updateState(.listening)
+                self.setLevel(0.0)
             }
-
-            // Phase 5: Back to idle
-            guard !Task.isCancelled else { return }
-            self.sendState(.idle)
         }
     }
 
-    public func stopSession() async {
+    public func endSession() async {
         simulationTask?.cancel()
         simulationTask = nil
-        sendState(.idle)
-        sendAudioLevel(0.0)
+        updateState(.disconnected)
+        setLevel(0.0)
     }
 
-    public func sendAudio(data: Data) async throws {
-        // mock accepts audio data
+    private func updateState(_ newState: AgentVoiceSessionState) {
+        lock.lock()
+        _state = newState
+        continuation?.yield(newState)
+        lock.unlock()
     }
 
-    private func sendState(_ state: AgentVoiceSessionState) {
-        stateValue = state
-        #if canImport(Combine)
-        stateSubject.send(state)
-        #endif
-    }
-
-    private func sendAudioLevel(_ level: Float) {
-        #if canImport(Combine)
-        audioLevelSubject.send(level)
-        #endif
-    }
-}
-
-public struct MockVoiceActivityDetector: AgentVoiceActivityDetecting, Sendable {
-    public init() {}
-
-    public func isSpeech(buffer: Data) -> Bool {
-        return buffer.count > 100
+    private func setLevel(_ level: Float) {
+        lock.lock()
+        _audioLevel = level
+        lock.unlock()
     }
 }

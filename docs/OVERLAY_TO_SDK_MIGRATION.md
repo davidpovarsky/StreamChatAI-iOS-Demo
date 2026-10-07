@@ -1,39 +1,54 @@
-# SwiftChat Overlay to AgentChatSDK Migration Map
+# SwiftChat Overlay to AgentChatSDK Migration Map (Realigned)
 
-This document records the migration of legacy `swiftchat-overlay` components into the reusable `AgentChatSDK` Swift Package structure.
-
-## 1. Component Mapping Table
-
-| Legacy Overlay File | Target SDK Module | New Component | Notes / Upgrades |
-|---|---|---|---|
-| `swiftchat-overlay/Features/AgentActivity/AgentActivityModels.swift` | `AgentChatCore` | `AgentActivityModels.swift`, `AgentActivityEvents.swift` | Upgraded into Sendable public structs (`AgentActivityItem`, `AgentActivitySession`, `AgentActivityEvent`). |
-| `swiftchat-overlay/Features/AgentActivity/AgentActivityStore.swift` | `AgentChatActivity` | `AgentActivityStore.swift` | Decoupled from SwiftChat view models; uses `AgentChatCore` domain types. |
-| `swiftchat-overlay/Features/AgentActivity/AgentActivityRowView.swift` | `AgentChatActivity` | `AgentActivityRowView.swift` | Uses public `AgentActivityItem` and dynamic type scaling. |
-| `swiftchat-overlay/Features/AgentActivity/AgentActivityTimelineView.swift` | `AgentChatActivity` | `AgentActivityTimelineView.swift` | Reusable SwiftUI view with expand/collapse and elapsed time chips. |
-| `swiftchat-overlay/Features/AgentActivity/AgentActivityDetailViews.swift` | `AgentChatActivity` | `AgentActivityDetailViews.swift` | Modal inspection sheets for step summaries, arguments, and sources. |
-| `swiftchat-overlay/Features/AgentActivity/AgentActivityDemoDriver.swift` | `AgentChatActivity` & `AgentChatIntegrations` | `AgentActivityDemoDriver.swift`, `DeterministicDemoDriver.swift` | Provides deterministic scenario runners for web research and tool execution. |
-| `swiftchat-overlay/Features/ToolPresentation/ToolExecutionDisclosure.swift` | `AgentChatRichResults` | `ToolExecutionDisclosure.swift` | Liquid Glass disclosure container with `#available(iOS 26.0, *)` and ultra-thin material fallback. |
-| `swiftchat-overlay/Features/ToolPresentation/ToolCallInspection.swift` | `AgentChatRichResults` | `ToolCallInspection.swift` | Decoupled from app-specific models into clean Sendable inspection payload. |
-| `swiftchat-overlay/Features/ToolPresentation/ToolCallInspectionView.swift` | `AgentChatRichResults` | `ToolCallInspectionView.swift` | Expandable arguments, duration, and output inspection with copy actions. |
-| `swiftchat-overlay/Features/ToolPresentation/ToolExecutionStatus.swift` | `AgentChatRichResults` | `ToolCallInspection.swift` (`ToolExecutionStatus`) | Standardized execution status enum (.running, .completed, .failed). |
-| `swiftchat-overlay/Features/SectionSources/SectionSourcesPresentation.swift` | `AgentChatRendering` | `SectionSourcesPresentation.swift` | Decomposes markdown text from trailing citation paragraphs. |
-| `swiftchat-overlay/Features/SectionSources/InlineSectionSourcesView.swift` | `AgentChatRendering` | `InlineSectionSourcesView.swift` | Reusable source chips with favicon badges and `SourcesSheetView`. |
-| `swiftchat-overlay/Features/RichMedia/InlineImageMediaView.swift` | `AgentChatMedia` | `AgentRemoteImageView.swift` | Powered by `Kingfisher` with placeholders, caching, and `AgentImagePreviewSheet`. |
-| `swiftchat-overlay/Features/RichMedia/InlineVideoMediaView.swift` | `AgentChatMedia` | `AgentVideoMediaView.swift` | Native video player thumbnail view with external open fallback. |
-| `swiftchat-overlay/Features/RichMedia/InlineYouTubeMediaView.swift` | `AgentChatMedia` | `AgentVideoMediaView.swift` (`AgentYouTubeMediaView`) | YouTube player card with red play badge and external deep link. |
-| `swiftchat-overlay/Features/RichMedia/RichMediaFallbackView.swift` | `AgentChatMedia` | `AgentMediaFallbackView.swift` | Graceful fallback card for missing or errored media. |
-| `swiftchat-overlay/Features/Composer/SelectedModelMenu.swift` | `AgentChatUI` | `AgentSelectedModelMenu.swift` | Reusable model selector capsule driven by `AgentComposerConfiguration`. |
+This document records the exact mechanical extraction and mapping of `swiftchat-overlay` components into the modular `AgentChatSDK` Swift Package targets.
 
 ---
 
-## 2. Legacy Patch Scripts Status
+## 1. Component Mapping Table
 
-The scripts in `scripts/`:
-- `scripts/apply_swiftchat_safe_overlay.py`
-- `scripts/verify_swiftchat_safe_overlay.py`
-- `scripts/patch_swiftchat_full_demo.py`
-- `scripts/upgrade_swiftchat_ui.py`
+| Legacy Overlay File in `swiftchat-overlay/` | Target SPM Module in `Packages/AgentChatSDK/` | New Realigned File & Type | Enhancements / Integration |
+|---|---|---|---|
+| `Features/AgentActivity/AgentActivityModels.swift` | `AgentChatActivity` | `AgentActivityModels.swift` (`AgentActivityItem`, `AgentActivitySession`, `AgentActivityStepKind`) | Sendable, Codable, decoupled from app-specific state. |
+| `Features/AgentActivity/AgentActivityStore.swift` | `AgentChatActivity` | `AgentActivityStore.swift` (`AgentActivityStore`) | ObservableObject store managing active sessions and step transitions. |
+| `Features/AgentActivity/AgentActivityRowView.swift` | `AgentChatActivity` | `AgentActivityRowView.swift` (`AgentActivityRowView`) | Dynamic Type accessible row view for timeline entries. |
+| `Features/AgentActivity/AgentActivityTimelineView.swift` | `AgentChatActivity` | `AgentActivityTimelineView.swift` (`AgentActivityTimelineView`, `AgentActivityTimelineBridge`) | Expandable reasoning disclosure with elapsed time chip. |
+| `Features/AgentActivity/AgentActivityDetailViews.swift` | `AgentChatActivity` | `AgentActivityDetailViews.swift` (`AgentActivityDetailSheet`, `FaviconView`) | Inspection sheets for activity steps and argument payloads. |
+| `Features/AgentActivity/AgentActivityDemoDriver.swift` | `AgentChatActivity` | `AgentActivityDemoDriver.swift` (`AgentActivityDemoDriver`) | Deterministic mock activity generator for previews and testing. |
+| `Features/ToolPresentation/ToolExecutionDisclosure.swift` | `AgentChatToolPresentation` | `ToolExecutionDisclosure.swift` (`ToolExecutionDisclosure`, `LiquidGlassStyle`) | Adaptive tool card with iOS 26 liquid glass / iOS 17 material fallback. |
+| `Features/ToolPresentation/ToolCallInspection.swift` | `AgentChatToolPresentation` | `ToolCallInspection.swift` (`ToolCallInspection`, `ToolExecutionStatus`) | Sendable inspection models with formatted payload representations. |
+| `Features/ToolPresentation/ToolCallInspectionView.swift` | `AgentChatToolPresentation` | `ToolCallInspectionView.swift` (`ToolCallInspectionView`) | Expandable arguments, duration, status, and payload clipboard copy. |
+| `Features/ToolPresentation/AgentToolRendererRegistry.swift` | `AgentChatToolPresentation` | `AgentToolRendererRegistry.swift` (`AgentToolRendererRegistry`) | Pluggable renderer registry for domain-specific tool cards. |
+| `Features/SectionSources/SectionSourcesPresentation.swift` | `AgentChatSources` | `SectionSourcesPresentation.swift` (`SectionSourcesPresentation`) | Citation extraction decomposing text body from trailing source clusters. |
+| `Features/SectionSources/InlineSectionSourcesView.swift` | `AgentChatSources` | `InlineSectionSourcesView.swift` (`InlineSectionSourcesView`, `SourcesSheetView`) | Citation pill clusters with favicon icons and modal source sheets. |
+| `Features/RichMedia/InlineImageMediaView.swift` | `AgentChatRichMedia` | `SafeInlineImageMediaView.swift` (`SafeInlineImageMediaView`) | Upgraded with Kingfisher image caching while retaining existing interface and graceful fallback. |
+| `Features/RichMedia/InlineVideoMediaView.swift` | `AgentChatRichMedia` | `SafeInlineVideoMediaView.swift` (`SafeInlineVideoMediaView`) | Video thumbnail preview card with native playback launch. |
+| `Features/RichMedia/InlineYouTubeMediaView.swift` | `AgentChatRichMedia` | `SafeInlineYouTubeMediaView.swift` (`SafeInlineYouTubeMediaView`) | YouTube thumbnail card with red play badge and external deep linking. |
+| `Features/RichMedia/RichMediaFallbackView.swift` | `AgentChatRichMedia` | `RichMediaFallbackView.swift` (`RichMediaFallbackView`) | Defensive fallback card for failed or missing multimedia items. |
+| `Features/Composer/SelectedModelMenu.swift` | `AgentChatComposerExtensions` | `SelectedModelMenu.swift` (`SelectedModelMenu`) | Reusable capsule model picker menu supporting dynamic models. |
 
-are preserved intact for backward compatibility with the existing SwiftChat showcase CI job.
+---
 
-**Standard consumers of `AgentChatSDK` do NOT require any patch scripts.** Another iOS app can import the package directly via Swift Package Manager and instantiate `AgentChatView(session: session)`.
+## 2. Additive Feature Enhancements (ChatGPT Stack)
+
+In addition to the direct mechanical extraction of overlay features, `AgentChatSDK` introduces safe additive modules:
+
+| New Component | Target Module | Backing Library | Description |
+|---|---|---|---|
+| `InlineSVGMediaView` | `AgentChatRichMedia` | `SVGView` | Renders vector graphics when a `MessageContentPart` contains SVG XML. |
+| `AgentLottieMediaView` | `AgentChatRichMedia` | `Lottie` + `Pow` | Optional vector micro-animations respecting Reduce Motion. |
+| `AgentEmojiPicker` | `AgentChatComposerExtensions` | `EmojiKit` | Additive emoji selection sheet accessed via composer '+' menu. |
+| `AgentVoiceOrbView` | `AgentChatVoice` | Native SwiftUI | Glowing reactive orb visualizer for voice interactions. |
+| `LiveKitVoiceSessionProvider` | `AgentChatVoiceLiveKit` | `client-sdk-swift` | WebRTC transport provider isolated in dedicated package target. |
+| `AsyncEventBuffer` | `AgentChatCore` | `swift-collections` & `swift-async-algorithms` | FIFO streaming buffer and async pipeline for timeline events. |
+
+---
+
+## 3. Preserved Upstream SwiftChat Components
+
+All core chat UI, layout, and rendering engines remain faithful to `sachaservan/SwiftChat`:
+- `ChatContainer`, `ChatView`, `ChatViewModel` -> `AgentChatSwiftChat`
+- `MessageView`, `MessageInputView`, `AttachmentPreviewBar` -> `AgentChatSwiftChat`
+- `LaTeXMarkdownView`, `WebSearchBox`, `URLFetchBox` -> `AgentChatSwiftChat`
+- Text formatting powered by `Textual` (`StructuredText`) and LaTeX powered by `SwiftMath`.
+
+The overlay patch scripts (`scripts/apply_swiftchat_safe_overlay.py` and `scripts/verify_swiftchat_safe_overlay.py`) remain functional and verified at commit `b9d2cc0` for standalone upstream workflows.

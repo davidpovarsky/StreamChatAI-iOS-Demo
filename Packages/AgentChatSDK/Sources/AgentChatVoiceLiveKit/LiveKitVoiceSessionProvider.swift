@@ -1,43 +1,41 @@
-#if canImport(AgentChatCore)
-import AgentChatCore
-#endif
-#if canImport(AgentChatVoice)
-import AgentChatVoice
-#endif
-#if canImport(Combine)
-import Combine
-#endif
 import Foundation
+import AgentChatCore
 #if canImport(LiveKit)
 import LiveKit
 #endif
 
 public final class LiveKitVoiceSessionProvider: AgentVoiceSessionProvider, @unchecked Sendable {
-    #if canImport(Combine)
-    private let stateSubject = CurrentValueSubject<AgentVoiceSessionState, Never>(.idle)
-    private let audioLevelSubject = PassthroughSubject<Float, Never>()
-    #endif
     private let url: String
     private let token: String
-    private var stateValue: AgentVoiceSessionState = .idle
+    private let lock = NSLock()
+    private var _state: AgentVoiceSessionState = .disconnected
+    private var _audioLevel: Float = 0.0
+    private var continuation: AsyncStream<AgentVoiceSessionState>.Continuation?
 
-    #if canImport(Combine)
-    public var statePublisher: AnyPublisher<AgentVoiceSessionState, Never> {
-        stateSubject.eraseToAnyPublisher()
+#if canImport(LiveKit)
+    private var room: Room?
+#endif
+
+    public var state: AgentVoiceSessionState {
+        lock.lock()
+        defer { lock.unlock() }
+        return _state
     }
 
-    public var audioLevelPublisher: AnyPublisher<Float, Never> {
-        audioLevelSubject.eraseToAnyPublisher()
+    public var audioLevel: Float {
+        lock.lock()
+        defer { lock.unlock() }
+        return _audioLevel
     }
-    #endif
 
-    public var currentState: AgentVoiceSessionState {
-        #if canImport(Combine)
-        return stateSubject.value
-        #else
-        return stateValue
-        #endif
-    }
+    public lazy var statePublisher: AsyncStream<AgentVoiceSessionState> = {
+        AsyncStream { [weak self] cont in
+            self?.lock.lock()
+            self?.continuation = cont
+            cont.yield(self?._state ?? .disconnected)
+            self?.lock.unlock()
+        }
+    }()
 
     public init(url: String, token: String) {
         self.url = url
@@ -45,32 +43,37 @@ public final class LiveKitVoiceSessionProvider: AgentVoiceSessionProvider, @unch
     }
 
     public func startSession() async throws {
-        sendState(.listening)
-        #if canImport(LiveKit)
-        // Production LiveKit connection entry point
-        // Room().connect(url: url, token: token)
-        #endif
+        updateState(.connecting)
+#if canImport(LiveKit)
+        let room = Room()
+        self.room = room
+        try await room.connect(url: url, token: token)
+        updateState(.connected)
+        updateState(.listening)
+#else
+        // If LiveKit SDK is not linked, transition to error or simulate
+        updateState(.connected)
+        updateState(.listening)
+#endif
     }
 
-    public func stopSession() async {
-        sendState(.idle)
-        sendAudioLevel(0.0)
+    public func endSession() async {
+#if canImport(LiveKit)
+        if let room = self.room {
+            await room.disconnect()
+            self.room = nil
+        }
+#endif
+        updateState(.disconnected)
+        lock.lock()
+        _audioLevel = 0.0
+        lock.unlock()
     }
 
-    public func sendAudio(data: Data) async throws {
-        // Feed audio data into LiveKit local audio track
-    }
-
-    private func sendState(_ state: AgentVoiceSessionState) {
-        stateValue = state
-        #if canImport(Combine)
-        stateSubject.send(state)
-        #endif
-    }
-
-    private func sendAudioLevel(_ level: Float) {
-        #if canImport(Combine)
-        audioLevelSubject.send(level)
-        #endif
+    private func updateState(_ newState: AgentVoiceSessionState) {
+        lock.lock()
+        _state = newState
+        continuation?.yield(newState)
+        lock.unlock()
     }
 }

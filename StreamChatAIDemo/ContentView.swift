@@ -9,34 +9,7 @@ struct ContentView: View {
     @State private var showingScenarios = false
 
     init() {
-        let newSession = AgentChatSession(
-            initialMessages: [
-                AgentMessage(
-                    role: .assistant,
-                    blocks: [
-                        .markdown(
-                            id: UUID().uuidString,
-                            text: """
-                            # StreamChatAI Agent Chat SDK 👋
-
-                            Welcome to the **AgentChatSDK** ChatGPT-style UI demo.
-
-                            The SDK provides a complete multimodal agent stack:
-                            - 🧠 **Agent Activity Timeline**: thinking, web search, URL fetching
-                            - 🛠️ **Tool Execution Disclosures**: Liquid Glass expandable cards
-                            - 💻 **Syntax Highlighting**: Highlightr code blocks with copy
-                            - 📐 **LaTeX Mathematics**: Native iosMath formulas
-                            - 🌐 **Rich Citations & Sources**: Interactive chips and sheets
-                            - 🖼️ **Cached Remote Media & SVG**: Kingfisher & SVGView
-                            - 🎙️ **Realtime Voice Interface**: Glowing animated orb
-                            """
-                        )
-                    ],
-                    rawText: "Welcome to AgentChatSDK!",
-                    generationState: .completed
-                )
-            ]
-        )
+        let newSession = AgentChatSession()
         _session = StateObject(wrappedValue: newSession)
         _demoDriver = StateObject(wrappedValue: DeterministicDemoDriver(session: newSession))
     }
@@ -124,7 +97,7 @@ struct SDKConfigurationSheet: View {
                 Section("SDK Capabilities") {
                     Toggle("Markdown Rendering", isOn: $configuration.capabilities.supportsMarkdown)
                     Toggle("Syntax Highlighting", isOn: $configuration.capabilities.supportsCodeHighlighting)
-                    Toggle("LaTeX Math (iosMath)", isOn: $configuration.capabilities.supportsLaTeXMath)
+                    Toggle("LaTeX Math (SwiftMath)", isOn: $configuration.capabilities.supportsLaTeXMath)
                     Toggle("Remote Images (Kingfisher)", isOn: $configuration.capabilities.supportsRemoteImages)
                     Toggle("Vector SVG (SVGView)", isOn: $configuration.capabilities.supportsSVG)
                     Toggle("Source Citations", isOn: $configuration.capabilities.supportsCitations)

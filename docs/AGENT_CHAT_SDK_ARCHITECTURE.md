@@ -1,91 +1,122 @@
-# AgentChatSDK Architecture Specification
+# AgentChatSDK Architecture Specification (Realigned)
 
-`AgentChatSDK` is a modular, reusable Swift Package that provides an agentic AI chat interface for iOS applications. It transforms the chat surface from simple text bubbles into a multimodal conversational canvas supporting live reasoning timelines, expandable tool disclosures, syntax-highlighted code, LaTeX math, remote media, vector graphics, and realtime voice.
+`AgentChatSDK` is a modular, production-ready Swift Package that extracts the upgraded **`sachaservan/SwiftChat` Full Demo** (`d6f54ccf9e84d2fec672b7b89d5a67dd6ee0f957`) and repository **`swiftchat-overlay`** into an embeddable, multimodal agentic chat SDK.
+
+It preserves the proven UI layout, typography, markdown engine (`Textual`), LaTeX math parser (`SwiftMath`), and interaction models of SwiftChat while modularizing reasoning activity timelines, tool execution disclosures, citation clustering, media caching, and optional realtime voice into discrete, testable SPM targets.
 
 ---
 
-## 1. Package Graph & Modularity
+## 1. Package Target Dependency Graph
 
 ```mermaid
 flowchart TD
-    subgraph App Layer
-        DemoApp[Host Demo App]
-        ExternalApp[External Host App]
+    subgraph Host Application
+        HostApp[Host iOS Application / Demo]
     end
 
-    subgraph AgentChatSDK Umbrella
+    subgraph AgentChatSDK Facade
         SDK[AgentChatSDK]
     end
 
-    subgraph Core
+    subgraph SwiftChat Chat Engine
+        SwiftChatModule[AgentChatSwiftChat]
+    end
+
+    subgraph Overlay Feature Targets
+        Activity[AgentChatActivity]
+        ToolPres[AgentChatToolPresentation]
+        Sources[AgentChatSources]
+        RichMedia[AgentChatRichMedia]
+        ComposerExt[AgentChatComposerExtensions]
+    end
+
+    subgraph Voice Targets
+        Voice[AgentChatVoice]
+        VoiceLiveKit[AgentChatVoiceLiveKit]
+    end
+
+    subgraph Foundation
         Core[AgentChatCore]
     end
 
-    subgraph Features
-        Activity[AgentChatActivity]
-        RichResults[AgentChatRichResults]
-        Rendering[AgentChatRendering]
-        Media[AgentChatMedia]
-        Voice[AgentChatVoice]
-        VoiceLiveKit[AgentChatVoiceLiveKit]
-        UI[AgentChatUI]
-        Integrations[AgentChatIntegrations]
+    subgraph External Dependencies
+        Textual[Textual StructuredText]
+        SwiftMath[SwiftMath]
+        Kingfisher[Kingfisher]
+        SVGView[SVGView]
+        Lottie[Lottie]
+        Pow[Pow]
+        EmojiKit[EmojiKit]
+        LiveKit[LiveKit client-sdk-swift]
+        Collections[swift-collections]
+        AsyncAlgorithms[swift-async-algorithms]
     end
 
-    DemoApp --> SDK
-    ExternalApp --> SDK
-
-    SDK --> UI
-    SDK --> Integrations
+    HostApp --> SDK
+    SDK --> SwiftChatModule
     SDK --> Core
+    SDK --> Activity
+    SDK --> ToolPres
+    SDK --> Sources
+    SDK --> RichMedia
+    SDK --> ComposerExt
+    SDK --> Voice
 
-    UI --> Core
-    UI --> Activity
-    UI --> RichResults
-    UI --> Rendering
-    UI --> Media
-    UI --> Voice
+    SwiftChatModule --> Core
+    SwiftChatModule --> Activity
+    SwiftChatModule --> ToolPres
+    SwiftChatModule --> Sources
+    SwiftChatModule --> RichMedia
+    SwiftChatModule --> ComposerExt
+    SwiftChatModule --> Textual
+    SwiftChatModule --> SwiftMath
 
     Activity --> Core
-    RichResults --> Core
-    RichResults --> Activity
-    Rendering --> Core
-    Media --> Core
+    ToolPres --> Core
+    Sources --> Core
+    RichMedia --> Core
+    RichMedia --> Kingfisher
+    RichMedia --> SVGView
+    RichMedia --> Lottie
+    RichMedia --> Pow
+    ComposerExt --> Core
+    ComposerExt --> EmojiKit
     Voice --> Core
     VoiceLiveKit --> Voice
-    Integrations --> UI
-    Integrations --> Core
+    VoiceLiveKit --> LiveKit
+
+    Core --> Collections
+    Core --> AsyncAlgorithms
 ```
 
 ---
 
-## 2. Module Responsibilities
+## 2. Modular Target Breakdown
 
-| Module | Purpose & Scope |
-|---|---|
-| **`AgentChatCore`** | Foundation domain models, message contracts, generation states, event types (`AgentActivityEvent`), configuration structs, and the observable `AgentChatSession`. No UI dependencies. |
-| **`AgentChatActivity`** | Agent reasoning timeline, live step execution tracker, status indicators, and elapsed time chips (`AgentActivityTimelineView`, `AgentActivityStore`). |
-| **`AgentChatRichResults`** | Expandable tool execution disclosure cards (`ToolExecutionDisclosure`), inspection view (`ToolCallInspectionView`), and registry for custom tool renderers (`AgentToolRendererRegistry`). |
-| **`AgentChatRendering`** | Specialized multimodal text and graphic renderers: AST Markdown parser (`AgentMarkdownParser`), code syntax highlighting (`AgentCodeBlockView`), native LaTeX equations (`AgentMathView`), SVG vector graphics (`AgentSVGView`), and citation clusters (`InlineSectionSourcesView`). |
-| **`AgentChatMedia`** | Cached remote image loading, image galleries with preview sheet (`AgentRemoteImageView`), video thumbnail players (`AgentVideoMediaView`), and fallback views. |
-| **`AgentChatVoice`** | Voice session abstraction (`AgentVoiceSessionProvider`), state machine, deterministic mock provider (`AgentMockVoiceProvider`), and interactive glowing voice orb (`AgentVoiceOrbView`). |
-| **`AgentChatVoiceLiveKit`** | Optional WebRTC/LiveKit voice provider target (`LiveKitVoiceSessionProvider`). |
-| **`AgentChatUI`** | Top-level ChatGPT-style conversation view (`AgentChatView`), message rows (`AgentMessageRowView`), multiline composer (`AgentComposerView`), emoji picker (`AgentEmojiPicker`), and model selector. |
-| **`AgentChatIntegrations`** | Adapters for GetStream `StreamChatAI` and deterministic test drivers (`DeterministicDemoDriver`). |
-| **`AgentChatSDK`** | Umbrella module providing `@_exported` imports of all public targets. |
+| SPM Target | Scope & Responsibilities | Key Types | Dependencies |
+|---|---|---|---|
+| **`AgentChatCore`** | Canonical SwiftChat models, SDK configuration, event definitions, voice protocols, and async streaming utilities. No UI dependencies. | `Chat`, `Message`, `MessageRole`, `MessageContentPart`, `WebSearchSource`, `Attachment`, `ModelType`, `AgentChatConfiguration`, `AgentChatRuntimeProvider`, `AgentVoiceContracts`, `AsyncEventBuffer` | `swift-collections`, `swift-async-algorithms` |
+| **`AgentChatActivity`** | Agent reasoning timeline, live step execution tracker, elapsed time indicators, and timeline bridge. Migrated cleanly from `swiftchat-overlay`. | `AgentActivityTimelineView`, `AgentActivityStore`, `AgentActivityRowView`, `AgentActivityDetailViews`, `AgentActivityDemoDriver`, `AgentActivityTimelineBridge` | `AgentChatCore` |
+| **`AgentChatToolPresentation`** | Expandable tool execution disclosures, collapsible status banners, detailed JSON payload inspector, and custom tool renderer registry. | `ToolExecutionDisclosure`, `ToolCallInspectionView`, `ToolExecutionStatus`, `AgentToolRendererRegistry`, `ToolExecutionDemoStore`, `ToolExecutionDemoBridge` | `AgentChatCore` |
+| **`AgentChatSources`** | Citation badge clusters, inline section sources chips, and modal citation sheet presentation for web search results. | `SourcesSheetView`, `InlineSectionSourcesView`, `SectionSourcesPresentation`, `SectionSourceClusterRenderer` | `AgentChatCore` |
+| **`AgentChatRichMedia`** | Multimodal inline visual content. Enhances `SafeInlineImageMediaView` with Kingfisher image caching, `SafeInlineVideoMediaView`, `InlineSVGMediaView` (SVGView), and `AgentLottieMediaView` (Lottie + Pow with Reduce Motion safety). | `SafeInlineImageMediaView`, `InlineSVGMediaView`, `AgentLottieMediaView`, `SafeInlineVideoMediaView`, `SafeInlineYouTubeMediaView`, `RichMediaFallbackView` | `AgentChatCore`, `Kingfisher`, `SVGView`, `Lottie`, `Pow` |
+| **`AgentChatComposerExtensions`** | Composer action menu, model selector menu (`SelectedModelMenu`), and emoji picker popover/sheet (`AgentEmojiPicker`). | `SelectedModelMenu`, `AgentEmojiPicker` | `AgentChatCore`, `EmojiKit` |
+| **`AgentChatVoice`** | Reusable voice session protocol (`AgentVoiceSessionProvider`), state machine (`AgentVoiceSessionState`), deterministic mock provider (`AgentMockVoiceProvider`), and interactive glowing voice orb view (`AgentVoiceOrbView`). | `AgentVoiceOrbView`, `AgentMockVoiceProvider`, `AgentVoiceSessionState`, `AgentVoiceSessionProvider` | `AgentChatCore` |
+| **`AgentChatVoiceLiveKit`** | Optional WebRTC/LiveKit voice provider target isolating realtime transport dependencies. | `LiveKitVoiceSessionProvider` | `AgentChatVoice`, `LiveKit` |
+| **`AgentChatSwiftChat`** | Canonical SwiftChat UI engine extracted from upstream. Contains conversation scrolling, multi-turn messages, rich message formatting (`Textual` + `SwiftMath`), and composer input. | `ChatContainer`, `ChatView`, `ChatViewModel`, `MessageView`, `MessageInputView`, `LaTeXMarkdownView`, `WebSearchBox`, `URLFetchBox`, `AttachmentPreviewBar`, Theme, Constants | `AgentChatCore`, `AgentChatActivity`, `AgentChatToolPresentation`, `AgentChatSources`, `AgentChatRichMedia`, `AgentChatComposerExtensions`, `Textual`, `SwiftMath` |
+| **`AgentChatSDK`** | Public façade target exposing the standard interface for external host applications. | `AgentChatView`, `AgentChatSession`, `AgentChatSDKInfo` | All targets above (except `AgentChatVoiceLiveKit` which is linked optionally) |
 
 ---
 
-## 3. Public API & Consumption
+## 3. Public API & Host App Integration
 
-External host apps integrate `AgentChatSDK` via Swift Package Manager:
+Host applications embed `AgentChatSDK` through SPM:
 
 ```swift
-// In your host SwiftUI View:
-import AgentChatSDK
 import SwiftUI
+import AgentChatSDK
 
-struct MyChatView: View {
+struct ContentView: View {
     @StateObject private var session = AgentChatSession(
         configuration: AgentChatConfiguration()
     )
@@ -99,48 +130,8 @@ struct MyChatView: View {
 }
 ```
 
-### Event & Streaming Pipeline
-When an agent or backend runtime executes actions:
-1. `session.startAssistantMessage()` creates an active message slot.
-2. `session.publishEvent(.reasoningStarted(...))` updates the live reasoning timeline.
-3. `session.publishEvent(.webSearchStarted(...))` and `.sourceDiscovered(...)` populate search chips.
-4. `session.publishEvent(.toolStarted(...))` and `.toolCompleted(...)` populate interactive tool cards.
-5. `session.appendToken(...)` or `session.appendBlock(...)` streams tokens and heterogeneous blocks into the message.
-6. `session.completeAssistantMessage()` marks generation complete.
-
----
-
-## 4. Tool Execution & Custom Renderer Registry
-
-The SDK decouples tool execution UI from internal types through `AgentToolRendererRegistry`:
-
-```swift
-public struct FlightBookingRenderer: AnyAgentToolRenderer {
-    public var supportedToolIDs: Set<String> { ["book_flight", "search_flights"] }
-
-    public func render(call: AgentToolCall, result: AgentToolResult?) -> AnyView {
-        AnyView(FlightCardView(call: call, result: result))
-    }
-}
-
-// Register once at app launch:
-AgentToolRendererRegistry.shared.register(FlightBookingRenderer())
-```
-
-When a tool result arrives, `AgentRichResultView` looks up the custom renderer; if none is registered, it gracefully renders the fallback generic inspection card inside `ToolExecutionDisclosure`.
-
----
-
-## 5. Voice Architecture
-
-Voice mode uses a provider pattern:
-- `AgentVoiceSessionProvider` protocol defines `startSession()`, `stopSession()`, `sendAudio()`, and publishers for `state` and `audioLevel`.
-- `AgentMockVoiceProvider` provides a zero-network deterministic state machine for previews and tests.
-- `LiveKitVoiceSessionProvider` provides live WebRTC audio transport without coupling the core chat UI to WebRTC binaries.
-
----
-
-## 6. Host vs. SDK Separation
-
-- **The SDK is the product**: All models, views, renderers, adapters, and configuration options live in `Packages/AgentChatSDK`.
-- **The Demo App is the host**: `StreamChatAIDemo` simply adds `Packages/AgentChatSDK` as a package dependency in `project.yml`, imports `AgentChatSDK` in `ContentView.swift`, and exercises the public API without reaching into internals.
+### Architecture Guarantees:
+1. **Preserved SwiftChat UX**: Top-level `AgentChatView` embeds canonical `ChatContainer`, ensuring 100% fidelity with the proven SwiftChat layout, composer behavior, keyboard handling, and scrolling.
+2. **Canonical Models**: All modules operate on canonical SwiftChat models (`Chat`, `Message`, `MessageContentPart`, `Attachment`). No divergent AST or custom message structures are introduced.
+3. **Safe Additive ChatGPT Libraries**: External libraries from the ChatGPT iOS stack (Kingfisher, SVGView, Lottie, Pow, EmojiKit, Collections, AsyncAlgorithms) are utilized additively with defensive fallbacks and zero disruption to the core layout.
+4. **Decision Gate Enforced**: Core markdown (`Textual`) and LaTeX math (`SwiftMath`) are preserved. Proposed replacements (`Highlightr`, `iosMath`, `swift-markdown`, `KaTeX`, `STTextKitPlus`, `Motion`) require explicit user authorization.

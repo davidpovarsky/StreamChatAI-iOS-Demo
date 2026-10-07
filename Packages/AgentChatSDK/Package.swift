@@ -14,35 +14,34 @@ let package = Package(
             targets: [
                 "AgentChatSDK",
                 "AgentChatCore",
-                "AgentChatUI",
-                "AgentChatRendering",
+                "AgentChatSwiftChat",
                 "AgentChatActivity",
-                "AgentChatRichResults",
-                "AgentChatMedia",
-                "AgentChatVoice",
-                "AgentChatIntegrations"
+                "AgentChatToolPresentation",
+                "AgentChatSources",
+                "AgentChatRichMedia",
+                "AgentChatComposerExtensions",
+                "AgentChatVoice"
             ]
         ),
         .library(name: "AgentChatCore", targets: ["AgentChatCore"]),
-        .library(name: "AgentChatUI", targets: ["AgentChatUI"]),
-        .library(name: "AgentChatRendering", targets: ["AgentChatRendering"]),
+        .library(name: "AgentChatSwiftChat", targets: ["AgentChatSwiftChat"]),
         .library(name: "AgentChatActivity", targets: ["AgentChatActivity"]),
-        .library(name: "AgentChatRichResults", targets: ["AgentChatRichResults"]),
-        .library(name: "AgentChatMedia", targets: ["AgentChatMedia"]),
+        .library(name: "AgentChatToolPresentation", targets: ["AgentChatToolPresentation"]),
+        .library(name: "AgentChatSources", targets: ["AgentChatSources"]),
+        .library(name: "AgentChatRichMedia", targets: ["AgentChatRichMedia"]),
+        .library(name: "AgentChatComposerExtensions", targets: ["AgentChatComposerExtensions"]),
         .library(name: "AgentChatVoice", targets: ["AgentChatVoice"]),
-        .library(name: "AgentChatVoiceLiveKit", targets: ["AgentChatVoiceLiveKit"]),
-        .library(name: "AgentChatIntegrations", targets: ["AgentChatIntegrations"])
+        .library(name: "AgentChatVoiceLiveKit", targets: ["AgentChatVoiceLiveKit"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.0"),
-        .package(url: "https://github.com/raspu/Highlightr.git", from: "2.1.2"),
-        .package(url: "https://github.com/kostub/iosMath.git", from: "2.3.0"),
+        .package(url: "https://github.com/tinfoilsh/textual.git", branch: "main"),
+        .package(url: "https://github.com/mgriebling/SwiftMath.git", from: "1.6.0"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.10.0"),
         .package(url: "https://github.com/exyte/SVGView.git", from: "1.0.6"),
         .package(url: "https://github.com/airbnb/lottie-spm.git", from: "4.5.0"),
         .package(url: "https://github.com/EmergeTools/Pow.git", from: "0.3.1"),
-        .package(url: "https://github.com/krzyzanowskim/STTextKitPlus.git", from: "0.3.1"),
         .package(url: "https://github.com/danielsaidi/EmojiKit.git", exact: "1.0.0"),
         .package(url: "https://github.com/livekit/client-sdk-swift.git", from: "2.0.0"),
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing.git", from: "1.17.0")
@@ -62,29 +61,34 @@ let package = Package(
             ]
         ),
         .target(
-            name: "AgentChatRichResults",
+            name: "AgentChatToolPresentation",
             dependencies: [
                 "AgentChatCore",
                 "AgentChatActivity",
+                .product(name: "Pow", package: "Pow")
+            ]
+        ),
+        .target(
+            name: "AgentChatSources",
+            dependencies: [
+                "AgentChatCore"
+            ]
+        ),
+        .target(
+            name: "AgentChatRichMedia",
+            dependencies: [
+                "AgentChatCore",
+                .product(name: "Kingfisher", package: "Kingfisher"),
+                .product(name: "SVGView", package: "SVGView"),
                 .product(name: "Lottie", package: "lottie-spm"),
                 .product(name: "Pow", package: "Pow")
             ]
         ),
         .target(
-            name: "AgentChatMedia",
+            name: "AgentChatComposerExtensions",
             dependencies: [
                 "AgentChatCore",
-                .product(name: "Kingfisher", package: "Kingfisher")
-            ]
-        ),
-        .target(
-            name: "AgentChatRendering",
-            dependencies: [
-                "AgentChatCore",
-                .product(name: "Highlightr", package: "Highlightr"),
-                .product(name: "iosMath", package: "iosMath"),
-                .product(name: "SVGView", package: "SVGView"),
-                .product(name: "STTextKitPlus", package: "STTextKitPlus")
+                .product(name: "EmojiKit", package: "EmojiKit")
             ]
         ),
         .target(
@@ -101,40 +105,30 @@ let package = Package(
             ]
         ),
         .target(
-            name: "AgentChatUI",
+            name: "AgentChatSwiftChat",
             dependencies: [
                 "AgentChatCore",
                 "AgentChatActivity",
-                "AgentChatRichResults",
-                "AgentChatRendering",
-                "AgentChatMedia",
+                "AgentChatToolPresentation",
+                "AgentChatSources",
+                "AgentChatRichMedia",
+                "AgentChatComposerExtensions",
                 "AgentChatVoice",
-                .product(name: "EmojiKit", package: "EmojiKit"),
-                .product(name: "Pow", package: "Pow"),
-                .product(name: "Lottie", package: "lottie-spm")
-            ]
-        ),
-        .target(
-            name: "AgentChatIntegrations",
-            dependencies: [
-                "AgentChatCore",
-                "AgentChatUI",
-                "AgentChatActivity",
-                "AgentChatRichResults",
-                "AgentChatRendering"
+                .product(name: "Textual", package: "textual"),
+                .product(name: "SwiftMath", package: "SwiftMath")
             ]
         ),
         .target(
             name: "AgentChatSDK",
             dependencies: [
                 "AgentChatCore",
-                "AgentChatUI",
+                "AgentChatSwiftChat",
                 "AgentChatActivity",
-                "AgentChatRichResults",
-                "AgentChatRendering",
-                "AgentChatMedia",
-                "AgentChatVoice",
-                "AgentChatIntegrations"
+                "AgentChatToolPresentation",
+                "AgentChatSources",
+                "AgentChatRichMedia",
+                "AgentChatComposerExtensions",
+                "AgentChatVoice"
             ]
         ),
         .testTarget(

@@ -3,7 +3,7 @@ name: Build unsigned IPA
 on:
   workflow_dispatch:
   push:
-    branches: [main, agent/tool-execution-disclosure-ui]
+    branches: [main, agent/tool-execution-disclosure-ui, agent/swiftchat-sdk-chatgpt-stack-realignment]
 
 jobs:
   build:

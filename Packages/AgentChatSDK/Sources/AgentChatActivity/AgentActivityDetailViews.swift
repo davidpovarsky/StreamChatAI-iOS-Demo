@@ -1,97 +1,109 @@
 #if canImport(SwiftUI)
-import AgentChatCore
 import SwiftUI
+import AgentChatCore
 
-public struct AgentActivityItemDetailView: View {
+public struct FaviconView: View {
+    public let url: String
+    public let isDarkMode: Bool
+
+    public init(url: String, isDarkMode: Bool) {
+        self.url = url
+        self.isDarkMode = isDarkMode
+    }
+
+    private var faviconURL: URL? {
+        guard let urlObj = URL(string: url),
+              let host = urlObj.host else { return nil }
+        return URL(string: "https://icons.duckduckgo.com/ip3/\(host).ico")
+    }
+
+    public var body: some View {
+        AsyncImage(url: faviconURL) { phase in
+            switch phase {
+            case .empty:
+                placeholderIcon
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            case .failure:
+                placeholderIcon
+            @unknown default:
+                placeholderIcon
+            }
+        }
+        .frame(width: 16, height: 16)
+        .background(isDarkMode ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(isDarkMode ? Color.white.opacity(0.2) : Color.black.opacity(0.1), lineWidth: 0.5)
+        )
+    }
+
+    private var placeholderIcon: some View {
+        Image(systemName: "globe")
+            .font(.system(size: 9))
+            .foregroundColor(isDarkMode ? .gray : .secondary)
+    }
+}
+
+public struct AgentSearchDetailsView: View {
+    public let sources: [WebSearchSource]
+    public let isDarkMode: Bool
+
+    public init(sources: [WebSearchSource], isDarkMode: Bool) {
+        self.sources = sources
+        self.isDarkMode = isDarkMode
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            ForEach(sources) { source in
+                HStack(spacing: 8) {
+                    FaviconView(url: source.url, isDarkMode: isDarkMode)
+                        .frame(width: 16, height: 16)
+                    Text(domain(for: source.url))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.leading, 24)
+    }
+
+    private func domain(for value: String) -> String {
+        guard let host = URL(string: value)?.host else { return value }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+}
+
+public struct AgentToolDetailsView: View {
     public let item: AgentActivityItem
-    @Environment(\.dismiss) private var dismiss
 
     public init(item: AgentActivityItem) {
         self.item = item
     }
 
     public var body: some View {
-        NavigationStack {
-            List {
-                Section("Activity Step") {
-                    LabeledContent("Title", value: item.title)
-                    LabeledContent("Status", value: statusString)
-                    if item.elapsed > 0 {
-                        LabeledContent("Duration", value: String(format: "%.1f seconds", item.elapsed))
-                    }
-                }
-
-                if let summary = item.summary, !summary.isEmpty {
-                    Section("Summary / Output") {
-                        Text(summary)
-                            .font(.system(size: 14))
-                    }
-                }
-
-                if let toolName = item.toolName {
-                    Section("Tool Details") {
-                        LabeledContent("Tool Name", value: toolName)
-                        if let args = item.toolArguments {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Arguments")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(args)
-                                    .font(.system(size: 12, design: .monospaced))
-                                    .padding(8)
-                                    .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
-                        if let resultSummary = item.toolResultSummary {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Result")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(resultSummary)
-                                    .font(.system(size: 13))
-                            }
-                        }
-                    }
-                }
-
-                if !item.sources.isEmpty {
-                    Section("Sources (\(item.sources.count))") {
-                        ForEach(item.sources) { source in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(source.title)
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text(source.domain)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                if let snippet = source.snippet {
-                                    Text(snippet)
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Activity Details")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
+        VStack(alignment: .leading, spacing: 5) {
+            detail("Tool", item.toolName)
+            detail("Details", item.toolArguments)
+            detail("Result", item.toolResultSummary)
         }
+        .padding(.leading, 24)
     }
 
-    private var statusString: String {
-        switch item.status {
-        case .pending: return "Pending"
-        case .running: return "Running"
-        case .completed: return "Completed"
-        case .failed: return "Failed"
+    @ViewBuilder
+    private func detail(_ label: String, _ value: String?) -> some View {
+        if let value, !value.isEmpty {
+            HStack(alignment: .top, spacing: 5) {
+                Text("\(label):").fontWeight(.medium)
+                Text(value)
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
         }
     }
 }

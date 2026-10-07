@@ -1,246 +1,208 @@
-#if canImport(AgentChatActivity)
-import AgentChatActivity
-#endif
-#if canImport(AgentChatCore)
-import AgentChatCore
-#endif
-#if canImport(AgentChatIntegrations)
-import AgentChatIntegrations
-#endif
-#if canImport(AgentChatMedia)
-import AgentChatMedia
-#endif
-#if canImport(AgentChatRendering)
-import AgentChatRendering
-#endif
-#if canImport(AgentChatRichResults)
-import AgentChatRichResults
-#endif
-#if canImport(AgentChatSDK)
-import AgentChatSDK
-#endif
-#if canImport(AgentChatUI)
-import AgentChatUI
-#endif
-#if canImport(AgentChatVoice)
-import AgentChatVoice
-#endif
-#if canImport(Combine)
-import Combine
-#endif
-#if canImport(SnapshotTesting)
-import SnapshotTesting
+import Foundation
+#if canImport(XCTest)
+import XCTest
 #endif
 #if canImport(SwiftUI)
 import SwiftUI
 #endif
-#if canImport(XCTest)
-import XCTest
+#if canImport(SnapshotTesting)
+import SnapshotTesting
+#endif
+
+import AgentChatCore
+import AgentChatActivity
+import AgentChatToolPresentation
+import AgentChatSources
+import AgentChatRichMedia
+import AgentChatComposerExtensions
+import AgentChatVoice
+import AgentChatSDK
 
 @MainActor
 final class AgentChatSDKTests: XCTestCase {
 
-    // 1. Message Model & Blocks Test
-    func testMessageModelAndBlocks() {
-        let msg = AgentMessage(
-            role: .assistant,
-            blocks: [
-                .markdown(id: "1", text: "Hello world"),
-                .code(id: "2", code: "print(1)", language: "swift"),
-                .math(id: "3", formula: "x^2", displayMode: true)
+    // MARK: - 1. Canonical Chat & Message Models Tests
+
+    func testCanonicalChatAndMessageModels() {
+        let chat = Chat.create(
+            title: "Test Chat",
+            titleState: .manual,
+            messages: [
+                Message(
+                    id: "user-1",
+                    role: .user,
+                    content: "Can you analyze this system?"
+                ),
+                Message(
+                    id: "assistant-1",
+                    role: .assistant,
+                    content: "Analyzing the architecture...",
+                    thoughts: "The system is composed of modular SDK targets.",
+                    isThinking: false,
+                    isStreaming: false
+                )
             ],
-            rawText: "Hello world",
-            generationState: .completed
+            modelType: .gpt4o
         )
 
-        XCTAssertEqual(msg.role, .assistant)
-        XCTAssertEqual(msg.blocks.count, 3)
-        XCTAssertFalse(msg.isGenerating)
-        XCTAssertEqual(msg.blocks[0].id, "1")
+        XCTAssertEqual(chat.messages.count, 2)
+        XCTAssertEqual(chat.messages[0].role, .user)
+        XCTAssertEqual(chat.messages[1].role, .assistant)
+        XCTAssertEqual(chat.messages[1].thoughts, "The system is composed of modular SDK targets.")
+        XCTAssertFalse(chat.isBlankChat)
+        XCTAssertFalse(chat.needsGeneratedTitle)
     }
 
-    // 2. Activity Session & Event Transitions Test
-    func testActivitySessionAndEvents() {
-        let session = AgentChatSession()
-        let assistantID = session.startAssistantMessage()
+    // MARK: - 2. Async Event Buffer with Collections & AsyncAlgorithms
 
-        XCTAssertTrue(session.isGenerating)
-        XCTAssertEqual(session.messages.count, 1)
+    func testAsyncEventBufferBoundedCapacity() {
+        let buffer = AsyncEventBuffer<String>(capacity: 3)
+        buffer.append("Item 1")
+        buffer.append("Item 2")
+        buffer.append("Item 3")
+        buffer.append("Item 4") // Should evict Item 1
 
-        session.publishEvent(.sessionStarted(messageID: assistantID))
-        session.publishEvent(.reasoningStarted(messageID: assistantID, summary: "Initial reasoning"))
-        session.publishEvent(.reasoningUpdated(messageID: assistantID, summary: "Updated reasoning"))
-        session.publishEvent(.webSearchStarted(messageID: assistantID, query: "Swift 6"))
-        session.publishEvent(.sourceDiscovered(messageID: assistantID, source: AgentSource(title: "Swift.org", url: "https://swift.org")))
-        session.publishEvent(.webSearchCompleted(messageID: assistantID))
-
-        XCTAssertNotNil(session.currentActivity)
-        let items = session.currentActivity?.items ?? []
-        XCTAssertEqual(items.count, 2)
-        XCTAssertEqual(items[0].kind, .reasoning)
-        XCTAssertEqual(items[0].title, "Updated reasoning")
-        XCTAssertEqual(items[1].kind, .webSearch)
-        XCTAssertEqual(items[1].sources.count, 1)
-        XCTAssertEqual(items[1].status, .completed)
+        let elements = buffer.allElements
+        XCTAssertEqual(elements.count, 3)
+        XCTAssertEqual(elements, ["Item 2", "Item 3", "Item 4"])
     }
 
-    // 3. Tool State Transitions Test
-    func testToolStateTransitions() {
-        let session = AgentChatSession()
-        let msgID = session.startAssistantMessage()
-        let toolID = "tool-weather"
+    // MARK: - 3. Agent Activity Store Lifecycle
 
-        session.publishEvent(.toolStarted(messageID: msgID, toolID: toolID, toolName: "weather_lookup", service: "Meteo", arguments: "{\"loc\":\"NYC\"}"))
-        session.publishEvent(.toolProgress(messageID: msgID, toolID: toolID, summary: "Querying radar"))
-        session.publishEvent(.toolCompleted(messageID: msgID, toolID: toolID, resultSummary: "22C Sunny"))
+    func testAgentActivityStoreLifecycle() {
+        let store = AgentActivityStore()
+        let msgID = "test-msg-activity"
 
-        let activity = session.currentActivity
-        let toolItem = activity?.items.first(where: { $0.id == toolID })
-        XCTAssertNotNil(toolItem)
-        XCTAssertEqual(toolItem?.status, .completed)
-        XCTAssertEqual(toolItem?.toolResultSummary, "22C Sunny")
+        store.begin(messageID: msgID)
+        XCTAssertNotNil(store.session(for: msgID))
 
-        let inspection = ToolCallInspection(
-            call: AgentToolCall(id: toolID, name: "weather_lookup", arguments: "{\"loc\":\"NYC\"}"),
-            result: AgentToolResult(callID: toolID, toolName: "weather_lookup", outputSummary: "22C Sunny")
-        )
-        XCTAssertEqual(inspection.toolName, "weather_lookup")
-        XCTAssertEqual(inspection.rawOutput, "22C Sunny")
+        store.beginReasoning(messageID: msgID, summary: "Thinking deeply")
+        let session = store.session(for: msgID)
+        XCTAssertEqual(session?.items.count, 1)
+        XCTAssertEqual(session?.items.first?.kind, .reasoning)
+        XCTAssertEqual(session?.items.first?.title, "Thinking deeply")
+
+        store.beginWebSearch(messageID: msgID)
+        store.addSearchSource(messageID: msgID, source: WebSearchSource(title: "Apple HIG", url: "https://developer.apple.com"))
+        store.completeWebSearch(messageID: msgID)
+
+        let updatedSession = store.session(for: msgID)
+        XCTAssertEqual(updatedSession?.items.count, 2)
+
+        store.markAnswerStarted(messageID: msgID)
+        XCTAssertTrue(store.session(for: msgID)?.answerStarted ?? false)
     }
 
-    // 4. Tool Renderer Registry Test
-    #if canImport(SwiftUI)
-    func testToolRendererRegistry() {
-        let registry = AgentToolRendererRegistry.shared
-        XCTAssertNotNil(registry.renderer(for: "weather_lookup"))
-        XCTAssertNotNil(registry.renderer(for: "stock_quote"))
-        XCTAssertNotNil(registry.renderer(for: "calculator"))
-        XCTAssertNil(registry.renderer(for: "unknown_tool_xyz"))
-    }
-    #endif
+    // MARK: - 4. Tool Execution Store & Inspection
 
-    // 5. Source Grouping & Parsing Test
-    func testSourceGrouping() {
-        let text = "Here is a fact.\n\nMore detailed analysis follows.\n\nReferences and citations."
-        let presentation = SectionSourcesPresentation.parse(text)
-        XCTAssertNotNil(presentation)
-        XCTAssertEqual(presentation?.paragraphMarkdown, "References and citations.")
-        XCTAssertEqual(presentation?.leadingMarkdown, "Here is a fact.\n\nMore detailed analysis follows.")
+    func testToolExecutionDemoStoreInspection() {
+        let store = ToolExecutionDemoStore.shared
+        let executions = store.executions(for: ToolExecutionDemoStore.demoAssistantMessageID)
+
+        XCTAssertFalse(executions.isEmpty)
+        let githubTool = executions.first { $0.call.service == "GitHub" }
+        XCTAssertNotNil(githubTool)
+        XCTAssertEqual(githubTool?.status, .completed)
+        XCTAssertTrue(githubTool?.call.arguments.formattedText.contains("sachaservan/SwiftChat") ?? false)
     }
 
-    // 6. Markdown Parsing Test
-    func testMarkdownParsing() {
-        let parser = AgentMarkdownParser()
-        let md = """
-        Paragraph 1
+    // MARK: - 5. Realtime Voice Provider Lifecycle
 
-        ```swift
-        let x = 42
-        ```
-
-        Paragraph 2
-
-        $$
-        a^2 + b^2 = c^2
-        $$
-        """
-        let blocks = parser.parse(markdown: md)
-        XCTAssertEqual(blocks.count, 4)
-
-        if case .markdown(_, let text) = blocks[0] {
-            XCTAssertTrue(text.contains("Paragraph 1"))
-        } else {
-            XCTFail("Block 0 should be markdown")
-        }
-
-        if case .code(_, let code, let lang) = blocks[1] {
-            XCTAssertEqual(lang, "swift")
-            XCTAssertTrue(code.contains("let x = 42"))
-        } else {
-            XCTFail("Block 1 should be code")
-        }
-
-        if case .markdown(_, let text) = blocks[2] {
-            XCTAssertTrue(text.contains("Paragraph 2"))
-        } else {
-            XCTFail("Block 2 should be markdown")
-        }
-
-        if case .math(_, let formula, let display) = blocks[3] {
-            XCTAssertTrue(display)
-            XCTAssertTrue(formula.contains("a^2 + b^2 = c^2"))
-        } else {
-            XCTFail("Block 3 should be math")
-        }
-    }
-
-    // 7. Configuration Defaults & Capabilities Test
-    func testConfigurationDefaultsAndCapabilities() {
-        var config = AgentChatConfiguration()
-        XCTAssertTrue(config.capabilities.supportsMarkdown)
-        XCTAssertTrue(config.capabilities.supportsCodeHighlighting)
-        XCTAssertTrue(config.capabilities.supportsLaTeXMath)
-        XCTAssertTrue(config.capabilities.supportsVoice)
-
-        config.capabilities.supportsVoice = false
-        XCTAssertFalse(config.capabilities.supportsVoice)
-        XCTAssertEqual(config.composer.maxLines, 6)
-        XCTAssertEqual(config.appearance.userBubbleCornerRadius, 18.0)
-    }
-
-    // 8. Mock Voice State Machine Test
-    func testMockVoiceStateMachine() async {
+    func testMockVoiceProviderLifecycle() async throws {
         let provider = AgentMockVoiceProvider()
-        XCTAssertEqual(provider.currentState, .idle)
+        XCTAssertEqual(provider.state, .disconnected)
 
-        do {
-            try await provider.startSession()
-            XCTAssertEqual(provider.currentState, .listening)
-            await provider.stopSession()
-            XCTAssertEqual(provider.currentState, .idle)
-        } catch {
-            XCTFail("Voice session failed with \(error)")
-        }
+        try await provider.startSession()
+        XCTAssertTrue(provider.state == .connecting || provider.state == .listening)
+
+        await provider.endSession()
+        XCTAssertEqual(provider.state, .disconnected)
+        XCTAssertEqual(provider.audioLevel, 0.0)
     }
 
-    // 9. Retry and Cancellation Test
-    func testRetryAndCancellation() {
-        let session = AgentChatSession()
-        session.appendUserMessage(text: "Hello")
-        let assistantID = session.startAssistantMessage()
-        session.appendToken("First attempt", toMessageID: assistantID)
-        session.completeAssistantMessage(id: assistantID)
+    // MARK: - 6. Rich Media Content Parts (SVG, Video, YouTube, Lottie)
 
-        XCTAssertEqual(session.messages.count, 2)
-        session.retryLastAssistantMessage()
-        XCTAssertEqual(session.messages.count, 1)
-        XCTAssertEqual(session.messages[0].role, .user)
-    }
-
-    // 10. Visual Surface Verification Tests
-    #if canImport(SwiftUI) && canImport(UIKit)
-    func testVisualSurfacesInstantiation() {
-        let msg = AgentMessage(role: .assistant, rawText: "Test response", generationState: .completed)
-        let row = AgentMessageRowView(message: msg)
-        XCTAssertNotNil(row)
-
-        let codeView = AgentCodeBlockView(code: "print(\"hello\")", language: "swift")
-        XCTAssertNotNil(codeView)
-
-        let mathView = AgentMathView(formula: "E=mc^2")
-        XCTAssertNotNil(mathView)
-
-        let sources = [AgentSource(title: "Apple", url: "https://apple.com")]
-        let sourcesView = InlineSectionSourcesView(sources: sources)
-        XCTAssertNotNil(sourcesView)
-
-        let richResultView = AgentRichResultView(
-            call: AgentToolCall(name: "weather_lookup", arguments: "{}"),
-            result: AgentToolResult(callID: "1", toolName: "weather_lookup", outputSummary: "Sunny")
+    func testRichMediaContentParts() {
+        let svgPart = MessageContentPart(
+            kind: .svg,
+            caption: "System Architecture",
+            svgString: "<svg height='100' width='100'><circle cx='50' cy='50' r='40'/></svg>"
         )
-        XCTAssertNotNil(richResultView)
-    }
-    #endif
-}
-#endif
+        XCTAssertEqual(svgPart.kind, .svg)
+        XCTAssertNotNil(svgPart.svgString)
 
+        let videoPart = MessageContentPart(
+            kind: .video,
+            title: "Demo Video",
+            url: "https://example.com/demo.mp4"
+        )
+        XCTAssertEqual(videoPart.kind, .video)
+
+        let lottiePart = MessageContentPart(
+            kind: .lottie,
+            title: "Success Animation",
+            lottieAnimationName: "checkmark"
+        )
+        XCTAssertEqual(lottiePart.kind, .lottie)
+    }
+
+    // MARK: - 7. SwiftChat-derived Public Facade Session
+
+    func testAgentChatSessionInitialization() {
+        let session = AgentChatSession()
+        XCTAssertNotNil(session.viewModel)
+        XCTAssertNotNil(session.activityStore)
+        XCTAssertNotNil(session.toolStore)
+        XCTAssertNotNil(session.voiceProvider)
+    }
+
+    // MARK: - 8. Snapshot & Parity Testing
+
+#if os(iOS) && canImport(SnapshotTesting)
+    func testParitySnapshotViews() {
+        // Representative Views for Visual Regression Testing
+        let userMessage = Message(
+            role: .user,
+            content: "Explain SwiftUI and show a diagram."
+        )
+
+        let assistantMessage = Message(
+            role: .assistant,
+            content: "Here is the explanation with sources and diagram.",
+            contentParts: [
+                MessageContentPart(kind: .markdown, markdown: "SwiftUI is Apple's declarative framework."),
+                MessageContentPart(
+                    kind: .svg,
+                    caption: "SwiftUI Hierarchy",
+                    svgString: "<svg height='60' width='120'><rect width='120' height='60' fill='blue'/></svg>"
+                )
+            ]
+        )
+
+        let toolInspection = ToolCallInspection(
+            service: "GitHub",
+            toolName: "github_search",
+            arguments: .text("repo: sachaservan/SwiftChat"),
+            resultSummary: "Found repository"
+        )
+
+        let toolDisclosure = ToolExecutionDisclosure(call: toolInspection, status: .completed) {
+            Text("Inspected GitHub Repository")
+        }
+
+        // Test light mode on iPhone
+        assertSnapshot(of: toolDisclosure, as: .image(layout: .fixed(width: 375, height: 120)))
+
+        // Test dark mode on iPhone
+        let darkDisclosure = toolDisclosure.environment(\.colorScheme, .dark)
+        assertSnapshot(of: darkDisclosure, as: .image(layout: .fixed(width: 375, height: 120)))
+
+        // Test iPad width
+        assertSnapshot(of: toolDisclosure, as: .image(layout: .fixed(width: 768, height: 120)))
+
+        // Test Voice Orb
+        let voiceOrb = AgentVoiceOrbView(state: .listening, audioLevel: 0.5, size: 160)
+        assertSnapshot(of: voiceOrb, as: .image(layout: .fixed(width: 200, height: 200)))
+    }
+#endif
+}

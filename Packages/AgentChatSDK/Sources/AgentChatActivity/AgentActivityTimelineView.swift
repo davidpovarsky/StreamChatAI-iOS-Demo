@@ -1,110 +1,73 @@
 #if canImport(SwiftUI)
-import AgentChatCore
 import SwiftUI
+import AgentChatCore
 
-public struct AgentActivityTimelineView: View {
-    public let session: AgentActivitySession
-    public let onToggleExpand: (() -> Void)?
+public struct AgentActivityTimelineBridge: View {
+    public let messageID: String
+    public let isDarkMode: Bool
+    @ObservedObject private var store = AgentActivityStore.shared
 
-    @State private var isExpanded: Bool
-
-    public init(session: AgentActivitySession, onToggleExpand: (() -> Void)? = nil) {
-        self.session = session
-        self.onToggleExpand = onToggleExpand
-        self._isExpanded = State(initialValue: session.isExpanded)
+    public init(messageID: String, isDarkMode: Bool) {
+        self.messageID = messageID
+        self.isDarkMode = isDarkMode
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-                onToggleExpand?()
-            } label: {
-                HStack(spacing: 8) {
-                    headerIcon
-                        .frame(width: 14, height: 14)
-
-                    Text(summaryTitle)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.primary)
-
-                    if session.elapsed > 0.5 {
-                        Text(formatDuration(session.elapsed))
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .contentShape(Rectangle())
+        if let session = store.session(for: messageID) {
+            AgentActivityTimelineView(session: session, isDarkMode: isDarkMode) {
+                store.setExpanded(!session.isExpanded, messageID: messageID)
             }
-            .buttonStyle(.plain)
+        }
+    }
+}
 
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 6) {
-                    Divider()
-                        .padding(.vertical, 2)
+public struct AgentActivityTimelineView: View {
+    public let session: AgentActivitySession
+    public let isDarkMode: Bool
+    public let toggle: () -> Void
 
-                    ForEach(Array(session.items.enumerated()), id: \.element.id) { index, item in
-                        AgentActivityRowView(
-                            item: item,
-                            isLast: index == session.items.count - 1
-                        )
+    public init(session: AgentActivitySession, isDarkMode: Bool, toggle: @escaping () -> Void) {
+        self.session = session
+        self.isDarkMode = isDarkMode
+        self.toggle = toggle
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                Button(action: toggle) {
+                    HStack(spacing: 6) {
+                        Text(header(at: context.date))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(session.isExpanded ? 90 : 0))
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
+            if session.isExpanded {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(session.items) { item in
+                        AgentActivityRowView(item: item, isDarkMode: isDarkMode)
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Agent process timeline: \(summaryTitle)")
-        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
-    private var headerIcon: some View {
-        if isRunning {
-            ProgressView()
-                .controlSize(.mini)
-        } else {
-            Image(systemName: "sparkles")
-                .foregroundStyle(.blue)
-                .font(.system(size: 12))
-        }
-    }
-
-    private var isRunning: Bool {
-        session.completedAt == nil && session.items.contains { $0.status == .running }
-    }
-
-    private var summaryTitle: String {
-        if isRunning {
-            if let activeItem = session.items.last(where: { $0.status == .running }) {
-                return activeItem.title
-            }
-            return "Thinking..."
-        }
-        let completedCount = session.items.filter { $0.status == .completed }.count
-        if completedCount > 0 {
-            return "Finished in \(formatDuration(session.elapsed)) (\(completedCount) steps)"
-        }
-        return "Process completed"
-    }
-
-    private func formatDuration(_ seconds: TimeInterval) -> String {
-        if seconds < 1.0 {
-            return String(format: "%.1fs", seconds)
-        } else {
-            return String(format: "%.0fs", seconds)
-        }
+    private func header(at date: Date) -> String {
+        let end = session.completedAt ?? date
+        let seconds = max(0, Int(end.timeIntervalSince(session.startedAt).rounded()))
+        return "\(session.answerStarted || session.completedAt != nil ? "Worked" : "Working") for \(seconds)s"
     }
 }
 #endif

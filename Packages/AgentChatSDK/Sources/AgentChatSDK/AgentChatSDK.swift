@@ -1,29 +1,14 @@
-#if canImport(AgentChatActivity)
-@_exported import AgentChatActivity
-#endif
-#if canImport(AgentChatCore)
+import Foundation
 @_exported import AgentChatCore
-#endif
-#if canImport(AgentChatIntegrations)
-@_exported import AgentChatIntegrations
-#endif
-#if canImport(AgentChatMedia)
-@_exported import AgentChatMedia
-#endif
-#if canImport(AgentChatRendering)
-@_exported import AgentChatRendering
-#endif
-#if canImport(AgentChatRichResults)
-@_exported import AgentChatRichResults
-#endif
-#if canImport(AgentChatUI)
-@_exported import AgentChatUI
-#endif
-#if canImport(AgentChatVoice)
+@_exported import AgentChatSwiftChat
+@_exported import AgentChatActivity
+@_exported import AgentChatToolPresentation
+@_exported import AgentChatSources
+@_exported import AgentChatRichMedia
+@_exported import AgentChatComposerExtensions
 @_exported import AgentChatVoice
-#endif
 
 public enum AgentChatSDKInfo {
     public static let version = "1.0.0"
-    public static let identifier = "com.davidpovarsky.AgentChatSDK"
+    public static let baselineUpstreamCommit = "d6f54ccf9e84d2fec672b7b89d5a67dd6ee0f957"
 }

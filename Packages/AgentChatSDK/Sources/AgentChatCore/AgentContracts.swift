@@ -1,48 +1,28 @@
-#if canImport(Combine)
-import Combine
-#else
-public protocol ObservableObject: AnyObject {}
-#endif
 import Foundation
 
-public enum AgentVoiceSessionState: Equatable, Sendable {
-    case idle
-    case listening
-    case speechDetected
-    case processing
-    case speaking
-    case failed(String)
+// MARK: - Agent Chat Stream Event
+
+public enum AgentChatStreamEvent: Sendable, Equatable {
+    case token(String)
+    case thinkingToken(String)
+    case webSearch(WebSearchState)
+    case toolRequested(name: String, callId: String, arguments: String)
+    case toolProgress(name: String, callId: String, progress: Double)
+    case toolCompleted(name: String, callId: String, resultSummary: String, payload: String?)
+    case toolFailed(name: String, callId: String, error: String)
+    case richPart(MessageContentPart)
+    case finished
 }
 
-#if canImport(Combine)
-public protocol AgentVoiceSessionProvider: AnyObject, Sendable {
-    var statePublisher: AnyPublisher<AgentVoiceSessionState, Never> { get }
-    var audioLevelPublisher: AnyPublisher<Float, Never> { get }
-    var currentState: AgentVoiceSessionState { get }
+// MARK: - Agent Chat Runtime Provider
 
-    func startSession() async throws
-    func stopSession() async
-    func sendAudio(data: Data) async throws
-}
-#else
-public protocol AgentVoiceSessionProvider: AnyObject, Sendable {
-    var currentState: AgentVoiceSessionState { get }
+public protocol AgentChatRuntimeProvider: Sendable {
+    func sendMessage(
+        chatId: String,
+        content: String,
+        model: ModelType,
+        attachments: [Attachment]
+    ) async throws -> AsyncStream<AgentChatStreamEvent>
 
-    func startSession() async throws
-    func stopSession() async
-    func sendAudio(data: Data) async throws
-}
-#endif
-
-public protocol AgentVoiceActivityDetecting: Sendable {
-    func isSpeech(buffer: Data) -> Bool
-}
-
-public protocol AgentMarkdownParsing: Sendable {
-    func parse(markdown: String) -> [AgentMessageBlock]
-}
-
-public protocol AgentToolResultRenderer: Sendable {
-    static var supportedToolIDs: Set<String> { get }
-    var toolID: String { get }
+    func cancel(chatId: String)
 }

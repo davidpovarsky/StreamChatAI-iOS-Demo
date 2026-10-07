@@ -1,15 +1,18 @@
-#if canImport(AgentChatCore)
-import AgentChatCore
-#endif
 #if canImport(Combine)
 import Combine
 #endif
 import Foundation
+import AgentChatCore
+
+#if canImport(Combine)
+public typealias AgentActivityStoreBase = ObservableObject
+#else
+public protocol AgentActivityStoreBase: AnyObject {}
+#endif
 
 @MainActor
-public final class AgentActivityStore: ObservableObject {
+public final class AgentActivityStore: AgentActivityStoreBase {
     public static let shared = AgentActivityStore()
-
     #if canImport(Combine)
     @Published public private(set) var sessions: [String: AgentActivitySession] = [:]
     #else
@@ -18,9 +21,7 @@ public final class AgentActivityStore: ObservableObject {
 
     public init() {}
 
-    public func session(for messageID: String) -> AgentActivitySession? {
-        sessions[messageID]
-    }
+    public func session(for messageID: String) -> AgentActivitySession? { sessions[messageID] }
 
     public func begin(messageID: String) {
         guard sessions[messageID] == nil else { return }
@@ -35,9 +36,8 @@ public final class AgentActivityStore: ObservableObject {
 
     public func addStatus(messageID: String, title: String, summary: String? = nil) {
         mutate(messageID) { session in
-            var item = AgentActivityItem(kind: .status, status: .completed, title: title, summary: summary)
-            item.completedAt = Date()
-            session.items.append(item)
+            session.items.append(AgentActivityItem(kind: .status, status: .completed, title: title, summary: summary))
+            session.items[session.items.count - 1].completedAt = Date()
         }
     }
 
@@ -55,26 +55,21 @@ public final class AgentActivityStore: ObservableObject {
         }
     }
 
-    public func beginWebSearch(messageID: String, query: String? = nil) {
+    public func beginWebSearch(messageID: String) {
         begin(messageID: messageID)
-        completeRunningReasoning(messageID: messageID)
         guard index(in: messageID, matching: { $0.kind == .webSearch }) == nil else { return }
-        let title = query != nil ? "Searching web for \"\(query!)\"" : "Searching the web"
-        mutate(messageID) { $0.items.append(AgentActivityItem(kind: .webSearch, title: title)) }
+        mutate(messageID) { $0.items.append(AgentActivityItem(kind: .webSearch, title: "Searching the web")) }
     }
 
-    public func addSearchSource(messageID: String, source: AgentSource) {
+    public func addSearchSource(messageID: String, source: WebSearchSource) {
         updateItem(messageID, matching: { $0.kind == .webSearch }) { item in
-            if !item.sources.contains(where: { $0.url == source.url }) {
-                item.sources.append(source)
-            }
-            let count = item.sources.count
-            item.title = "Searched \(count) \(count == 1 ? "website" : "websites")"
+            if !item.sources.contains(where: { $0.url == source.url }) { item.sources.append(source) }
+            item.title = "Searched \(item.sources.count) \(item.sources.count == 1 ? "website" : "websites")"
         }
     }
 
     public func completeWebSearch(messageID: String) {
-        completeItem(messageID: messageID, matching: { $0.kind == .webSearch })
+        completeItem(messageID, matching: { $0.kind == .webSearch })
     }
 
     public func beginTool(
@@ -119,45 +114,34 @@ public final class AgentActivityStore: ObservableObject {
 
     public func markAnswerStarted(messageID: String) {
         mutate(messageID) { session in
+            guard !session.answerStarted else { return }
             session.answerStarted = true
-            for idx in session.items.indices where session.items[idx].status == .running {
-                session.items[idx].status = .completed
-                session.items[idx].completedAt = Date()
+            session.isExpanded = false
+            for index in session.items.indices where session.items[index].status == .running {
+                session.items[index].status = .completed
+                session.items[index].completedAt = Date()
             }
         }
     }
 
-    public func completeSession(messageID: String) {
+    public func finish(messageID: String) {
         mutate(messageID) { session in
             session.completedAt = Date()
-            session.isExpanded = false
-            for idx in session.items.indices where session.items[idx].status == .running {
-                session.items[idx].status = .completed
-                session.items[idx].completedAt = Date()
+            for index in session.items.indices where session.items[index].status == .running {
+                session.items[index].status = .completed
+                session.items[index].completedAt = Date()
             }
         }
     }
 
-    public func setExpanded(messageID: String, isExpanded: Bool) {
-        mutate(messageID) { $0.isExpanded = isExpanded }
+    public func setExpanded(_ expanded: Bool, messageID: String) {
+        mutate(messageID) { $0.isExpanded = expanded }
     }
 
-    public func reset(messageID: String) {
-        sessions.removeValue(forKey: messageID)
-    }
-
-    private func completeRunningReasoning(messageID: String) {
-        updateItem(messageID, matching: { $0.kind == .reasoning && $0.status == .running }) {
-            $0.status = .completed
-            $0.completedAt = Date()
-        }
-    }
-
-    private func completeItem(messageID: String, matching predicate: (AgentActivityItem) -> Bool) {
-        updateItem(messageID, matching: predicate) {
-            $0.status = .completed
-            $0.completedAt = Date()
-        }
+    private func mutate(_ messageID: String, _ change: (inout AgentActivitySession) -> Void) {
+        guard var session = sessions[messageID] else { return }
+        change(&session)
+        sessions[messageID] = session
     }
 
     private func index(in messageID: String, matching predicate: (AgentActivityItem) -> Bool) -> Int? {
@@ -167,17 +151,18 @@ public final class AgentActivityStore: ObservableObject {
     private func updateItem(
         _ messageID: String,
         matching predicate: (AgentActivityItem) -> Bool,
-        mutateBlock: (inout AgentActivityItem) -> Void
+        change: (inout AgentActivityItem) -> Void
     ) {
-        guard var session = sessions[messageID],
-              let idx = session.items.firstIndex(where: predicate) else { return }
-        mutateBlock(&session.items[idx])
-        sessions[messageID] = session
+        mutate(messageID) { session in
+            guard let index = session.items.firstIndex(where: predicate) else { return }
+            change(&session.items[index])
+        }
     }
 
-    private func mutate(_ messageID: String, block: (inout AgentActivitySession) -> Void) {
-        guard var session = sessions[messageID] else { return }
-        block(&session)
-        sessions[messageID] = session
+    private func completeItem(_ messageID: String, matching predicate: (AgentActivityItem) -> Bool) {
+        updateItem(messageID, matching: predicate) {
+            $0.status = .completed
+            $0.completedAt = Date()
+        }
     }
 }

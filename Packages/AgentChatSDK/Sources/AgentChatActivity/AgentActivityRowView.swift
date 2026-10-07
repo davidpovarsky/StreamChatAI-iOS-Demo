@@ -1,118 +1,85 @@
 #if canImport(SwiftUI)
-import AgentChatCore
 import SwiftUI
+import AgentChatCore
 
 public struct AgentActivityRowView: View {
     public let item: AgentActivityItem
-    public let isLast: Bool
+    public let isDarkMode: Bool
+    @State private var isExpanded = false
 
-    @State private var showingDetail = false
-
-    public init(item: AgentActivityItem, isLast: Bool = false) {
+    public init(item: AgentActivityItem, isDarkMode: Bool) {
         self.item = item
-        self.isLast = isLast
+        self.isDarkMode = isDarkMode
     }
 
     public var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            statusIcon
-                .frame(width: 16, height: 16)
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(item.title)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(item.status == .failed ? .red : .primary)
-
-                    if item.elapsed > 0.5 {
-                        Text(formatDuration(item.elapsed))
-                            .font(.system(size: 11))
+        VStack(alignment: .leading, spacing: 7) {
+            Button {
+                if hasDetails { withAnimation(.easeInOut(duration: 0.18)) { isExpanded.toggle() } }
+            } label: {
+                HStack(spacing: 8) {
+                    leadingIcon
+                        .frame(width: 16, height: 16)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(item.title)
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.secondary)
+                        if let summary = item.summary, !summary.isEmpty {
+                            Text(summary)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(2)
+                        }
                     }
-
-                    Spacer()
-
+                    Spacer(minLength: 4)
+                    if item.status == .running { ProgressView().controlSize(.mini) }
                     if hasDetails {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.system(size: 9, weight: .semibold))
                             .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
                     }
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                if let summary = item.summary, !summary.isEmpty {
-                    Text(summary)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                if !item.sources.isEmpty {
-                    sourcesPills
+            if isExpanded {
+                switch item.kind {
+                case .webSearch:
+                    AgentSearchDetailsView(sources: item.sources, isDarkMode: isDarkMode)
+                case .toolCall:
+                    AgentToolDetailsView(item: item)
+                default:
+                    EmptyView()
                 }
             }
-        }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if hasDetails {
-                showingDetail = true
-            }
-        }
-        .sheet(isPresented: $showingDetail) {
-            AgentActivityItemDetailView(item: item)
         }
     }
 
     @ViewBuilder
-    private var statusIcon: some View {
-        switch item.status {
-        case .pending:
-            Circle()
-                .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1.5)
-        case .running:
-            ProgressView()
-                .controlSize(.mini)
-        case .completed:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.system(size: 13))
-        case .failed:
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.orange)
-                .font(.system(size: 13))
+    private var leadingIcon: some View {
+        switch item.kind {
+        case .reasoning: Image(systemName: "brain.head.profile")
+        case .webSearch:
+            if let first = item.sources.first {
+                FaviconView(url: first.url, isDarkMode: isDarkMode)
+            } else {
+                Image(systemName: "globe")
+            }
+        case .urlFetch: Image(systemName: "link")
+        case .toolCall: Image(systemName: "hammer.fill")
+        case .status: Image(systemName: "info.circle")
         }
     }
 
     private var hasDetails: Bool {
-        !item.sources.isEmpty || item.toolArguments != nil || item.toolResultSummary != nil || item.summary != nil
-    }
-
-    @ViewBuilder
-    private var sourcesPills: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(item.sources) { source in
-                    HStack(spacing: 4) {
-                        Image(systemName: "globe")
-                            .font(.system(size: 9))
-                        Text(source.domain)
-                            .font(.system(size: 10, weight: .medium))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.secondary.opacity(0.12), in: Capsule())
-                }
-            }
-            .padding(.top, 2)
-        }
-    }
-
-    private func formatDuration(_ seconds: TimeInterval) -> String {
-        if seconds < 1.0 {
-            return String(format: "%.1fs", seconds)
-        } else {
-            return String(format: "%.0fs", seconds)
+        switch item.kind {
+        case .webSearch: return !item.sources.isEmpty
+        case .toolCall:
+            return (item.toolArguments != nil && !item.toolArguments!.isEmpty) ||
+                   (item.toolResultSummary != nil && !item.toolResultSummary!.isEmpty)
+        default: return false
         }
     }
 }

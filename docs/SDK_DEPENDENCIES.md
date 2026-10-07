@@ -1,30 +1,49 @@
-# SDK Dependencies Hygiene & Inventory
+# SDK Dependencies Hygiene & Inventory (Realigned)
 
-This document tracks all external dependencies used in the **AgentChatSDK** architecture, their target modules, and rationale.
-
-| Library | SDK Module | Purpose | Runtime/Test | Optional | Notes |
-|---|---|---|---|---|---|
-| **AgentMarkdownParser / Foundation Markdown** | `AgentChatRendering` | Markdown AST parsing and block decomposition | Runtime | No | Implements `AgentMarkdownParsing` / `SwiftMarkdownParser`. Uses Foundation / AttributedString rendering without linking external `swift-cmark`, preventing SPM target duplicate collisions with `StreamChatAI`'s `cmark-gfm`. |
-| **Highlightr** | `AgentChatRendering` | Native syntax highlighting for fenced code blocks | Runtime | Yes (graceful fallback) | Wrapped in `AgentCodeBlockView`. Provides syntax themes (Atom One Dark, GitHub, etc.). |
-| **iosMath** | `AgentChatRendering` | Native LaTeX mathematical formula rendering | Runtime | Yes (graceful fallback) | Wraps `MTMathUILabel` in `AgentMathView`. No WebView or JS overhead. |
-| **Kingfisher** | `AgentChatMedia` | Remote image downloading, disk/memory caching, and placeholders | Runtime | Yes (graceful fallback) | Wrapped in `AgentRemoteImageView`. `KFImage` is never exposed in public API. |
-| **SVGView** | `AgentChatRendering` | Scalable vector graphics (SVG) SwiftUI rendering | Runtime | Yes (graceful fallback) | Wrapped in `AgentSVGView` with tap-to-expand preview. |
-| **Lottie (lottie-spm)** | `AgentChatUI`, `AgentChatRichResults` | Vector animation playback for tool/generation completion | Runtime | Yes | Used for optional states with native SwiftUI icon fallbacks; respects Reduce Motion. |
-| **Pow** | `AgentChatUI`, `AgentChatRichResults` | Subtle transition effects and change animations | Runtime | Yes | Applied sparingly to status transitions and message insertions; respects accessibility. |
-| **STTextKitPlus** | `AgentChatRendering` | TextKit 2 range and selection helpers | Runtime | Yes | Isolated in `AgentTextSelectionHelper` for precise search/snippet selection. |
-| **EmojiKit** | `AgentChatUI` | Emoji picker sheet and grid integration | Runtime | Yes | Modular composer sheet integration; host app can toggle off via configuration. |
-| **swift-async-algorithms** | `AgentChatCore` | Async stream composition, debouncing, and event merging | Runtime | No | Standard Apple async primitives for timeline and streaming events. |
-| **swift-collections** | `AgentChatCore` | Ordered event buffers and deques | Runtime | No | `Deque` used for FIFO timeline management and event dispatch. |
-| **LiveKit (client-sdk-swift)** | `AgentChatVoiceLiveKit` | WebRTC realtime audio and voice transport | Runtime | Yes (isolated target) | Fully isolated behind `AgentVoiceSessionProvider`; not bundled into core chat module. |
-| **swift-snapshot-testing** | `AgentChatSDKTests` | Visual regression and snapshot verification | Test | No | Test dependency for verifying light/dark, RTL, and multi-device surfaces. |
+This document tracks all external dependencies in **`AgentChatSDK`**, their role, category classification, target module, and integration/hygiene guardrails.
 
 ---
 
-## Libraries Deliberately Excluded (Hygiene Guardrails)
+## 1. Category A: Safe Integrated Dependencies
 
-The following libraries from the ChatGPT dependency screen are excluded as they do not contribute to chat UI, streaming, or rendering:
+These open-source libraries from ChatGPT's iOS dependency disclosures (and SwiftChat's core stack) are safely integrated in an additive, modular manner without displacing working SwiftChat components.
 
-- **Financial / Subscriptions**: Stripe, Plaid, RevenueCat
-- **Analytics & Crash**: Segment, Sentry, Statsig
-- **Network / Codegen boilerplate**: OpenAPIKit, OpenAPI Generator, Yams, SwiftCSV, PhoneNumberKit, SimpleKeychain
-- **State stores**: Sovran, Queue
+| Library | Version / Pin | SDK Target | Role & Usage | Fallback / Safety Mechanism |
+|---|---|---|---|---|
+| **Textual (`StructuredText`)** | `0.1.0` | `AgentChatSwiftChat` | Canonical SwiftChat Markdown & syntax highlighting engine. | Retained as golden baseline; no replacement without user approval. |
+| **SwiftMath (`swiftui-math`)** | `0.1.0` | `AgentChatSwiftChat` | Canonical SwiftChat native LaTeX formula renderer. | Retained as golden baseline; no replacement without user approval. |
+| **Kingfisher** | `8.8.0` | `AgentChatRichMedia` | Remote image caching and pipeline behind `SafeInlineImageMediaView`. | Native `AsyncImage` fallback on network failure or image decode error. Zero API leakage. |
+| **SVGView** | `1.0.8` | `AgentChatRichMedia` | Scalable vector graphics renderer for `.svg` content parts (`InlineSVGMediaView`). | Graceful fallback view with asset title & error disclosure if XML parsing fails. |
+| **Lottie (`lottie-spm`)** | `4.6.1` | `AgentChatRichMedia` | Micro-animations and animated badges (`AgentLottieMediaView`). | Automatically disabled when `@Environment(\.accessibilityReduceMotion)` is active; falls back to static SF Symbols. |
+| **Pow** | `0.3.1` | `AgentChatRichMedia` | Spring transitions and physics-based view transitions. | Graceful static fade/scale when Reduce Motion is enabled. |
+| **EmojiKit** | `1.0.0` | `AgentChatComposerExtensions` | Emoji reactions and composer picker (`AgentEmojiPicker`). | Native iOS emoji keyboard remains standard; sheet is optional and configurable. |
+| **swift-collections** | `1.1.4` | `AgentChatCore` | `Collections.Deque` for FIFO streaming event buffer (`AsyncEventBuffer`). | Standard Apple open source. |
+| **swift-async-algorithms** | `1.0.4` | `AgentChatCore` | Debouncing, throttling, and stream combination for activity events. | Standard Apple open source. |
+| **LiveKit (`client-sdk-swift`)** | `2.17.0` | `AgentChatVoiceLiveKit` | Optional WebRTC transport for real-time voice (`LiveKitVoiceSessionProvider`). | Isolated in dedicated target; not linked by default host app; deterministic `AgentMockVoiceProvider` available. |
+| **swift-snapshot-testing** | `1.19.6` | `AgentChatSDKTests` | Multi-device, light/dark, and RTL visual regression test assertions. | Test-only dependency. |
+
+---
+
+## 2. Category B: Decision-Gated Dependencies (On Hold)
+
+These candidate libraries require **explicit user authorization** before replacing or displacing any working SwiftChat subsystem. See [`docs/REPLACEMENT_APPROVAL_REQUIRED.md`](file:///c:/Users/DAVID/Code/StreamChatAI-iOS-Demo/docs/REPLACEMENT_APPROVAL_REQUIRED.md) for detailed evaluation.
+
+| Candidate Library | Proposed Subsystem | Incumbent in SwiftChat | Decision Gate Status |
+|---|---|---|---|
+| **Highlightr** | Code block syntax highlighting | `Textual.StructuredText` | **ON HOLD** — Awaiting user approval. |
+| **iosMath** | Mathematical LaTeX formulas | `SwiftMath` (`MTMathUILabel`) | **ON HOLD** — Awaiting user approval. |
+| **swift-markdown** / `cmark-gfm` | Markdown parsing | `Textual` AST / Foundation AttributedString | **ON HOLD** — Awaiting user approval (collides with StreamChat). |
+| **KaTeX** | Web-based Math rendering | `SwiftMath` (Native UIKit/CoreText) | **REJECTED** — Avoid WebView overhead. |
+| **STTextKitPlus** | TextKit 2 range selections | Native TextEditor / SwiftUI Selection | **ON HOLD** — Awaiting user approval. |
+| **Motion** | Fluid animations | Standard SwiftUI Animations + `Pow` | **ON HOLD** — Awaiting user approval. |
+
+---
+
+## 3. Category C: Deliberately Excluded Dependencies
+
+The following libraries from the ChatGPT dependency disclosures are excluded from `AgentChatSDK` as they are application-level concerns unrelated to a reusable chat SDK:
+
+- **Monetization & Financial**: Stripe, Plaid, RevenueCat.
+- **Analytics & Crash Reporting**: Segment, Sentry, Statsig.
+- **Codegen & Plumbing**: OpenAPIKit, OpenAPI Generator, Yams, SwiftCSV, PhoneNumberKit, SimpleKeychain.
+- **State Store Frameworks**: Sovran, Queue.

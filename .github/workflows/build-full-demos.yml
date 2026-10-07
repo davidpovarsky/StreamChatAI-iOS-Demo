@@ -11,8 +11,24 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     steps:
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - uses: actions/checkout@v4
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Select Xcode 26
         run: |
           XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
@@ -23,11 +39,27 @@ jobs:
           fi
           echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Clone SwiftChat
         run: |
           mkdir -p upstream
           git clone https://github.com/sachaservan/SwiftChat.git upstream/SwiftChat
           git -C upstream/SwiftChat checkout d6f54ccf9e84d2fec672b7b89d5a67dd6ee0f957
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Patch into offline full showcase
         run: |
           python3 scripts/patch_swiftchat_full_demo.py
@@ -39,17 +71,42 @@ jobs:
             commit -m "local golden baseline after existing patches"
           python3 scripts/apply_swiftchat_safe_overlay.py
           python3 scripts/verify_swiftchat_safe_overlay.py
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Build device app
         run: |
           set -o pipefail
           cd upstream/SwiftChat
           xcodebuild -project SwiftChat.xcodeproj -scheme SwiftChat -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tee ../../swiftchat-build.log
+      - name: Live Activity · refresh
+        if: failure()
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Report SwiftChat build errors
         if: failure()
         run: |
           grep -E 'error:|warning:' swiftchat-build.log | tail -100 | while IFS= read -r line; do
             echo "::error::$line"
           done
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Package IPA
         run: |
           APP=$(find upstream/SwiftChat/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
@@ -58,6 +115,14 @@ jobs:
           mkdir Payload
           cp -R "$APP" Payload/
           zip -qry SwiftChat-Full-Demo-unsigned.ipa Payload
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - uses: actions/upload-artifact@v4
         with:
           name: SwiftChat-Full-Demo-IPA

@@ -84,7 +84,7 @@ private struct IOSMathUIView: UIViewRepresentable {
     func makeUIView(context: Context) -> MTMathUILabel {
         let label = MTMathUILabel()
         label.latex = latex
-        label.labelMode = displayMode ? .display : .text
+        label.mode = displayMode ? .display : .text
         label.fontSize = fontSize
         label.textColor = textColor
         label.textAlignment = displayMode ? .center : .left
@@ -95,7 +95,7 @@ private struct IOSMathUIView: UIViewRepresentable {
 
     func updateUIView(_ uiView: MTMathUILabel, context: Context) {
         uiView.latex = latex
-        uiView.labelMode = displayMode ? .display : .text
+        uiView.mode = displayMode ? .display : .text
         uiView.fontSize = fontSize
         uiView.textColor = textColor
         uiView.textAlignment = displayMode ? .center : .left

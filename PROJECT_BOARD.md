@@ -20,6 +20,8 @@ Quick captures that still need classification.
 - Wrapping `MTMathUILabel` in a `UIViewRepresentable` provides smooth LaTeX rendering without needing WebViews or JavaScript engines.
 - Using `#if canImport(SwiftUI)` and `#if canImport(UIKit)` across SDK targets allows pure Swift domain models and parsers to type-check and run cross-platform while compiling full UI surfaces on iOS/macOS.
 - Liquid Glass effects (`.glassEffect(.regular)`) on iOS 26+ gracefully degrade to `.ultraThinMaterial` and borders on iOS 16-18.
+- SPM requires globally unique target names across all packages. Both `swift-cmark` and `swift-markdown-ui` declare a target named `cmark-gfm`, causing collision exit code 74 if both packages are present in the dependency graph. `AgentChatRendering` implements its parser adapter without pulling `swift-cmark` to ensure seamless coexistence with `StreamChatAI`.
+- `StreamChatAI` 0.12.0 uses `SystemLanguageModel.contextSize` which broke on Xcode 26 beta; pinning `StreamChatAI` to `exactVersion: "0.10.0"` in `project.yml` ensures rock-solid builds.
 
 ## Experiments / Investigations
 

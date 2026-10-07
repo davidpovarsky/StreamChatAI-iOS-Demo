@@ -9,8 +9,24 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - uses: actions/checkout@v4
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Select Xcode 26
         run: |
           XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
@@ -22,19 +38,51 @@ jobs:
           echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Clone official GetStream sample
         run: |
           mkdir -p upstream
           git clone --depth 1 https://github.com/GetStream/chat-ai-samples.git upstream/chat-ai-samples
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Patch offline full showcase
         run: python3 scripts/patch_getstream_offline_showcase.py
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Resolve packages
         run: |
           cd upstream/chat-ai-samples/ios
           xcodebuild -resolvePackageDependencies -project AIComponents.xcodeproj -scheme AIComponents
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Build unsigned device app
         run: |
           set -o pipefail
@@ -50,6 +98,14 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build | tee ../../../getstream-official-build.log
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Package IPA
         run: |
           APP=$(find upstream/chat-ai-samples/ios/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)
@@ -59,12 +115,29 @@ jobs:
           cp -R "$APP" Payload/
           zip -qry GetStream-Official-AI-Showcase-unsigned.ipa Payload
 
+      - name: Live Activity · refresh
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - uses: actions/upload-artifact@v4
         with:
           name: GetStream-Official-AI-Showcase-IPA
           path: GetStream-Official-AI-Showcase-unsigned.ipa
           if-no-files-found: error
 
+      - name: Live Activity · refresh
+        if: failure()
+        uses: davidpovarsky/github-automation/live-refresh@main
+        continue-on-error: true
+        with:
+          event: refresh
+          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
+          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
+          github_token: ${{ github.token }}
       - name: Upload build log on failure
         if: failure()
         uses: actions/upload-artifact@v4

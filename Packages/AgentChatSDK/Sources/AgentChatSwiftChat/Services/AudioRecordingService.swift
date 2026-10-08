@@ -115,7 +115,7 @@ class AudioRecordingService: NSObject, ObservableObject {
         )
 
         let result = try await client.audioTranscriptions(query: query)
-        let transcription = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let transcription = result.text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
 
         guard !transcription.isEmpty else {
             throw AudioRecordingError.emptyTranscription

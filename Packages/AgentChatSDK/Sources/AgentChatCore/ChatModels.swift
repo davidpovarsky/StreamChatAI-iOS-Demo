@@ -329,6 +329,21 @@ public struct ModelType: Identifiable, Codable, Equatable, Hashable, Sendable {
         self.isThinkingModel = isThinkingModel
     }
 
+    public init(
+        id: String,
+        displayName: String,
+        fullName: String? = nil,
+        iconName: String = "sparkles",
+        isMultimodal: Bool = true,
+        isThinkingModel: Bool = false
+    ) {
+        self.id = id
+        self.name = displayName
+        self.shortName = displayName
+        self.iconName = iconName
+        self.isThinkingModel = isThinkingModel
+    }
+
     public static let gpt4o = ModelType(id: "gpt-4o", name: "GPT-4o", shortName: "4o", iconName: "sparkles")
     public static let gpt4oMini = ModelType(id: "gpt-4o-mini", name: "GPT-4o mini", shortName: "Mini", iconName: "bolt")
     public static let o1 = ModelType(id: "o1", name: "o1", shortName: "o1", iconName: "brain", isThinkingModel: true)

@@ -24,19 +24,20 @@ Quick captures that still need classification.
 - Using `#if canImport(SwiftUI)` and `#if canImport(UIKit)` across SDK targets allows pure Swift domain models and parsers to type-check and run cross-platform while compiling full UI surfaces on iOS/macOS.
 - Liquid Glass effects (`.glassEffect(.regular)`) on iOS 26+ gracefully degrade to `.ultraThinMaterial` and borders on iOS 16-18.
 - SPM requires globally unique target names across all packages. Both `swift-cmark` and `swift-markdown-ui` declare a target named `cmark-gfm`, causing collision exit code 74 if both packages are present in the dependency graph.
+- **OpenAI Fork Streaming Schemas (`tinfoilsh/openai-swift-fork`)**: `ResponseStreamEvent` uses typed cases `.reasoningText(.delta(Schemas.ResponseReasoningTextDeltaEvent))` where `delta` is directly `Swift.String`, and `.outputTextAnnotation(.added(Schemas.ResponseOutputTextAnnotationAddedEvent))` where `annotation` is an enum `Components.Schemas.Annotation` with case `.urlCitationBody(Components.Schemas.UrlCitationBody)`. Pattern matching directly against these typed schemas avoids type erasure, reflection, and JSON dictionary casting timeouts.
 
 ## Experiments / Investigations
 
-- Category B Decision Gate: Evaluate `Highlightr` vs `Textual` syntax parser performance during streaming updates once user provides direction.
-- Category B Decision Gate: Benchmark `iosMath` vs `SwiftMath` rendering latency on complex mathematical papers once user provides direction.
+- Category B Decision Gate: Completed. Highlightr (rejected), swift-markdown (rejected), STTextKitPlus (deferred), Motion (rejected), KaTeX (rejected), iosMath (isolated A/B testing harness in `AgentChatMathComparisonTests`).
+- SwiftMath is canonical production renderer across all UI targets.
 
 ## Open Questions
 
-- Will the user approve replacing `Textual` with `Highlightr` or `SwiftMath` with `iosMath`? (See `docs/REPLACEMENT_APPROVAL_REQUIRED.md`).
+- None. All Category B decision gates resolved per master alignment requirements.
 
 ## Planned / Todo
 
-- [ ] Implement isolated iosMath vs SwiftMath A/B test harness (`docs/IOSMATH_VS_SWIFTMATH_AB_TEST.md`).
+- [x] Implement isolated iosMath vs SwiftMath A/B test harness (`docs/IOSMATH_VS_SWIFTMATH_AB_TEST.md`).
 - [ ] Run full package targets build and real snapshot test suite.
 - [ ] Trigger and monitor GitHub Actions CI to generate `SwiftChat-AgentSDK-Demo-IPA`.
 - [ ] Verify final unsigned IPA artifact structure and completeness.
@@ -44,7 +45,7 @@ Quick captures that still need classification.
 ## In Progress / Verification
 
 - [ ] Phase 1 Verification of Realigned `AgentChatSDK`
-  - Branch: `agent/swiftchat-sdk-chatgpt-stack-realignment` (pushed to remote at `64bea89`)
+  - Branch: `agent/swiftchat-sdk-chatgpt-stack-realignment`
   - Target: SwiftChat-derived architecture verified with CI, snapshots, and IPA
   - Modules: `AgentChatCore`, `AgentChatActivity`, `AgentChatToolPresentation`, `AgentChatSources`, `AgentChatRichMedia`, `AgentChatComposerExtensions`, `AgentChatVoice`, `AgentChatVoiceLiveKit`, `AgentChatSwiftChat`, `AgentChatSDK`
 

@@ -1052,8 +1052,8 @@ public class ChatViewModel: ObservableObject {
                             }
                         }
 
-                    case .reasoning(.delta(let reasoningEvent)):
-                        let text = (reasoningEvent.delta.value as? [String: Any])?["text"] as? String ?? ""
+                    case .reasoningText(.delta(let reasoningEvent)):
+                        let text = reasoningEvent.delta
                         if !text.isEmpty {
                             AgentActivityStore.shared.beginReasoning(messageID: activityMessageID)
                             if !isInThinkingMode {
@@ -1075,11 +1075,10 @@ public class ChatViewModel: ObservableObject {
                         }
 
                     case .outputTextAnnotation(.added(let annotationEvent)):
-                        if let dict = annotationEvent.annotation.value as? [String: Any],
-                           let type = dict["type"] as? String,
-                           type == "url_citation",
-                           let url = dict["url"] as? String {
-                            let title = dict["title"] as? String ?? url
+                        if let annotation = annotationEvent.annotation,
+                           case .urlCitationBody(let citation) = annotation {
+                            let url = citation.url
+                            let title = citation.title.isEmpty ? url : citation.title
                             let source = WebSearchSource(title: title, url: url)
                             collectedSources.append(source)
                             AgentActivityStore.shared.beginWebSearch(messageID: activityMessageID)

@@ -499,4 +499,11 @@ public struct Chat: Identifiable, Codable, Equatable, Hashable, Sendable {
             language: language
         )
     }
+
+    public static func triggerSuccessFeedback() {
+        #if canImport(UIKit)
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        #endif
+    }
 }

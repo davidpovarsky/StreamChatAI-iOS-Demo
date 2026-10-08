@@ -899,7 +899,7 @@ public class ChatViewModel: ObservableObject {
         let activityMessageID = assistantMessage.id
         currentTask?.cancel()
 
-        currentTask = Task<Void, Error> {
+        currentTask = Task {
             var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
             backgroundTaskId = UIApplication.shared.beginBackgroundTask(withName: "CompleteStreamingResponse") {
                 UIApplication.shared.endBackgroundTask(backgroundTaskId)

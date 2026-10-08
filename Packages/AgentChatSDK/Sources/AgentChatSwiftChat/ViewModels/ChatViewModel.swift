@@ -56,7 +56,7 @@ public class ChatViewModel: ObservableObject {
 
     // Private properties
     private var client: OpenAI?
-    private var currentTask: Task<Void, Error>?
+    private var currentTask: Task<Void, Never>?
     private var demoStreamingTask: Task<Void, Never>?
     private var streamUpdateTimer: Timer?
     private var pendingStreamUpdate: Chat?
@@ -899,8 +899,13 @@ public class ChatViewModel: ObservableObject {
         let activityMessageID = assistantMessage.id
         currentTask?.cancel()
 
-        currentTask = Task {
-            var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
+        currentTask = Task { [weak self] in
+            await self?.executeStreamingResponse(streamChatId: streamChatId, activityMessageID: activityMessageID)
+        }
+    }
+
+    private func executeStreamingResponse(streamChatId: String?, activityMessageID: String) async {
+        var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
             backgroundTaskId = UIApplication.shared.beginBackgroundTask(withName: "CompleteStreamingResponse") {
                 UIApplication.shared.endBackgroundTask(backgroundTaskId)
                 backgroundTaskId = .invalid
@@ -965,7 +970,7 @@ public class ChatViewModel: ObservableObject {
 
                 var collectedSources: [WebSearchSource] = []
 
-                let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.createResponseStreaming(query: chatQuery)
+                let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.responses.createResponseStreaming(query: chatQuery)
 
                 var thinkStartTime: Date? = nil
                 var thoughtsBuffer = ""
@@ -1496,7 +1501,7 @@ extension ChatViewModel {
             )
 
             var title = ""
-            let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.createResponseStreaming(query: query)
+            let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.responses.createResponseStreaming(query: query)
             for try await event in stream {
                 if case .outputText(.delta(let textEvent)) = event {
                     title += textEvent.delta

@@ -49,342 +49,14 @@ public struct MessageView: View {
             }
 
             VStack(alignment: .trailing, spacing: 4) {
-            // Show attachment indicators above the message bubble
-            if message.role == .user && !message.attachments.isEmpty {
-                MessageAttachmentIndicator(
-                    attachments: message.attachments,
-                    isDarkMode: isDarkMode
-                )
-            }
-
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 2) {
-                if message.role == .assistant {
-                    AgentActivityTimelineBridge(messageID: message.id, isDarkMode: isDarkMode)
-                    ToolExecutionDemoBridge(messageID: message.id, isDarkMode: isDarkMode)
-                }
-
-                // Show the loading dots for a fresh streaming assistant response (but not if we have thoughts or are thinking)
-                if message.role == .assistant &&
-                    message.content.isEmpty &&
-                    message.thoughts == nil &&
-                    !message.isThinking &&
-                    isLoading &&
-                    isLastMessage {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if !message.urlFetches.isEmpty {
-                            URLFetchBox(urlFetches: message.urlFetches, isDarkMode: isDarkMode, onTap: { showURLFetchSheet = true })
-                        }
-
-                        // Show web search box if searching
-                        if !hasAgentActivity, let webSearchState = message.webSearchState {
-                            WebSearchBox(
-                                webSearchState: webSearchState,
-                                isDarkMode: isDarkMode,
-                                isStreaming: true,
-                                webSearchSummary: viewModel.webSearchSummary,
-                                onTap: { showSourcesSheet = true }
-                            )
-                        }
-
-                        // Show loading dots if no web search or search is complete
-                        if !hasAgentActivity && (message.webSearchState == nil || message.webSearchState?.status != .searching) {
-                            LoadingDotsView(isDarkMode: isDarkMode)
-                                .padding(.horizontal)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                // If the message is thinking or has thoughts, display them in a thinking box
-                else if message.isThinking || message.thoughts != nil {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if !message.urlFetches.isEmpty {
-                            URLFetchBox(urlFetches: message.urlFetches, isDarkMode: isDarkMode, onTap: { showURLFetchSheet = true })
-                        }
-
-                        // Web search box (if applicable) - shown before thoughts since search happens first
-                        if !hasAgentActivity, let webSearchState = message.webSearchState {
-                            WebSearchBox(
-                                webSearchState: webSearchState,
-                                isDarkMode: isDarkMode,
-                                isStreaming: isLoading && isLastMessage,
-                                webSearchSummary: isLastMessage ? viewModel.webSearchSummary : nil,
-                                onTap: { showSourcesSheet = true }
-                            )
-                        }
-
-                        if !hasAgentActivity {
-                            CollapsibleThinkingBox(
-                                thinkingText: message.thoughts ?? "",
-                                isDarkMode: isDarkMode,
-                                isStreaming: message.isThinking && isLoading && isLastMessage,
-                                generationTimeSeconds: message.generationTimeSeconds,
-                                thinkingSummary: isLastMessage && message.isThinking ? viewModel.thinkingSummary : nil,
-                                onTap: { showThoughtsSheet = true }
-                            )
-                        }
-
-                        if !message.content.isEmpty {
-                            if !message.contentChunks.isEmpty {
-                                ChunkedContentView(chunks: message.contentChunks, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
-                                    .equatable()
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            } else {
-                                LaTeXMarkdownView(content: message.content, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
-                                    .equatable()
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .transaction { transaction in
-                                        transaction.animation = nil
-                                    }
-                            }
-                        }
-                    }
-                }
-                
-                // Legacy support: if content still has <think> tags, parse and display
-                else if let parsed = getParsedMessageContent() {
-                    VStack(alignment: .leading, spacing: 4) {
-                        CollapsibleThinkingBox(
-                            thinkingText: parsed.thinkingText,
-                            isDarkMode: isDarkMode,
-                            isStreaming: isLoading && isLastMessage,
-                            generationTimeSeconds: message.generationTimeSeconds,
-                            thinkingSummary: isLastMessage && !message.content.contains("</think>") ? viewModel.thinkingSummary : nil,
-                            onTap: { showThoughtsSheet = true }
-                        )
-                        
-                        // Remainder: text after </think> if present
-                        if !parsed.remainderText.isEmpty {
-                            LaTeXMarkdownView(content: parsed.remainderText, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
-                                .equatable()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .transaction { transaction in
-                                    transaction.animation = nil
-                                }
-                        }
-                    }
-                }
-                
-                // Display long user messages as an attachment-style preview that expands on tap
-                else if message.role == .user && message.shouldDisplayAsAttachment {
-                    if isEditMode {
-                        UserMessageEditView(
-                            content: $editedContent,
-                            isDarkMode: isDarkMode,
-                            onSave: {
-                                viewModel.editMessage(at: messageIndex, newContent: editedContent)
-                                isEditMode = false
-                            },
-                            onCancel: {
-                                isEditMode = false
-                                editedContent = message.content
-                            }
-                        )
-                    } else {
-                        LongMessageAttachmentView(message: message, isDarkMode: isDarkMode) {
-                            showLongMessageSheet = true
-                        }
-                    }
-                }
-
-                else if !message.content.isEmpty {
-                    if message.role == .user {
-                        if isEditMode {
-                            UserMessageEditView(
-                                content: $editedContent,
-                                isDarkMode: isDarkMode,
-                                onSave: {
-                                    viewModel.editMessage(at: messageIndex, newContent: editedContent)
-                                    isEditMode = false
-                                },
-                                onCancel: {
-                                    isEditMode = false
-                                    editedContent = message.content
-                                }
-                            )
-                        } else {
-                            AdaptiveMarkdownText(content: message.content, isDarkMode: isDarkMode)
-                        }
-                    } else {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if !message.urlFetches.isEmpty {
-                                URLFetchBox(urlFetches: message.urlFetches, isDarkMode: isDarkMode, onTap: { showURLFetchSheet = true })
-                            }
-
-                            // Web search box for non-thinking assistant messages
-                            if !hasAgentActivity, let webSearchState = message.webSearchState {
-                                WebSearchBox(
-                                    webSearchState: webSearchState,
-                                    isDarkMode: isDarkMode,
-                                    isStreaming: isLoading && isLastMessage,
-                                    webSearchSummary: isLastMessage ? viewModel.webSearchSummary : nil,
-                                    onTap: { showSourcesSheet = true }
-                                )
-                            }
-
-                            if !message.contentParts.isEmpty {
-                                ForEach(message.contentParts) { part in
-                                    switch part.kind {
-                                    case .markdown:
-                                        if let text = part.markdown, !text.isEmpty {
-                                            if part.sources.isEmpty {
-                                                LaTeXMarkdownView(content: text, isDarkMode: isDarkMode, isStreaming: false)
-                                                    .equatable()
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                            } else {
-                                                InlineSectionSourcesView(
-                                                    markdown: text,
-                                                    sources: part.sources,
-                                                    isDarkMode: isDarkMode
-                                                )
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                            }
-                                        }
-                                    case .image:
-                                        SafeInlineImageMediaView(part: part, isDarkMode: isDarkMode)
-                                    case .video:
-                                        SafeInlineVideoMediaView(part: part, isDarkMode: isDarkMode)
-                                    case .youtube:
-                                        SafeInlineYouTubeMediaView(part: part, isDarkMode: isDarkMode)
-                                    case .linkPreview:
-                                        InlineLinkPreviewView(part: part, isDarkMode: isDarkMode)
-                                    case .svg:
-                                        InlineSVGMediaView(part: part, isDarkMode: isDarkMode)
-                                    case .lottie:
-                                        if let name = part.lottieAnimationName {
-                                            AgentLottieMediaView(animationName: name, isDarkMode: isDarkMode)
-                                        }
-                                    case .customTool:
-                                        EmptyView()
-                                    }
-                                }
-                            } else if !message.contentChunks.isEmpty {
-                                ChunkedContentView(chunks: message.contentChunks, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
-                                    .equatable()
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            } else {
-                                LaTeXMarkdownView(content: message.content, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
-                                    .equatable()
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                    }
-                }
-
-                // Show error box with regenerate button if stream failed
-                if message.streamError != nil && message.role == .assistant {
-                    ErrorMessageView(
-                        errorMessage: message.streamError!,
-                        isDarkMode: isDarkMode,
-                        isRequestError: message.isRequestError,
-                        onRegenerate: isLastMessage ? { viewModel.regenerateLastResponse() } : nil
+                if message.role == .user && !message.attachments.isEmpty {
+                    MessageAttachmentIndicator(
+                        attachments: message.attachments,
+                        isDarkMode: isDarkMode
                     )
-                    .padding(.top, message.content.isEmpty && message.thoughts == nil ? 0 : 8)
-                }
-                
-                // Add action buttons for assistant messages (only when not streaming)
-                if message.role == .assistant &&
-                   (!message.content.isEmpty || !message.contentParts.isEmpty || message.thoughts != nil) &&
-                   !(isLoading && isLastMessage) {
-                    HStack(spacing: 16) {
-                        // Sources button - only show if we have web search sources
-                        if let webSearchState = message.webSearchState,
-                           !webSearchState.sources.isEmpty {
-                            SourcesButton(
-                                sources: webSearchState.sources,
-                                isDarkMode: isDarkMode
-                            ) {
-                                showSourcesSheet = true
-                            }
-                        }
-
-                        Button {
-                            showRawContentModal = true
-                        } label: {
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(isDarkMode ? .white.opacity(0.5) : .black.opacity(0.5))
-                                .frame(width: 32, height: 32)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-
-                        // Regenerate button - only on the last assistant message
-                        if isLastMessage && !viewModel.isLoading && messageIndex > 0 {
-                            Button {
-                                viewModel.regenerateMessage(at: messageIndex - 1)
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(isDarkMode ? .white.opacity(0.5) : .black.opacity(0.5))
-                                    .frame(width: 32, height: 32)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-
-                        Spacer()
-                    }
-                    .padding(.vertical, 8)
-
-                    // AI disclaimer - only on the last assistant message
-                    if isLastMessage {
-                        Text("AI can make mistakes. Verify important information.")
-                            .font(.system(size: 11))
-                            .foregroundColor(isDarkMode ? .white.opacity(0.35) : .black.opacity(0.35))
-                    }
                 }
 
-                }
-                .padding(.vertical, message.role == .user && message.content.isEmpty ? 0 : 8)
-                .padding(.horizontal, message.role == .user && !message.content.isEmpty ? 12 : 0)
-                .background {
-                    if message.role == .user && !message.content.isEmpty {
-                        if #available(iOS 26, *) {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(.thickMaterial)
-                        } else {
-                            Color.userMessageBackground(isDarkMode: isDarkMode)
-                        }
-                    }
-                }
-                .cornerRadius(16)
-                .modifier(MessageBubbleModifier(isUserMessage: message.role == .user))
-                .contextMenu {
-                    if message.role == .user && !message.content.isEmpty {
-                        Button {
-                            viewModel.regenerateMessage(at: messageIndex)
-                        } label: {
-                            Label("Resend", systemImage: "arrow.clockwise")
-                        }
-                        .disabled(viewModel.isLoading)
-
-                        Button {
-                            UIPasteboard.general.string = message.content
-                        } label: {
-                            Label("Copy", systemImage: "doc.on.doc")
-                        }
-
-                        Button {
-                            editedContent = message.content
-                            isEditMode = true
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                    }
-                }
-                .onChange(of: message.id) { _, _ in
-                    isEditMode = false
-                    editedContent = ""
-                }
-                .onChange(of: viewModel.editRequestedForMessageIndex) { _, newValue in
-                    if newValue == messageIndex && message.role == .user {
-                        editedContent = message.content
-                        isEditMode = true
-                        viewModel.editRequestedForMessageIndex = nil
-                    }
-                }
-
+                messageBubbleContent
             }
         }
         .padding(.horizontal, 4)
@@ -442,6 +114,366 @@ public struct MessageView: View {
             }
             return .systemAction
         })
+    }
+
+    // MARK: - Message Subviews (Decomposed for compiler performance)
+
+    @ViewBuilder
+    private var messageBubbleContent: some View {
+        VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 2) {
+            if message.role == .assistant {
+                AgentActivityTimelineBridge(messageID: message.id, isDarkMode: isDarkMode)
+                ToolExecutionDemoBridge(messageID: message.id, isDarkMode: isDarkMode)
+            }
+
+            messageInnerContent
+
+            if message.streamError != nil && message.role == .assistant {
+                ErrorMessageView(
+                    errorMessage: message.streamError!,
+                    isDarkMode: isDarkMode,
+                    isRequestError: message.isRequestError,
+                    onRegenerate: isLastMessage ? { viewModel.regenerateLastResponse() } : nil
+                )
+                .padding(.top, message.content.isEmpty && message.thoughts == nil ? 0 : 8)
+            }
+
+            assistantActionsBar
+        }
+        .padding(.vertical, message.role == .user && message.content.isEmpty ? 0 : 8)
+        .padding(.horizontal, message.role == .user && !message.content.isEmpty ? 12 : 0)
+        .background {
+            messageBackground
+        }
+        .cornerRadius(16)
+        .modifier(MessageBubbleModifier(isUserMessage: message.role == .user))
+        .contextMenu {
+            messageContextMenu
+        }
+        .onChange(of: message.id) { _, _ in
+            isEditMode = false
+            editedContent = ""
+        }
+        .onChange(of: viewModel.editRequestedForMessageIndex) { _, newValue in
+            if newValue == messageIndex && message.role == .user {
+                editedContent = message.content
+                isEditMode = true
+                viewModel.editRequestedForMessageIndex = nil
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var messageBackground: some View {
+        if message.role == .user && !message.content.isEmpty {
+            if #available(iOS 26, *) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.thickMaterial)
+            } else {
+                Color.userMessageBackground(isDarkMode: isDarkMode)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var messageContextMenu: some View {
+        if message.role == .user && !message.content.isEmpty {
+            Button {
+                viewModel.regenerateMessage(at: messageIndex)
+            } label: {
+                Label("Resend", systemImage: "arrow.clockwise")
+            }
+            .disabled(viewModel.isLoading)
+
+            Button {
+                UIPasteboard.general.string = message.content
+            } label: {
+                Label("Copy", systemImage: "doc.on.doc")
+            }
+
+            Button {
+                editedContent = message.content
+                isEditMode = true
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var messageInnerContent: some View {
+        if message.role == .assistant &&
+            message.content.isEmpty &&
+            message.thoughts == nil &&
+            !message.isThinking &&
+            isLoading &&
+            isLastMessage {
+            loadingAssistantView
+        } else if message.isThinking || message.thoughts != nil {
+            thinkingAssistantView
+        } else if let parsed = getParsedMessageContent() {
+            legacyThinkContentView(parsed: parsed)
+        } else if message.role == .user {
+            userContentView
+        } else if !message.content.isEmpty {
+            assistantStandardContentView
+        }
+    }
+
+    @ViewBuilder
+    private var loadingAssistantView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if !message.urlFetches.isEmpty {
+                URLFetchBox(urlFetches: message.urlFetches, isDarkMode: isDarkMode, onTap: { showURLFetchSheet = true })
+            }
+
+            if !hasAgentActivity, let webSearchState = message.webSearchState {
+                WebSearchBox(
+                    webSearchState: webSearchState,
+                    isDarkMode: isDarkMode,
+                    isStreaming: true,
+                    webSearchSummary: viewModel.webSearchSummary,
+                    onTap: { showSourcesSheet = true }
+                )
+            }
+
+            if !hasAgentActivity && (message.webSearchState == nil || message.webSearchState?.status != .searching) {
+                LoadingDotsView(isDarkMode: isDarkMode)
+                    .padding(.horizontal)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var thinkingAssistantView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if !message.urlFetches.isEmpty {
+                URLFetchBox(urlFetches: message.urlFetches, isDarkMode: isDarkMode, onTap: { showURLFetchSheet = true })
+            }
+
+            if !hasAgentActivity, let webSearchState = message.webSearchState {
+                WebSearchBox(
+                    webSearchState: webSearchState,
+                    isDarkMode: isDarkMode,
+                    isStreaming: isLoading && isLastMessage,
+                    webSearchSummary: isLastMessage ? viewModel.webSearchSummary : nil,
+                    onTap: { showSourcesSheet = true }
+                )
+            }
+
+            if !hasAgentActivity {
+                CollapsibleThinkingBox(
+                    thinkingText: message.thoughts ?? "",
+                    isDarkMode: isDarkMode,
+                    isStreaming: message.isThinking && isLoading && isLastMessage,
+                    generationTimeSeconds: message.generationTimeSeconds,
+                    thinkingSummary: isLastMessage && message.isThinking ? viewModel.thinkingSummary : nil,
+                    onTap: { showThoughtsSheet = true }
+                )
+            }
+
+            if !message.content.isEmpty {
+                if !message.contentChunks.isEmpty {
+                    ChunkedContentView(chunks: message.contentChunks, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
+                        .equatable()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    LaTeXMarkdownView(content: message.content, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
+                        .equatable()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .transaction { transaction in
+                            transaction.animation = nil
+                        }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func legacyThinkContentView(parsed: (thinkingText: String, remainderText: String)) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            CollapsibleThinkingBox(
+                thinkingText: parsed.thinkingText,
+                isDarkMode: isDarkMode,
+                isStreaming: isLoading && isLastMessage,
+                generationTimeSeconds: message.generationTimeSeconds,
+                thinkingSummary: isLastMessage && !message.content.contains("</think>") ? viewModel.thinkingSummary : nil,
+                onTap: { showThoughtsSheet = true }
+            )
+
+            if !parsed.remainderText.isEmpty {
+                LaTeXMarkdownView(content: parsed.remainderText, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
+                    .equatable()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transaction { transaction in
+                        transaction.animation = nil
+                    }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var userContentView: some View {
+        if message.shouldDisplayAsAttachment {
+            if isEditMode {
+                UserMessageEditView(
+                    content: $editedContent,
+                    isDarkMode: isDarkMode,
+                    onSave: {
+                        viewModel.editMessage(at: messageIndex, newContent: editedContent)
+                        isEditMode = false
+                    },
+                    onCancel: {
+                        isEditMode = false
+                        editedContent = message.content
+                    }
+                )
+            } else {
+                LongMessageAttachmentView(message: message, isDarkMode: isDarkMode) {
+                    showLongMessageSheet = true
+                }
+            }
+        } else if !message.content.isEmpty {
+            if isEditMode {
+                UserMessageEditView(
+                    content: $editedContent,
+                    isDarkMode: isDarkMode,
+                    onSave: {
+                        viewModel.editMessage(at: messageIndex, newContent: editedContent)
+                        isEditMode = false
+                    },
+                    onCancel: {
+                        isEditMode = false
+                        editedContent = message.content
+                    }
+                )
+            } else {
+                AdaptiveMarkdownText(content: message.content, isDarkMode: isDarkMode)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var assistantStandardContentView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if !message.urlFetches.isEmpty {
+                URLFetchBox(urlFetches: message.urlFetches, isDarkMode: isDarkMode, onTap: { showURLFetchSheet = true })
+            }
+
+            if !hasAgentActivity, let webSearchState = message.webSearchState {
+                WebSearchBox(
+                    webSearchState: webSearchState,
+                    isDarkMode: isDarkMode,
+                    isStreaming: isLoading && isLastMessage,
+                    webSearchSummary: isLastMessage ? viewModel.webSearchSummary : nil,
+                    onTap: { showSourcesSheet = true }
+                )
+            }
+
+            if !message.contentParts.isEmpty {
+                ForEach(message.contentParts) { part in
+                    contentPartView(part)
+                }
+            } else if !message.contentChunks.isEmpty {
+                ChunkedContentView(chunks: message.contentChunks, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
+                    .equatable()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                LaTeXMarkdownView(content: message.content, isDarkMode: isDarkMode, isStreaming: isLoading && isLastMessage)
+                    .equatable()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func contentPartView(_ part: MessageContentPart) -> some View {
+        switch part.kind {
+        case .markdown:
+            if let text = part.markdown, !text.isEmpty {
+                if part.sources.isEmpty {
+                    LaTeXMarkdownView(content: text, isDarkMode: isDarkMode, isStreaming: false)
+                        .equatable()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    InlineSectionSourcesView(
+                        markdown: text,
+                        sources: part.sources,
+                        isDarkMode: isDarkMode
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        case .image:
+            SafeInlineImageMediaView(part: part, isDarkMode: isDarkMode)
+        case .video:
+            SafeInlineVideoMediaView(part: part, isDarkMode: isDarkMode)
+        case .youtube:
+            SafeInlineYouTubeMediaView(part: part, isDarkMode: isDarkMode)
+        case .linkPreview:
+            InlineLinkPreviewView(part: part, isDarkMode: isDarkMode)
+        case .svg:
+            InlineSVGMediaView(part: part, isDarkMode: isDarkMode)
+        case .lottie:
+            if let name = part.lottieAnimationName {
+                AgentLottieMediaView(animationName: name, isDarkMode: isDarkMode)
+            }
+        case .customTool:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var assistantActionsBar: some View {
+        if message.role == .assistant &&
+           (!message.content.isEmpty || !message.contentParts.isEmpty || message.thoughts != nil) &&
+           !(isLoading && isLastMessage) {
+            HStack(spacing: 16) {
+                if let webSearchState = message.webSearchState,
+                   !webSearchState.sources.isEmpty {
+                    SourcesButton(
+                        sources: webSearchState.sources,
+                        isDarkMode: isDarkMode
+                    ) {
+                        showSourcesSheet = true
+                    }
+                }
+
+                Button {
+                    showRawContentModal = true
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(isDarkMode ? .white.opacity(0.5) : .black.opacity(0.5))
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                if isLastMessage && !viewModel.isLoading && messageIndex > 0 {
+                    Button {
+                        viewModel.regenerateMessage(at: messageIndex - 1)
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(isDarkMode ? .white.opacity(0.5) : .black.opacity(0.5))
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, 8)
+
+            if isLastMessage {
+                Text("AI can make mistakes. Verify important information.")
+                    .font(.system(size: 11))
+                    .foregroundColor(isDarkMode ? .white.opacity(0.35) : .black.opacity(0.35))
+            }
+        }
     }
 
     private func copyMessagePart(_ text: String) {

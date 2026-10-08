@@ -965,7 +965,7 @@ public class ChatViewModel: ObservableObject {
 
                 var collectedSources: [WebSearchSource] = []
 
-                let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.responses.createResponseStreaming(query: chatQuery)
+                let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.createResponseStreaming(query: chatQuery)
 
                 var thinkStartTime: Date? = nil
                 var thoughtsBuffer = ""
@@ -1496,7 +1496,7 @@ extension ChatViewModel {
             )
 
             var title = ""
-            let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.responses.createResponseStreaming(query: query)
+            let stream: AsyncThrowingStream<ResponseStreamEvent, Error> = client.createResponseStreaming(query: query)
             for try await event in stream {
                 if case .outputText(.delta(let textEvent)) = event {
                     title += textEvent.delta

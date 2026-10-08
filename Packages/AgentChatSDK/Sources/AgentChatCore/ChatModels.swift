@@ -345,6 +345,11 @@ public struct Message: Identifiable, Codable, Equatable, Hashable, Sendable {
     public var contentParts: [MessageContentPart]
     public var urlFetches: [URLFetch]
 
+    public static let longMessageAttachmentThreshold = 1200
+    public var shouldDisplayAsAttachment: Bool {
+        role == .user && content.count >= Message.longMessageAttachmentThreshold
+    }
+
     public init(
         id: String = UUID().uuidString.lowercased(),
         role: MessageRole,

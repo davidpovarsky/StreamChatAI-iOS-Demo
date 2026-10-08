@@ -14,6 +14,7 @@ import OpenAI
 @_spi(Generated) import OpenAPIRuntime
 #endif
 import AgentChatCore
+import AgentChatActivity
 
 @MainActor
 public class ChatViewModel: ObservableObject {

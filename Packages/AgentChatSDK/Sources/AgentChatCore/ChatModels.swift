@@ -34,7 +34,7 @@ public struct WebSearchSource: Codable, Equatable, Identifiable, Hashable, Senda
 
 // MARK: - Web Search Status & State
 
-public enum WebSearchStatus: String, Codable, Equatable, Sendable {
+public enum WebSearchStatus: String, Codable, Equatable, Hashable, Sendable {
     case searching
     case reading
     case synthesizing
@@ -44,7 +44,7 @@ public enum WebSearchStatus: String, Codable, Equatable, Sendable {
     case blocked
 }
 
-public struct WebSearchState: Codable, Equatable, Sendable {
+public struct WebSearchState: Codable, Equatable, Hashable, Sendable {
     public var query: String?
     public var status: WebSearchStatus
     public var sources: [WebSearchSource]
@@ -140,32 +140,72 @@ public struct MessageContentPart: Identifiable, Codable, Equatable, Hashable, Se
 
 // MARK: - Attachment Models
 
-public enum AttachmentType: String, Codable, Sendable {
+public enum AttachmentType: String, Codable, Equatable, Hashable, Sendable {
     case image
     case document
     case audio
     case video
 }
 
-public struct Attachment: Identifiable, Codable, Equatable, Sendable {
+public enum AttachmentProcessingState: String, Codable, Equatable, Hashable, Sendable {
+    case pending
+    case processing
+    case completed
+    case failed
+}
+
+public struct Attachment: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public var type: AttachmentType
     public var url: String?
     public var filename: String
     public var size: Int?
+    public var mimeType: String?
+    public var base64: String?
+    public var thumbnailBase64: String?
+    public var textContent: String?
+    public var description: String?
+    public var encryptionKey: String?
+    public var processingState: AttachmentProcessingState
+
+    public var fileName: String {
+        get { filename }
+        set { filename = newValue }
+    }
+
+    public var fileSize: Int64 {
+        get { Int64(size ?? 0) }
+        set { size = Int(newValue) }
+    }
 
     public init(
         id: String = UUID().uuidString.lowercased(),
         type: AttachmentType = .image,
         url: String? = nil,
-        filename: String,
-        size: Int? = nil
+        filename: String = "",
+        size: Int? = nil,
+        fileName: String? = nil,
+        mimeType: String? = nil,
+        base64: String? = nil,
+        thumbnailBase64: String? = nil,
+        textContent: String? = nil,
+        description: String? = nil,
+        fileSize: Int64? = nil,
+        encryptionKey: String? = nil,
+        processingState: AttachmentProcessingState = .pending
     ) {
         self.id = id
         self.type = type
         self.url = url
-        self.filename = filename
-        self.size = size
+        self.filename = fileName ?? filename
+        self.size = fileSize != nil ? Int(fileSize!) : size
+        self.mimeType = mimeType
+        self.base64 = base64
+        self.thumbnailBase64 = thumbnailBase64
+        self.textContent = textContent
+        self.description = description
+        self.encryptionKey = encryptionKey
+        self.processingState = processingState
     }
 }
 
@@ -237,14 +277,14 @@ public struct ThinkingChunk: Identifiable, Codable, Equatable, Hashable, Sendabl
 
 // MARK: - URL Fetch Types
 
-public enum URLFetchStatus: String, Codable, Equatable, Sendable {
+public enum URLFetchStatus: String, Codable, Equatable, Hashable, Sendable {
     case fetching
     case completed
     case failed
     case blocked
 }
 
-public struct URLFetchState: Identifiable, Codable, Equatable, Sendable {
+public struct URLFetchState: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public let url: String
     public var status: URLFetchStatus
@@ -260,7 +300,7 @@ public struct URLFetchState: Identifiable, Codable, Equatable, Sendable {
 
 public typealias URLFetch = URLFetchState
 
-public struct URLCitation: Codable, Equatable, Sendable {
+public struct URLCitation: Codable, Equatable, Hashable, Sendable {
     public let title: String
     public let url: String
     public let start_index: Int?
@@ -274,7 +314,7 @@ public struct URLCitation: Codable, Equatable, Sendable {
     }
 }
 
-public struct Annotation: Codable, Equatable, Sendable {
+public struct Annotation: Codable, Equatable, Hashable, Sendable {
     public let type: String
     public let url_citation: URLCitation
 
@@ -286,7 +326,7 @@ public struct Annotation: Codable, Equatable, Sendable {
 
 // MARK: - Message Model
 
-public struct Message: Identifiable, Codable, Equatable, Sendable {
+public struct Message: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public let role: MessageRole
     public var content: String
@@ -392,8 +432,8 @@ public struct ModelType: Identifiable, Codable, Equatable, Hashable, Sendable {
 
 // MARK: - Chat Model
 
-public struct Chat: Identifiable, Codable, Equatable, Sendable {
-    public enum TitleState: String, Codable, Sendable {
+public struct Chat: Identifiable, Codable, Equatable, Hashable, Sendable {
+    public enum TitleState: String, Codable, Hashable, Sendable {
         case placeholder
         case generated
         case manual
@@ -442,7 +482,8 @@ public struct Chat: Identifiable, Codable, Equatable, Sendable {
         title: String = placeholderTitle,
         titleState: TitleState = .placeholder,
         messages: [Message] = [],
-        modelType: ModelType = .gpt4o
+        modelType: ModelType = .gpt4o,
+        language: String? = nil
     ) -> Chat {
         Chat(
             id: UUID().uuidString.lowercased(),
@@ -451,7 +492,8 @@ public struct Chat: Identifiable, Codable, Equatable, Sendable {
             messages: messages,
             hasActiveStream: false,
             createdAt: Date(),
-            modelType: modelType
+            modelType: modelType,
+            language: language
         )
     }
 }

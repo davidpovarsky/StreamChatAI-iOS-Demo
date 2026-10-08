@@ -34,6 +34,7 @@ let package = Package(
         .library(name: "AgentChatVoiceLiveKit", targets: ["AgentChatVoiceLiveKit"])
     ],
     dependencies: [
+        .package(url: "https://github.com/tinfoilsh/openai-swift-fork.git", from: "0.0.4"),
         .package(url: "https://github.com/apple/swift-async-algorithms.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.0"),
         .package(url: "https://github.com/tinfoilsh/textual.git", branch: "main"),
@@ -115,6 +116,7 @@ let package = Package(
                 "AgentChatRichMedia",
                 "AgentChatComposerExtensions",
                 "AgentChatVoice",
+                .product(name: "OpenAI", package: "openai-swift-fork"),
                 .product(name: "Textual", package: "textual"),
                 .product(name: "SwiftMath", package: "SwiftMath")
             ]

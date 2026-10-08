@@ -997,7 +997,7 @@ struct ThinkingChunkView: View, Equatable {
     let chunk: ThinkingChunk
     let isDarkMode: Bool
 
-    static func == (lhs: ThinkingChunkView, rhs: ThinkingChunkView) -> Bool {
+    nonisolated static func == (lhs: ThinkingChunkView, rhs: ThinkingChunkView) -> Bool {
         if lhs.chunk.isComplete && rhs.chunk.isComplete {
             return lhs.chunk.id == rhs.chunk.id && lhs.isDarkMode == rhs.isDarkMode
         }
@@ -1122,7 +1122,7 @@ struct ChunkedContentView: View, Equatable {
     let isDarkMode: Bool
     let isStreaming: Bool
 
-    static func == (lhs: ChunkedContentView, rhs: ChunkedContentView) -> Bool {
+    nonisolated static func == (lhs: ChunkedContentView, rhs: ChunkedContentView) -> Bool {
         lhs.chunks == rhs.chunks &&
         lhs.isDarkMode == rhs.isDarkMode &&
         lhs.isStreaming == rhs.isStreaming
@@ -1142,7 +1142,7 @@ struct ChunkView: View, Equatable {
     let isDarkMode: Bool
     let isStreaming: Bool
 
-    static func == (lhs: ChunkView, rhs: ChunkView) -> Bool {
+    nonisolated static func == (lhs: ChunkView, rhs: ChunkView) -> Bool {
         if lhs.chunk.isComplete && rhs.chunk.isComplete {
             return lhs.chunk.id == rhs.chunk.id && lhs.isDarkMode == rhs.isDarkMode
         }

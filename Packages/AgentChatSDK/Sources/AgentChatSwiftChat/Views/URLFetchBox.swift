@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AgentChatCore
 
 /// Inline row showing URL fetch count; tapping opens detail sheet
 struct URLFetchBox: View {

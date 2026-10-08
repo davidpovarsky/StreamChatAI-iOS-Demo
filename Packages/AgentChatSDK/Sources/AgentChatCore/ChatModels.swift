@@ -39,20 +39,38 @@ public enum WebSearchStatus: String, Codable, Equatable, Sendable {
     case reading
     case synthesizing
     case complete
+    case completed
     case failed
+    case blocked
 }
 
 public struct WebSearchState: Codable, Equatable, Sendable {
+    public var query: String?
     public var status: WebSearchStatus
-    public var query: String
     public var sources: [WebSearchSource]
+    public var reason: String?
     public var error: String?
+
+    public init(
+        query: String? = nil,
+        status: WebSearchStatus = .searching,
+        sources: [WebSearchSource] = [],
+        reason: String? = nil,
+        error: String? = nil
+    ) {
+        self.query = query
+        self.status = status
+        self.sources = sources
+        self.reason = reason
+        self.error = error ?? reason
+    }
 
     public init(status: WebSearchStatus, query: String, sources: [WebSearchSource] = [], error: String? = nil) {
         self.status = status
         self.query = query
         self.sources = sources
         self.error = error
+        self.reason = error
     }
 }
 
@@ -177,15 +195,52 @@ public struct ThinkingChunk: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
-public struct URLFetch: Identifiable, Codable, Equatable, Sendable {
+// MARK: - URL Fetch Types
+
+public enum URLFetchStatus: String, Codable, Equatable, Sendable {
+    case fetching
+    case completed
+    case failed
+    case blocked
+}
+
+public struct URLFetchState: Identifiable, Codable, Equatable, Sendable {
     public let id: String
     public let url: String
-    public let title: String?
+    public var status: URLFetchStatus
+    public var title: String?
 
-    public init(id: String = UUID().uuidString.lowercased(), url: String, title: String? = nil) {
+    public init(id: String = UUID().uuidString.lowercased(), url: String, status: URLFetchStatus = .fetching, title: String? = nil) {
         self.id = id
         self.url = url
+        self.status = status
         self.title = title
+    }
+}
+
+public typealias URLFetch = URLFetchState
+
+public struct URLCitation: Codable, Equatable, Sendable {
+    public let title: String
+    public let url: String
+    public let start_index: Int?
+    public let end_index: Int?
+
+    public init(title: String, url: String, start_index: Int? = nil, end_index: Int? = nil) {
+        self.title = title
+        self.url = url
+        self.start_index = start_index
+        self.end_index = end_index
+    }
+}
+
+public struct Annotation: Codable, Equatable, Sendable {
+    public let type: String
+    public let url_citation: URLCitation
+
+    public init(type: String, url_citation: URLCitation) {
+        self.type = type
+        self.url_citation = url_citation
     }
 }
 

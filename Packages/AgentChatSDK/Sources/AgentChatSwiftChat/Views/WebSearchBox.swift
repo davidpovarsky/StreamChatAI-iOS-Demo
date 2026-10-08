@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AgentChatCore
 
 /// Inline row showing web search status; tapping opens sources sheet
 struct WebSearchBox: View {

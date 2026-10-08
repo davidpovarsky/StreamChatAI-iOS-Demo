@@ -336,6 +336,7 @@ public struct Message: Identifiable, Codable, Equatable, Hashable, Sendable {
     public var isCollapsed: Bool
     public var isStreaming: Bool
     public var streamError: String?
+    public var isRequestError: Bool
     public var generationTimeSeconds: Double?
     public var contentChunks: [ContentChunk]
     public var thinkingChunks: [ThinkingChunk]
@@ -354,6 +355,7 @@ public struct Message: Identifiable, Codable, Equatable, Hashable, Sendable {
         isCollapsed: Bool = true,
         isStreaming: Bool = false,
         streamError: String? = nil,
+        isRequestError: Bool = false,
         generationTimeSeconds: Double? = nil,
         contentChunks: [ContentChunk] = [],
         thinkingChunks: [ThinkingChunk] = [],
@@ -371,6 +373,7 @@ public struct Message: Identifiable, Codable, Equatable, Hashable, Sendable {
         self.isCollapsed = isCollapsed
         self.isStreaming = isStreaming
         self.streamError = streamError
+        self.isRequestError = isRequestError
         self.generationTimeSeconds = generationTimeSeconds
         self.contentChunks = contentChunks
         self.thinkingChunks = thinkingChunks

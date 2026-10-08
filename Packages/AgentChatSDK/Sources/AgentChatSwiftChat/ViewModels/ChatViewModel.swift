@@ -15,6 +15,7 @@ import OpenAI
 #endif
 import AgentChatCore
 import AgentChatActivity
+import AgentChatToolPresentation
 
 @MainActor
 public class ChatViewModel: ObservableObject {
@@ -898,7 +899,7 @@ public class ChatViewModel: ObservableObject {
         let activityMessageID = assistantMessage.id
         currentTask?.cancel()
 
-        currentTask = Task {
+        currentTask = Task<Void, Error> {
             var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
             backgroundTaskId = UIApplication.shared.beginBackgroundTask(withName: "CompleteStreamingResponse") {
                 UIApplication.shared.endBackgroundTask(backgroundTaskId)

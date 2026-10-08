@@ -96,7 +96,7 @@ struct ChatQueryBuilder {
         // Build tools array
         var tools: [Tool]? = nil
         if webSearchEnabled {
-            tools = [.webSearchTool(Schemas.WebSearchPreviewTool(_type: .webSearchPreview))]
+            tools = [.webSearchPreviewTool(Schemas.WebSearchPreviewTool(_type: .webSearchPreview))]
         }
 
         return CreateModelResponseQuery(

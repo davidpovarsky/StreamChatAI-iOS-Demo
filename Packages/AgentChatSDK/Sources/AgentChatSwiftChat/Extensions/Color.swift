@@ -59,5 +59,46 @@ extension Color {
 #else
     public static let adaptiveAccent = Color.white
 #endif
+
+    // Convenience helpers for common surfaces
+    public static func chatSurface(isDarkMode: Bool) -> Color {
+        isDarkMode ? chatSurfaceDark : chatSurfaceLight
+    }
+
+    public static func sidebarButtonBackground(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? sidebarButtonBackgroundDark : sidebarButtonBackgroundLight
+    }
+
+    public static func cardSurface(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? cardSurfaceDark : cardSurfaceLight
+    }
+
+    public static func chatBackground(isDarkMode: Bool) -> Color {
+        isDarkMode ? chatBackgroundDark : chatBackgroundLight
+    }
+
+    public static func sidebarBackground(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? sidebarBackgroundDark : sidebarBackgroundLight
+    }
+
+    public static func settingsBackground(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? settingsBackgroundDark : settingsBackgroundLight
+    }
+
+    public static func thinkingBackground(isDarkMode: Bool) -> Color {
+        isDarkMode ? thinkingBackgroundDark : thinkingBackgroundLight
+    }
+
+    public static func userMessageBackground(isDarkMode: Bool) -> Color {
+        isDarkMode ? userMessageBackgroundDark : userMessageBackgroundLight
+    }
+
+    public static func userMessageForeground(isDarkMode: Bool) -> Color {
+        isDarkMode ? userMessageForegroundDark : userMessageForegroundLight
+    }
+
+    public static func actionButtonBackground(isDarkMode: Bool) -> Color {
+        isDarkMode ? actionButtonBackgroundDark : actionButtonBackgroundLight
+    }
 }
 #endif

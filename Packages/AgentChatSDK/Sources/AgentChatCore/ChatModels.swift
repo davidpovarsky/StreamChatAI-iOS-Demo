@@ -171,26 +171,66 @@ public struct Attachment: Identifiable, Codable, Equatable, Sendable {
 
 // MARK: - Chunks
 
-public struct ContentChunk: Identifiable, Codable, Equatable, Sendable {
+public enum ContentChunkType: Codable, Equatable, Hashable, Sendable {
+    case paragraph
+    case codeBlock(language: String?)
+    case latexBlock
+    case heading
+    case list
+    case blockquote
+    case table
+    case other
+
+    public static var codeBlock: ContentChunkType {
+        .codeBlock(language: nil)
+    }
+}
+
+public struct ContentChunk: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
-    public let text: String
-    public let timestamp: Date
+    public var type: ContentChunkType
+    public var content: String
+    public var isComplete: Bool
+    public var timestamp: Date
+
+    public var text: String { content }
+
+    public init(id: String = UUID().uuidString.lowercased(), type: ContentChunkType = .other, content: String, isComplete: Bool = true, timestamp: Date = Date()) {
+        self.id = id
+        self.type = type
+        self.content = content
+        self.isComplete = isComplete
+        self.timestamp = timestamp
+    }
 
     public init(id: String = UUID().uuidString.lowercased(), text: String, timestamp: Date = Date()) {
         self.id = id
-        self.text = text
+        self.type = .other
+        self.content = text
+        self.isComplete = true
         self.timestamp = timestamp
     }
 }
 
-public struct ThinkingChunk: Identifiable, Codable, Equatable, Sendable {
+public struct ThinkingChunk: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
-    public let text: String
-    public let timestamp: Date
+    public var content: String
+    public var isComplete: Bool
+    public var timestamp: Date
+
+    public var text: String { content }
+
+    public init(id: String = UUID().uuidString.lowercased(), content: String, isComplete: Bool = true, timestamp: Date = Date()) {
+        self.id = id
+        self.content = content
+        self.isComplete = isComplete
+        self.timestamp = timestamp
+    }
 
     public init(id: String = UUID().uuidString.lowercased(), text: String, timestamp: Date = Date()) {
         self.id = id
-        self.text = text
+        self.content = text
+        self.isComplete = true
         self.timestamp = timestamp
     }
 }

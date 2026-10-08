@@ -7,30 +7,7 @@
 //
 
 import Foundation
-
-enum ContentChunkType: Codable, Equatable, Hashable {
-    case paragraph
-    case codeBlock(language: String?)
-    case heading
-    case list
-    case blockquote
-    case table
-    case other
-}
-
-struct ContentChunk: Codable, Equatable, Identifiable, Hashable {
-    let id: String
-    let type: ContentChunkType
-    let content: String
-    let isComplete: Bool
-
-    init(id: String = UUID().uuidString, type: ContentChunkType, content: String, isComplete: Bool) {
-        self.id = id
-        self.type = type
-        self.content = content
-        self.isComplete = isComplete
-    }
-}
+import AgentChatCore
 
 class StreamingMarkdownChunker {
     private var completedChunks: [ContentChunk] = []

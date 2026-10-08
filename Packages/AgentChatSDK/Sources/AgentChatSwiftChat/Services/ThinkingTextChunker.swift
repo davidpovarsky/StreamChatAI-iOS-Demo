@@ -7,12 +7,7 @@
 //
 
 import Foundation
-
-struct ThinkingChunk: Identifiable, Equatable, Hashable {
-    let id: String
-    let content: String
-    let isComplete: Bool
-}
+import AgentChatCore
 
 class ThinkingTextChunker {
     private var completedChunks: [ThinkingChunk] = []

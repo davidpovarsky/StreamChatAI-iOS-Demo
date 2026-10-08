@@ -38,7 +38,7 @@ struct WebSearchBox: View {
     @ViewBuilder
     private var headerContent: some View {
         switch webSearchState.status {
-        case .searching:
+        case .searching, .reading, .synthesizing:
             HStack(spacing: 8) {
                 SearchingDotsView(isDarkMode: isDarkMode)
                 if let summary = webSearchSummary, !summary.isEmpty {
@@ -60,7 +60,7 @@ struct WebSearchBox: View {
                 }
             }
 
-        case .completed:
+        case .completed, .complete:
             HStack(spacing: 8) {
                 Image(systemName: "globe")
                     .foregroundColor(.blue)

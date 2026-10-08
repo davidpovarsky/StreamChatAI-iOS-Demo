@@ -5,8 +5,8 @@ let package = Package(
     name: "AgentChatSDK",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v16),
-        .macOS(.v13)
+        .iOS(.v18),
+        .macOS(.v14)
     ],
     products: [
         .library(

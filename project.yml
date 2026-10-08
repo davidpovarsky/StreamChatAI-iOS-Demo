@@ -2,7 +2,7 @@ name: StreamChatAIDemo
 options:
   bundleIdPrefix: com.davidpovarsky
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "18.0"
 packages:
   StreamChatAI:
     url: https://github.com/GetStream/stream-chat-swift-ai.git

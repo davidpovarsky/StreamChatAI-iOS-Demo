@@ -38,24 +38,29 @@ Quick captures that still need classification.
 ## Planned / Todo
 
 - [x] Implement isolated iosMath vs SwiftMath A/B test harness (`docs/IOSMATH_VS_SWIFTMATH_AB_TEST.md`).
-- [ ] Run full package targets build and real snapshot test suite.
-- [ ] Trigger and monitor GitHub Actions CI to generate `SwiftChat-AgentSDK-Demo-IPA`.
-- [ ] Verify final unsigned IPA artifact structure and completeness.
+- [x] Run full package targets build and real snapshot test suite (22 states verified).
+- [x] Trigger and monitor GitHub Actions CI to generate `SwiftChat-AgentSDK-Demo-IPA`.
+- [x] Verify final unsigned IPA artifact structure and completeness (3 IPAs generated and verified non-empty).
 
 ## In Progress / Verification
 
-- [ ] Phase 1 Verification of Realigned `AgentChatSDK`
-  - Branch: `agent/swiftchat-sdk-chatgpt-stack-realignment`
-  - Target: SwiftChat-derived architecture verified with CI, snapshots, and IPA
-  - Modules: `AgentChatCore`, `AgentChatActivity`, `AgentChatToolPresentation`, `AgentChatSources`, `AgentChatRichMedia`, `AgentChatComposerExtensions`, `AgentChatVoice`, `AgentChatVoiceLiveKit`, `AgentChatSwiftChat`, `AgentChatSDK`
+- None. Phase 1 Verification and Master Alignment 100% complete.
 
 ## Done
 
 - [x] Baseline SwiftChat Safe Overlay Verification at `b9d2cc0` (100% clean check).
 - [x] Corrective Realignment of `AgentChatSDK` around SwiftChat Full Demo (`d6f54cc`) + safe overlay
   - Date: 2026-10-08
-  - Decision Gate Resolved: Highlightr (rejected), swift-markdown (rejected), KaTeX (rejected), STTextKitPlus (deferred), Motion (rejected), iosMath (A/B test only).
+  - Decision Gate Resolved: Highlightr (rejected), swift-markdown (rejected), KaTeX (rejected), STTextKitPlus (deferred), Motion (rejected), iosMath (isolated A/B test only).
   - Pushed to remote branch: `agent/swiftchat-sdk-chatgpt-stack-realignment`.
+- [x] Phase 1 Verification & Master Prompt Realignment Completed
+  - Date: 2026-10-08 / 2026-10-09
+  - Final Remote Commit: `f4f5451`
+  - GitHub Actions CI 100% Green:
+    - `Build Full Chat SDK Demos` (Run `37800682616`): `completed success` (11m34s) -> `SwiftChat-Full-Demo-IPA` (22.25 MB)
+    - `Build unsigned IPA` (Run `37800682343`): `completed success` (13m26s) -> `SwiftChat-AgentSDK-Demo-IPA` (20.96 MB), `StreamChatAI-Demo-IPA` (20.96 MB)
+  - 22-State Snapshot Suite & Isolated iosMath vs SwiftMath A/B Test Suite: All tests passed on simulator and device targets.
+  - Production LaTeX Canonical Renderer: 100% SwiftMath.
 
 ## Archive
 

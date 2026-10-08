@@ -1256,7 +1256,6 @@ public class ChatViewModel: ObservableObject {
                     }
                 }
             }
-        }
     }
 
     func cancelGeneration() {

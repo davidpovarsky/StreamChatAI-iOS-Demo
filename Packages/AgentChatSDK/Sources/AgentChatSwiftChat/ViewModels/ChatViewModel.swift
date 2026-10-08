@@ -58,7 +58,6 @@ public class ChatViewModel: ObservableObject {
     private var client: OpenAI?
     private var currentTask: Task<Void, Never>?
     private var demoStreamingTask: Task<Void, Never>?
-    private var streamUpdateTimer: Timer?
     private var pendingStreamUpdate: Chat?
     private var networkStatusCancellable: AnyCancellable?
 
@@ -481,11 +480,6 @@ public class ChatViewModel: ObservableObject {
 
         setupClient()
         setupNetworkStatusObserver()
-    }
-
-    deinit {
-        streamUpdateTimer?.invalidate()
-        networkStatusCancellable?.cancel()
     }
 
     // MARK: - Client Setup

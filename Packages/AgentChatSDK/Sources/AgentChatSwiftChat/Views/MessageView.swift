@@ -42,7 +42,7 @@ public struct MessageView: View {
         activityStore.session(for: message.id) != nil
     }
 
-    var body: some View {
+    public var body: some View {
         HStack {
             if message.role == .user {
                 Spacer()
@@ -1108,7 +1108,7 @@ struct TextPulseAnimation: ViewModifier {
 }
 
 struct MessageActionsView: View {
-    @EnvironmentObject var viewModel: SwiftChat.ChatViewModel
+    @EnvironmentObject var viewModel: ChatViewModel
     
     var body: some View {
         EmptyView() // Placeholder - replace with actual content when needed

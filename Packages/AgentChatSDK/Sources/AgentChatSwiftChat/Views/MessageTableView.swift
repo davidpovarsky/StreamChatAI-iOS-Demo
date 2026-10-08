@@ -13,7 +13,7 @@ struct MessageTableView: UIViewRepresentable {
     let archivedMessagesStartIndex: Int
     let isDarkMode: Bool
     let isLoading: Bool
-    @ObservedObject var viewModel: SwiftChat.ChatViewModel
+    @ObservedObject var viewModel: ChatViewModel
     @Binding var isAtBottom: Bool
     @Binding var userHasScrolled: Bool
     let scrollTrigger: UUID

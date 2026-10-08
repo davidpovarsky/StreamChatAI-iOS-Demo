@@ -11,7 +11,7 @@ import SwiftUI
 struct ChatListView: View {
     let isDarkMode: Bool
     let isLoading: Bool
-    @ObservedObject var viewModel: SwiftChat.ChatViewModel
+    @ObservedObject var viewModel: ChatViewModel
     @ObservedObject private var settings = SettingsManager.shared
     @Binding var messageText: String
 

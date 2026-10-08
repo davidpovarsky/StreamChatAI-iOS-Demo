@@ -51,7 +51,7 @@ public struct MessageInputView: View {
     }
 
     @ViewBuilder
-    var body: some View {
+    public var body: some View {
         inputContent
             .alert("Attachment Error", isPresented: showAttachmentError) {
                 Button("OK", role: .cancel) {}
@@ -374,7 +374,7 @@ public struct MessageInputView: View {
 
 /// Bottom sheet presented from the "+" button with attachment options and model selector
 struct AddToSheetView: View {
-    @ObservedObject var viewModel: SwiftChat.ChatViewModel
+    @ObservedObject var viewModel: ChatViewModel
     let isDarkMode: Bool
     let onCamera: () -> Void
     let onPhotos: () -> Void

@@ -29,7 +29,7 @@ public struct ChatContainer: View {
         colorScheme == .dark ? Color.white : Color.black
     }
 
-    var body: some View {
+    public var body: some View {
         NavigationSplitView(
             columnVisibility: $columnVisibility,
             preferredCompactColumn: $preferredCompactColumn

@@ -10,7 +10,7 @@ import SwiftUI
 
 /// Sidebar session list matching ManifoldKit Advanced SessionListView architecture
 struct ChatSidebar: View {
-    @ObservedObject var viewModel: SwiftChat.ChatViewModel
+    @ObservedObject var viewModel: ChatViewModel
 
     @State private var chatToDelete: Chat?
     @State private var chatToRename: Chat?

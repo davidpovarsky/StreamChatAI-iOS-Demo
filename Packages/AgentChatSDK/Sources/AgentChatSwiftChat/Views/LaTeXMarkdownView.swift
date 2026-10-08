@@ -114,7 +114,7 @@ public struct LaTeXMarkdownView: View, Equatable {
     private nonisolated(unsafe) static let inlineCodeRegex = try? NSRegularExpression(pattern: "`[^`]+`", options: [])
     private nonisolated(unsafe) static let displayLatexRegex = try? NSRegularExpression(pattern: "\\\\\\[(.+?)\\\\\\]", options: [.dotMatchesLineSeparators])
     private nonisolated(unsafe) static let inlineLatexRegex = try? NSRegularExpression(pattern: "\\\\\\((.+?)\\\\\\)", options: [])
-    public static func == (lhs: LaTeXMarkdownView, rhs: LaTeXMarkdownView) -> Bool {
+    public nonisolated static func == (lhs: LaTeXMarkdownView, rhs: LaTeXMarkdownView) -> Bool {
         lhs.content == rhs.content &&
         lhs.isDarkMode == rhs.isDarkMode &&
         lhs.horizontalPadding == rhs.horizontalPadding &&

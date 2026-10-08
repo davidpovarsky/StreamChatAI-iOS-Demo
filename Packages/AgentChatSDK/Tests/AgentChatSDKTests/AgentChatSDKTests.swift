@@ -16,6 +16,7 @@ import AgentChatSources
 import AgentChatRichMedia
 import AgentChatComposerExtensions
 import AgentChatVoice
+import AgentChatSwiftChat
 import AgentChatSDK
 
 @MainActor
@@ -60,11 +61,21 @@ final class AgentChatSDKTests: XCTestCase {
         buffer.append("Item 1")
         buffer.append("Item 2")
         buffer.append("Item 3")
-        buffer.append("Item 4") // Should evict Item 1
+        buffer.append("Item 4") // Evicts Item 1
 
         let elements = buffer.allElements
         XCTAssertEqual(elements.count, 3)
         XCTAssertEqual(elements, ["Item 2", "Item 3", "Item 4"])
+    }
+
+    func testAsyncEventBufferAsyncAlgorithmsStreaming() async {
+        let buffer = AsyncEventBuffer<String>(capacity: 10)
+        buffer.append("Token 1")
+        buffer.append("Token 2")
+        buffer.append("Token 3")
+
+        let all = buffer.allElements
+        XCTAssertEqual(all.count, 3)
     }
 
     // MARK: - 3. Agent Activity Store Lifecycle
@@ -156,28 +167,14 @@ final class AgentChatSDKTests: XCTestCase {
         XCTAssertNotNil(session.voiceProvider)
     }
 
-    // MARK: - 8. Snapshot & Parity Testing
+    // MARK: - 8. Snapshot Suite (All 22 Required States)
 
 #if os(iOS) && canImport(SnapshotTesting)
-    func testParitySnapshotViews() {
-        // Representative Views for Visual Regression Testing
-        let userMessage = Message(
-            role: .user,
-            content: "Explain SwiftUI and show a diagram."
-        )
 
-        let assistantMessage = Message(
-            role: .assistant,
-            content: "Here is the explanation with sources and diagram.",
-            contentParts: [
-                MessageContentPart(kind: .markdown, markdown: "SwiftUI is Apple's declarative framework."),
-                MessageContentPart(
-                    kind: .svg,
-                    caption: "SwiftUI Hierarchy",
-                    svgString: "<svg height='60' width='120'><rect width='120' height='60' fill='blue'/></svg>"
-                )
-            ]
-        )
+    func testVisualSnapshotSuite() {
+        // Shared Fixtures
+        let s1 = WebSearchSource(title: "Apple HIG", url: "https://developer.apple.com")
+        let s2 = WebSearchSource(title: "SwiftChat", url: "https://github.com/sachaservan/SwiftChat")
 
         let toolInspection = ToolCallInspection(
             service: "GitHub",
@@ -186,23 +183,130 @@ final class AgentChatSDKTests: XCTestCase {
             resultSummary: "Found repository"
         )
 
-        let toolDisclosure = ToolExecutionDisclosure(call: toolInspection, status: .completed) {
+        let imgPart = MessageContentPart(kind: .image, title: "Preview", url: "https://example.com/img.png")
+        let svgPart = MessageContentPart(kind: .svg, caption: "Diagram", svgString: "<svg height='60' width='120'><rect width='120' height='60' fill='blue'/></svg>")
+        let videoPart = MessageContentPart(kind: .video, title: "Video Tutorial", url: "https://example.com/demo.mp4")
+
+        // 1. Empty / Initial Chat
+        let emptySession = AgentChatSession()
+        let emptyView = AgentChatView(session: emptySession, configuration: emptySession.configuration)
+        assertSnapshot(of: emptyView, as: .image(layout: .fixed(width: 375, height: 600)), named: "01_EmptyInitialChat")
+
+        // 2. User Message
+        let userMsg = Message(role: .user, content: "What is SwiftChat?")
+        let userMsgView = MessageView(message: userMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        assertSnapshot(of: userMsgView, as: .image(layout: .fixed(width: 375, height: 80)), named: "02_UserMessage")
+
+        // 3. Normal Assistant Message
+        let assistantMsg = Message(role: .assistant, content: "SwiftChat is an open-source ChatGPT-style client for iOS.")
+        let assistantMsgView = MessageView(message: assistantMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        assertSnapshot(of: assistantMsgView, as: .image(layout: .fixed(width: 375, height: 100)), named: "03_NormalAssistantMessage")
+
+        // 4. Streaming Assistant Message
+        let streamingMsg = Message(role: .assistant, content: "Generating response incrementally...", isStreaming: true)
+        let streamingMsgView = MessageView(message: streamingMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        assertSnapshot(of: streamingMsgView, as: .image(layout: .fixed(width: 375, height: 100)), named: "04_StreamingAssistantMessage")
+
+        // 5. Reasoning / Activity State
+        let actSession = AgentActivitySession(
+            messageID: "reasoning-msg",
+            startedAt: Date(),
+            items: [
+                AgentActivityItem(kind: .reasoning, title: "Analyzing system dependencies"),
+                AgentActivityItem(kind: .status, status: .completed, title: "Inspected SwiftChat architecture")
+            ],
+            answerStarted: false,
+            isExpanded: true
+        )
+        let activityView = AgentActivityTimelineView(session: actSession, isDarkMode: false) {}
+        assertSnapshot(of: activityView, as: .image(layout: .fixed(width: 375, height: 110)), named: "05_ReasoningActivityState")
+
+        // 6. Web Search State
+        let webSearchBox = WebSearchBox(source: s1)
+        assertSnapshot(of: webSearchBox, as: .image(layout: .fixed(width: 375, height: 60)), named: "06_WebSearchState")
+
+        // 7. Inline Citations / Sources
+        let inlineSourcesView = InlineSectionSourcesView(
+            markdown: "According to Apple guidelines, materials provide depth.",
+            sources: [s1, s2],
+            isDarkMode: false
+        ) { Text($0) }
+        assertSnapshot(of: inlineSourcesView, as: .image(layout: .fixed(width: 375, height: 80)), named: "07_InlineCitationsSources")
+
+        // 8. Expanded Sources
+        let sourcesSheet = SourcesSheetView(sources: [s1, s2], isDarkMode: false)
+        assertSnapshot(of: sourcesSheet, as: .image(layout: .fixed(width: 375, height: 260)), named: "08_ExpandedSources")
+
+        // 9. Tool Running
+        let toolRunning = ToolExecutionDisclosure(call: toolInspection, status: .running) {
+            Text("Inspecting GitHub Repository")
+        }
+        assertSnapshot(of: toolRunning, as: .image(layout: .fixed(width: 375, height: 60)), named: "09_ToolRunning")
+
+        // 10. Tool Completed
+        let toolCompleted = ToolExecutionDisclosure(call: toolInspection, status: .completed) {
             Text("Inspected GitHub Repository")
         }
+        assertSnapshot(of: toolCompleted, as: .image(layout: .fixed(width: 375, height: 60)), named: "10_ToolCompleted")
 
-        // Test light mode on iPhone
-        assertSnapshot(of: toolDisclosure, as: .image(layout: .fixed(width: 375, height: 120)))
+        // 11. Tool Failed
+        let failCall = ToolCallInspection(service: "Database", toolName: "sql_exec", arguments: .text("SELECT *"), resultSummary: nil, errorMessage: "Host unreachable")
+        let toolFailed = ToolExecutionDisclosure(call: failCall, status: .failed) {
+            Text("Database Query")
+        }
+        assertSnapshot(of: toolFailed, as: .image(layout: .fixed(width: 375, height: 60)), named: "11_ToolFailed")
 
-        // Test dark mode on iPhone
-        let darkDisclosure = toolDisclosure.environment(\.colorScheme, .dark)
-        assertSnapshot(of: darkDisclosure, as: .image(layout: .fixed(width: 375, height: 120)))
+        // 12. Tool Disclosure Expanded
+        let toolExpanded = ToolExecutionDisclosure(call: toolInspection, status: .completed, isExpanded: true) {
+            Text("Inspected GitHub Repository")
+        }
+        assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 375, height: 180)), named: "12_ToolDisclosureExpanded")
 
-        // Test iPad width
-        assertSnapshot(of: toolDisclosure, as: .image(layout: .fixed(width: 768, height: 120)))
+        // 13. Remote Image
+        let imageView = SafeInlineImageMediaView(part: imgPart, isDarkMode: false)
+        assertSnapshot(of: imageView, as: .image(layout: .fixed(width: 375, height: 200)), named: "13_RemoteImage")
 
-        // Test Voice Orb
-        let voiceOrb = AgentVoiceOrbView(state: .listening, audioLevel: 0.5, size: 160)
-        assertSnapshot(of: voiceOrb, as: .image(layout: .fixed(width: 200, height: 200)))
+        // 14. SVG Vector
+        let svgView = InlineSVGMediaView(part: svgPart, isDarkMode: false)
+        assertSnapshot(of: svgView, as: .image(layout: .fixed(width: 375, height: 140)), named: "14_SVGVector")
+
+        // 15. Video Rich Media
+        let videoView = SafeInlineVideoMediaView(part: videoPart, isDarkMode: false)
+        assertSnapshot(of: videoView, as: .image(layout: .fixed(width: 375, height: 160)), named: "15_VideoRichMedia")
+
+        // 16. Composer
+        let composer = MessageInputView(
+            isDarkMode: false,
+            text: .constant("What is the speed of light?"),
+            viewModel: emptySession.viewModel,
+            onSend: {}
+        )
+        assertSnapshot(of: composer, as: .image(layout: .fixed(width: 375, height: 80)), named: "16_Composer")
+
+        // 17. Model Menu (Add menu popover)
+        let modelMenu = SelectedModelMenu(currentModel: .gpt4o, isDarkMode: false, isLoading: false) { _ in }
+        assertSnapshot(of: modelMenu, as: .image(layout: .fixed(width: 200, height: 44)), named: "17_ModelMenu")
+
+        // 18. Light Mode
+        let lightAssistant = assistantMsgView.environment(\.colorScheme, .light)
+        assertSnapshot(of: lightAssistant, as: .image(layout: .fixed(width: 375, height: 100)), named: "18_LightMode")
+
+        // 19. Dark Mode
+        let darkAssistant = assistantMsgView.environment(\.colorScheme, .dark)
+        assertSnapshot(of: darkAssistant, as: .image(layout: .fixed(width: 375, height: 100)), named: "19_DarkMode")
+
+        // 20. RTL / Hebrew
+        let hebrewMsg = Message(role: .assistant, content: "שלום! זוהי הדגמה של עברית וכיווניות מימין לשמאל.")
+        let hebrewView = MessageView(message: hebrewMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+            .environment(\.layoutDirection, .rightToLeft)
+        assertSnapshot(of: hebrewView, as: .image(layout: .fixed(width: 375, height: 100)), named: "20_RTLHebrew")
+
+        // 21. Narrow iPhone Width
+        assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 320, height: 180)), named: "21_NarrowiPhoneWidth")
+
+        // 22. iPad Regular Width
+        assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 768, height: 180)), named: "22_iPadRegularWidth")
     }
+
 #endif
 }

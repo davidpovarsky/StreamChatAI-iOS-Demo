@@ -36,19 +36,25 @@ Quick captures that still need classification.
 
 ## Planned / Todo
 
-- [ ] Await user response to Category B Decision Gate in `docs/REPLACEMENT_APPROVAL_REQUIRED.md`.
-- [ ] Verify Demo Host and CI workflows packaging for `SwiftChat-AgentSDK-Demo-IPA`.
+- [ ] Implement isolated iosMath vs SwiftMath A/B test harness (`docs/IOSMATH_VS_SWIFTMATH_AB_TEST.md`).
+- [ ] Run full package targets build and real snapshot test suite.
+- [ ] Trigger and monitor GitHub Actions CI to generate `SwiftChat-AgentSDK-Demo-IPA`.
+- [ ] Verify final unsigned IPA artifact structure and completeness.
+
+## In Progress / Verification
+
+- [ ] Phase 1 Verification of Realigned `AgentChatSDK`
+  - Branch: `agent/swiftchat-sdk-chatgpt-stack-realignment` (pushed to remote at `64bea89`)
+  - Target: SwiftChat-derived architecture verified with CI, snapshots, and IPA
+  - Modules: `AgentChatCore`, `AgentChatActivity`, `AgentChatToolPresentation`, `AgentChatSources`, `AgentChatRichMedia`, `AgentChatComposerExtensions`, `AgentChatVoice`, `AgentChatVoiceLiveKit`, `AgentChatSwiftChat`, `AgentChatSDK`
 
 ## Done
 
+- [x] Baseline SwiftChat Safe Overlay Verification at `b9d2cc0` (100% clean check).
 - [x] Corrective Realignment of `AgentChatSDK` around SwiftChat Full Demo (`d6f54cc`) + safe overlay
   - Date: 2026-10-08
-  - Branch: `agent/swiftchat-sdk-chatgpt-stack-realignment`
-  - Modules: `AgentChatCore`, `AgentChatActivity`, `AgentChatToolPresentation`, `AgentChatSources`, `AgentChatRichMedia`, `AgentChatComposerExtensions`, `AgentChatVoice`, `AgentChatVoiceLiveKit`, `AgentChatSwiftChat`, `AgentChatSDK`
-  - Safe Category A Additions: Kingfisher, SVGView, Lottie, Pow, EmojiKit, swift-collections, swift-async-algorithms, LiveKit.
-  - Decision Gate Established: `docs/REPLACEMENT_APPROVAL_REQUIRED.md` gating Category B libraries.
-  - Documentation Artifacts: `docs/CURRENT_AGENTCHATSDK_REALIGNMENT_AUDIT.md`, `docs/CHATGPT_DEPENDENCY_DECISION_MATRIX.md`, `docs/SWIFTCHAT_SDK_PROVENANCE.md`, `THIRD_PARTY_NOTICES.md`, `docs/DEPENDENCY_INTEGRATION_EVIDENCE.md`.
-- [x] Baseline SwiftChat Safe Overlay Verification at `b9d2cc0` (100% clean check).
+  - Decision Gate Resolved: Highlightr (rejected), swift-markdown (rejected), KaTeX (rejected), STTextKitPlus (deferred), Motion (rejected), iosMath (A/B test only).
+  - Pushed to remote branch: `agent/swiftchat-sdk-chatgpt-stack-realignment`.
 
 ## Archive
 

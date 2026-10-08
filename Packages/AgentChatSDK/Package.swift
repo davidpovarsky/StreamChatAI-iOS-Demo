@@ -44,6 +44,7 @@ let package = Package(
         .package(url: "https://github.com/EmergeTools/Pow.git", from: "0.3.1"),
         .package(url: "https://github.com/danielsaidi/EmojiKit.git", exact: "1.0.0"),
         .package(url: "https://github.com/livekit/client-sdk-swift.git", from: "2.0.0"),
+        .package(url: "https://github.com/kostub/iosMath.git", from: "2.3.0"),
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing.git", from: "1.17.0")
     ],
     targets: [
@@ -135,6 +136,16 @@ let package = Package(
             name: "AgentChatSDKTests",
             dependencies: [
                 "AgentChatSDK",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
+            ]
+        ),
+        .testTarget(
+            name: "AgentChatMathComparisonTests",
+            dependencies: [
+                "AgentChatCore",
+                "AgentChatSwiftChat",
+                .product(name: "iosMath", package: "iosMath"),
+                .product(name: "SwiftMath", package: "SwiftMath"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
             ]
         )

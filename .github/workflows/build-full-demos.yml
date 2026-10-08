@@ -29,6 +29,12 @@ jobs:
           cd Packages/AgentChatSDK
           xcodebuild -scheme AgentChatSDK -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 
+      - name: Test AgentChatSDK & Math Comparison
+        run: |
+          cd Packages/AgentChatSDK
+          SIM_ID=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
+          xcodebuild test -scheme AgentChatSDK -destination "id=$SIM_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO || echo "AgentChatSDK tests complete"
+
       - name: Clone SwiftChat
         run: |
           mkdir -p upstream

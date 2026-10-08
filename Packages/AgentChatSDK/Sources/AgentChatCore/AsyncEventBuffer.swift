@@ -7,6 +7,7 @@ import AsyncAlgorithms
 public final class AsyncEventBuffer<Element: Sendable>: @unchecked Sendable {
     private let capacity: Int
     private var deque: Deque<Element>
+    private let channel = AsyncChannel<Element>()
     private let lock = NSLock()
 
     public init(capacity: Int = 100) {
@@ -16,11 +17,15 @@ public final class AsyncEventBuffer<Element: Sendable>: @unchecked Sendable {
 
     public func append(_ element: Element) {
         lock.lock()
-        defer { lock.unlock() }
         if deque.count >= capacity {
             _ = deque.popFirst()
         }
         deque.append(element)
+        lock.unlock()
+
+        Task { [channel] in
+            await channel.send(element)
+        }
     }
 
     public var allElements: [Element] {
@@ -39,5 +44,16 @@ public final class AsyncEventBuffer<Element: Sendable>: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return deque.count
+    }
+
+    /// Provides a debounced async stream of elements using `AsyncAlgorithms.debounce(for:)`
+    /// to avoid UI stuttering during high-frequency token generation.
+    public func debouncedStream(for duration: Duration = .milliseconds(50)) -> some AsyncSequence {
+        channel.debounce(for: duration)
+    }
+
+    /// Provides a chunked async stream of elements using `AsyncAlgorithms.chunks(ofCount:)`.
+    public func chunkedStream(count: Int = 5) -> some AsyncSequence {
+        channel.chunks(ofCount: count)
     }
 }

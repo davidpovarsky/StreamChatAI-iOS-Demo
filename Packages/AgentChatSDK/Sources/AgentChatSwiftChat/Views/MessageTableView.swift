@@ -539,6 +539,7 @@ struct MessageTableView: UIViewRepresentable {
     }
 }
 
+@MainActor
 class ObservableMessageWrapper: ObservableObject {
     @Published var message: Message
     @Published var isDarkMode: Bool
@@ -594,7 +595,8 @@ class ObservableMessageWrapper: ObservableObject {
         // Defer @Published property updates to the next run loop tick.
         // UIHostingConfiguration requires the objectWillChange notification
         // to arrive on a separate run loop iteration to trigger a re-render.
-        DispatchQueue.main.async {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
             self.message = message
             self.isDarkMode = isDarkMode
             self.isLastMessage = isLastMessage

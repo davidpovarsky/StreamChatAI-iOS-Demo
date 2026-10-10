@@ -8,6 +8,15 @@ import SwiftUI
 #if canImport(SnapshotTesting)
 import SnapshotTesting
 #endif
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(Pow)
+import Pow
+#endif
 
 import AgentChatCore
 import AgentChatActivity
@@ -70,12 +79,27 @@ final class AgentChatSDKTests: XCTestCase {
 
     func testAsyncEventBufferAsyncAlgorithmsStreaming() async {
         let buffer = AsyncEventBuffer<String>(capacity: 10)
+        let chunkedSequence = buffer.chunkedStream(count: 2)
+
+        let consumeTask = Task<[[String]], Never> {
+            var chunks: [[String]] = []
+            for await chunk in chunkedSequence {
+                chunks.append(chunk)
+                if chunks.count >= 1 {
+                    break
+                }
+            }
+            return chunks
+        }
+
+        try? await Task.sleep(nanoseconds: 30_000_000)
+
         buffer.append("Token 1")
         buffer.append("Token 2")
-        buffer.append("Token 3")
 
-        let all = buffer.allElements
-        XCTAssertEqual(all.count, 3)
+        let received = await consumeTask.value
+        XCTAssertEqual(received.count, 1)
+        XCTAssertEqual(received.first, ["Token 1", "Token 2"])
     }
 
     // MARK: - 3. Agent Activity Store Lifecycle
@@ -262,7 +286,15 @@ final class AgentChatSDKTests: XCTestCase {
         }
         assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 375, height: 180)), named: "12_ToolDisclosureExpanded")
 
-        // 13. Remote Image
+        // 13. Remote Image (Deterministic Kingfisher cache fixture)
+#if canImport(Kingfisher) && canImport(UIKit)
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 320, height: 180))
+        let fixtureImage = renderer.image { ctx in
+            UIColor.systemIndigo.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: 320, height: 180))
+        }
+        ImageCache.default.store(fixtureImage, forKey: "https://example.com/img.png")
+#endif
         let imageView = SafeInlineImageMediaView(part: imgPart, isDarkMode: false)
         assertSnapshot(of: imageView, as: .image(layout: .fixed(width: 375, height: 200)), named: "13_RemoteImage")
 
@@ -283,9 +315,9 @@ final class AgentChatSDKTests: XCTestCase {
         )
         assertSnapshot(of: composer, as: .image(layout: .fixed(width: 375, height: 80)), named: "16_Composer")
 
-        // 17. Model Menu (Add menu popover)
+        // 17. Model Selector Menu
         let modelMenu = SelectedModelMenu(currentModel: .gpt4o, isDarkMode: false, isLoading: false) { _ in }
-        assertSnapshot(of: modelMenu, as: .image(layout: .fixed(width: 200, height: 44)), named: "17_ModelMenu")
+        assertSnapshot(of: modelMenu, as: .image(layout: .fixed(width: 200, height: 44)), named: "17_ModelSelectorMenu")
 
         // 18. Light Mode
         let lightAssistant = assistantMsgView.environment(\.colorScheme, .light)
@@ -306,6 +338,40 @@ final class AgentChatSDKTests: XCTestCase {
 
         // 22. iPad Regular Width
         assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 768, height: 180)), named: "22_iPadRegularWidth")
+    }
+
+    // MARK: - 9. Pow Transitions & Accessibility Reduce Motion Tests
+
+    func testToolExecutionDisclosurePowIntegration() {
+        let call = ToolCallInspection(
+            service: "Terminal",
+            toolName: "build_artifact",
+            arguments: .text("scheme: AgentChatSDK"),
+            resultSummary: "Build completed successfully"
+        )
+        let viewAnimated = ToolExecutionDisclosure(call: call, status: .completed) {
+            Text("Building Target")
+        }
+        .environment(\.accessibilityReduceMotion, false)
+
+        assertSnapshot(of: viewAnimated, as: .image(layout: .fixed(width: 375, height: 60)), named: "Pow_ToolCompleted_Animated")
+
+        let viewReduceMotion = ToolExecutionDisclosure(call: call, status: .completed) {
+            Text("Building Target")
+        }
+        .environment(\.accessibilityReduceMotion, true)
+
+        assertSnapshot(of: viewReduceMotion, as: .image(layout: .fixed(width: 375, height: 60)), named: "Pow_ToolCompleted_ReduceMotion")
+    }
+
+    func testAgentLottieMediaViewReduceMotion() {
+        let viewAnimated = AgentLottieMediaView(animationName: "sparkles", isDarkMode: false)
+            .environment(\.accessibilityReduceMotion, false)
+        assertSnapshot(of: viewAnimated, as: .image(layout: .fixed(width: 100, height: 100)), named: "Lottie_Animated")
+
+        let viewReduceMotion = AgentLottieMediaView(animationName: "sparkles", isDarkMode: false)
+            .environment(\.accessibilityReduceMotion, true)
+        assertSnapshot(of: viewReduceMotion, as: .image(layout: .fixed(width: 100, height: 100)), named: "Lottie_ReduceMotion")
     }
 
 #endif

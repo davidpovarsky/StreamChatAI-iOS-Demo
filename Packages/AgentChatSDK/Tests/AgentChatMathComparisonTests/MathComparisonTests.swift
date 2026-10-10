@@ -167,13 +167,46 @@ final class MathComparisonTests: XCTestCase {
             "\\frac{1}{2} + \\sqrt{x} = 0"
         ]
 
-        var parsedSwiftMathCount = 0
-        for token in progressiveTokens {
-            if !token.isEmpty {
-                parsedSwiftMathCount += 1
+#if os(iOS) && canImport(SwiftMath) && canImport(iosMath)
+        for (index, token) in progressiveTokens.enumerated() {
+            // 1. SwiftMath Path
+            let swiftMathView = SwiftMath.MathView(equation: token)
+            XCTAssertNotNil(swiftMathView, "SwiftMath MathView must instantiate without crash for '\(token)'")
+
+            let swiftBuilder = SwiftMath.MTMathListBuilder(string: token)
+            let swiftList = swiftBuilder.build()
+            let swiftError = swiftBuilder.error
+
+            if index == 0 || index == 3 {
+                // Incomplete LaTeX syntax: unclosed bracket / unclosed radical
+                XCTAssertNil(swiftList, "SwiftMath should return nil for incomplete token '\(token)'")
+                XCTAssertNotNil(swiftError, "SwiftMath should record parser error for incomplete token '\(token)'")
+            } else {
+                XCTAssertNotNil(swiftList, "SwiftMath should successfully parse valid token '\(token)'")
+            }
+
+            // 2. iosMath Path
+            let iosLabel = iosMath.MTMathUILabel()
+            iosLabel.latex = token
+            XCTAssertNotNil(iosLabel, "iosMath MTMathUILabel must instantiate and accept '\(token)'")
+
+            let iosBuilder = iosMath.MTMathListBuilder(string: token)
+            let iosList = iosBuilder.build()
+            let iosError = iosBuilder.error
+
+            if index == 0 || index == 3 {
+                // Incomplete LaTeX syntax
+                XCTAssertNil(iosList, "iosMath should return nil for incomplete token '\(token)'")
+                XCTAssertNotNil(iosError, "iosMath should record parser error for incomplete token '\(token)'")
+                XCTAssertNotNil(iosLabel.error, "MTMathUILabel should have error for incomplete token '\(token)'")
+            } else {
+                XCTAssertNotNil(iosList, "iosMath should successfully parse valid token '\(token)'")
+                XCTAssertNil(iosLabel.error, "MTMathUILabel should have nil error for valid token '\(token)'")
             }
         }
-        XCTAssertEqual(parsedSwiftMathCount, progressiveTokens.count)
+#else
+        XCTAssertFalse(progressiveTokens.isEmpty)
+#endif
     }
 
 #if os(iOS) && canImport(SnapshotTesting) && canImport(iosMath) && canImport(SwiftMath)

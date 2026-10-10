@@ -42,14 +42,15 @@ This document provides verified proof of real API usage for all open-source libr
 - **Package / Product**: `lottie-spm` / `Lottie`
 - **Target**: `AgentChatRichMedia`
 - **Source File**: `Packages/AgentChatSDK/Sources/AgentChatRichMedia/AgentLottieMediaView.swift`
+- **Reachable Runtime Path**: `MessageView.contentPartView(_:)` (`case .lottie` -> `AgentLottieMediaView`)
 - **API Types / Methods Used**:
   - `LottieView(animation: .named(animationName))`
   - `.playbackMode(.playing(...))`
   - `.resizable()`
   - `@Environment(\.accessibilityReduceMotion)`
-- **Visible Capability**: Smooth vector JSON animations for tool completion, generation finished badges, and voice mode transitions.
-- **Fallback Behavior**: Replaces animation with a clean static SF Symbol (`Image(systemName: "sparkles")`) whenever Reduce Motion is enabled.
-- **Test**: `AgentChatSDKTests.testRichMediaContentParts()`
+- **Visible Capability**: Vector JSON animations for rich media content parts.
+- **Fallback Behavior**: Replaces animation with a static SF Symbol (`Image(systemName: "sparkles")`) whenever Reduce Motion is enabled.
+- **Test**: `AgentChatSDKTests.testRichMediaContentParts()`, `AgentChatSDKTests.testAgentLottieMediaViewReduceMotion()`
 - **Type**: Direct additive dependency.
 
 ---
@@ -57,13 +58,15 @@ This document provides verified proof of real API usage for all open-source libr
 ## 4. Pow
 - **Package / Product**: `Pow` / `Pow`
 - **Target**: `AgentChatRichMedia`, `AgentChatToolPresentation`
-- **Source File**: `Packages/AgentChatSDK/Sources/AgentChatRichMedia/AgentLottieMediaView.swift`, `ToolExecutionDisclosure.swift`
+- **Source File**: `Packages/AgentChatSDK/Sources/AgentChatToolPresentation/ToolExecutionDisclosure.swift`, `Packages/AgentChatSDK/Sources/AgentChatRichMedia/AgentLottieMediaView.swift`
+- **Reachable Runtime Path**: `ToolExecutionDisclosure.statusCompletedIndicator` and `AgentLottieMediaView.animatedView`
 - **API Types / Methods Used**:
   - `import Pow`
-  - Subtle spring physics and change transitions for execution disclosure cards.
-- **Visible Capability**: Delicate physical spring feedback on disclosure expansion and completion badge appearance.
-- **Fallback Behavior**: Degrades to standard SwiftUI `.animation(.easeInOut)` when Pow is unavailable or Reduce Motion is active.
-- **Test**: `AgentChatSDKTests.testVisualSnapshotSuite()` (Snapshots 9, 10, 11, 12)
+  - `.changeEffect(.glow(color: ...), value: status == .completed)`
+  - `.changeEffect(.glow(color: ...), value: animationName)`
+- **Visible Capability**: Subtle glow micro-interaction on tool completion badge and rich media view.
+- **Fallback Behavior**: Conditioned on `!reduceMotion`; renders static view when Reduce Motion is active or Pow is unavailable.
+- **Test**: `AgentChatSDKTests.testToolExecutionDisclosurePowIntegration()`, `AgentChatSDKTests.testVisualSnapshotSuite()` (Snapshot 10, 12)
 - **Type**: Direct additive dependency.
 
 ---
@@ -72,13 +75,14 @@ This document provides verified proof of real API usage for all open-source libr
 - **Package / Product**: `EmojiKit` / `EmojiKit`
 - **Target**: `AgentChatComposerExtensions`
 - **Source File**: `Packages/AgentChatSDK/Sources/AgentChatComposerExtensions/AgentEmojiPicker.swift`
+- **Reachable Runtime Path**: `MessageInputView.attachButton` ("Emoji" menu action -> `.sheet(isPresented: $showEmojiPicker)` -> `AgentEmojiPicker`)
 - **API Types / Methods Used**:
-  - `EmojiGrid(emojis: Emoji.all, selection: .single { emoji in ... })`
+  - `EmojiScrollGrid(emojis: Emoji.all, action: { emoji in onSelect(emoji.char) })`
   - `Emoji.all`
   - `emoji.char`
 - **Visible Capability**: Full categorized emoji sheet launched from the '+' composer menu to insert emojis directly into the message input field.
 - **Fallback Behavior**: Degrades to categorized SwiftUI `LazyVGrid` of unicode emojis if EmojiKit is not present.
-- **Test**: `AgentChatSDKTests.testVisualSnapshotSuite()` (Composer extension)
+- **Test**: `AgentChatSDKTests.testVisualSnapshotSuite()` (Snapshot 16 Composer)
 - **Type**: Direct additive dependency.
 
 ---
@@ -93,7 +97,7 @@ This document provides verified proof of real API usage for all open-source libr
   - `channel.chunks(ofCount: count)` via `AsyncAlgorithms.chunks(ofCount:)`
 - **Visible Capability**: Debounced and chunked async event streaming to prevent UI stutter during high-frequency token generation.
 - **Fallback Behavior**: Native Swift Concurrency `AsyncStream`.
-- **Test**: `AgentChatSDKTests.testAsyncEventBufferAsyncAlgorithmsStreaming()`
+- **Test**: `AgentChatSDKTests.testAsyncEventBufferAsyncAlgorithmsStreaming()` (directly consumes `buffer.chunkedStream(count: 2)`)
 - **Type**: Direct dependency.
 
 ---
@@ -114,7 +118,7 @@ This document provides verified proof of real API usage for all open-source libr
 
 ---
 
-## 8. LiveKit (Outcome A: Real Optional Provider)
+## 8. LiveKit (LiveKit room/session transport foundation)
 - **Package / Product**: `client-sdk-swift` / `LiveKit`
 - **Target**: `AgentChatVoiceLiveKit`
 - **Source File**: `Packages/AgentChatSDK/Sources/AgentChatVoiceLiveKit/LiveKitVoiceSessionProvider.swift`
@@ -122,9 +126,10 @@ This document provides verified proof of real API usage for all open-source libr
   - `Room()`
   - `room.connect(url:token:)`
   - `room.disconnect()`
-- **Visible Capability**: Realtime bidirectional audio session management for interactive voice conversations with injectable server URL/token.
+  - `actor LiveKitVoiceState` + `OSAllocatedUnfairLock`
+- **Visible Capability**: LiveKit room/session transport foundation managing connection/disconnection lifecycle, error propagation, and Swift 6 async-safe state updates. (Does not claim full local/remote audio track publication in Phase 1).
 - **Fallback Behavior**: Offline/mock provider (`AgentMockVoiceProvider`) allows complete offline demo and tests without server credentials.
-- **Test**: `AgentChatSDKTests.testMockVoiceProviderLifecycle()`
+- **Test**: `AgentChatSDKTests.testMockVoiceProviderLifecycle()`, full target compilation in simulator and device builds.
 - **Type**: Direct dependency in optional target.
 
 ---

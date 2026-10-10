@@ -416,9 +416,8 @@ public struct MessageView: View {
         case .svg:
             InlineSVGMediaView(part: part, isDarkMode: isDarkMode)
         case .lottie:
-            if let name = part.lottieAnimationName {
-                AgentLottieMediaView(animationName: name, isDarkMode: isDarkMode)
-            }
+            let name = part.lottieAnimationName ?? part.title ?? "sparkles"
+            AgentLottieMediaView(animationName: name, isDarkMode: isDarkMode)
         case .customTool:
             EmptyView()
         }

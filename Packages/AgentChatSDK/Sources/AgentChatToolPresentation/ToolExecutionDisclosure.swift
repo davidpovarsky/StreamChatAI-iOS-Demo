@@ -4,15 +4,18 @@
 //
 //  Generic Liquid Glass disclosure container for tool-provided UI and expandable call inspection.
 //
-
 #if canImport(SwiftUI)
 import SwiftUI
+#if canImport(Pow)
+import Pow
+#endif
 
 public struct ToolExecutionDisclosure<Presentation: View>: View {
     public let call: ToolCallInspection
     public let status: ToolExecutionStatus
     public let presentation: () -> Presentation
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var internalExpanded: Bool
     private var externalExpanded: Binding<Bool>?
 
@@ -59,6 +62,8 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
                 if status == .running {
                     ProgressView()
                         .controlSize(.mini)
+                } else if status == .completed {
+                    statusCompletedIndicator
                 } else if status == .failed {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 11, weight: .semibold))
@@ -71,6 +76,26 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
         .toolExecutionGlassEffect()
         .accessibilityElement(children: .contain)
         .accessibilityValue(isExpandedBinding.wrappedValue ? "Expanded" : "Collapsed")
+    }
+
+    @ViewBuilder
+    private var statusCompletedIndicator: some View {
+#if canImport(Pow)
+        if !reduceMotion {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.green)
+                .changeEffect(.glow(color: .green.opacity(0.6)), value: status == .completed)
+        } else {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.green)
+        }
+#else
+        Image(systemName: "checkmark.circle.fill")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.green)
+#endif
     }
 }
 

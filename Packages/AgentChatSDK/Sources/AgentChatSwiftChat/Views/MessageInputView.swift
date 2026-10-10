@@ -36,6 +36,7 @@ public struct MessageInputView: View {
     @State private var showDocumentPicker = false
     @State private var showPhotoPicker = false
     @State private var showCamera = false
+    @State private var showEmojiPicker = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var pendingPickerAction: PickerAction?
 
@@ -86,6 +87,13 @@ public struct MessageInputView: View {
                     }
                 }
                 .ignoresSafeArea()
+            }
+            .sheet(isPresented: $showEmojiPicker) {
+                AgentEmojiPicker(isDarkMode: isDarkMode) { selectedEmoji in
+                    messageText += selectedEmoji
+                    showEmojiPicker = false
+                }
+                .presentationDetents([.medium])
             }
 
     }
@@ -259,6 +267,12 @@ public struct MessageInputView: View {
                     showDocumentPicker = true
                 } label: {
                     Label("Files", systemImage: "doc.badge.arrow.up")
+                }
+
+                Button {
+                    showEmojiPicker = true
+                } label: {
+                    Label("Emoji", systemImage: "face.smiling")
                 }
 
                 Button {

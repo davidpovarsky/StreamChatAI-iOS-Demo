@@ -15,11 +15,11 @@ These open-source libraries from ChatGPT's iOS dependency disclosures (and Swift
 | **Kingfisher** | `8.8.0` | `AgentChatRichMedia` | Remote image caching and pipeline behind `SafeInlineImageMediaView`. | Native `AsyncImage` fallback on network failure or image decode error. Zero API leakage. |
 | **SVGView** | `1.0.8` | `AgentChatRichMedia` | Scalable vector graphics renderer for `.svg` content parts (`InlineSVGMediaView`). | Graceful fallback view with asset title & error disclosure if XML parsing fails. |
 | **Lottie (`lottie-spm`)** | `4.6.1` | `AgentChatRichMedia` | Micro-animations and animated badges (`AgentLottieMediaView`). | Automatically disabled when `@Environment(\.accessibilityReduceMotion)` is active; falls back to static SF Symbols. |
-| **Pow** | `0.3.1` | `AgentChatRichMedia` | Spring transitions and physics-based view transitions. | Graceful static fade/scale when Reduce Motion is enabled. |
+| **Pow** | `0.3.1` | `AgentChatRichMedia`, `AgentChatToolPresentation` | `.changeEffect(.glow(...))` micro-interactions on tool completion and rich media. | Conditioned on `!reduceMotion`; renders static view when Reduce Motion is enabled. |
 | **EmojiKit** | `1.0.0` | `AgentChatComposerExtensions` | Emoji reactions and composer picker (`AgentEmojiPicker`). | Native iOS emoji keyboard remains standard; sheet is optional and configurable. |
 | **swift-collections** | `1.1.4` | `AgentChatCore` | `Collections.Deque` for FIFO streaming event buffer (`AsyncEventBuffer`). | Standard Apple open source. |
 | **swift-async-algorithms** | `1.0.4` | `AgentChatCore` | Debouncing, throttling, and stream combination for activity events. | Standard Apple open source. |
-| **LiveKit (`client-sdk-swift`)** | `2.17.0` | `AgentChatVoiceLiveKit` | Optional WebRTC transport for real-time voice (`LiveKitVoiceSessionProvider`). | Isolated in dedicated target; not linked by default host app; deterministic `AgentMockVoiceProvider` available. |
+| **LiveKit (`client-sdk-swift`)** | `2.17.0` | `AgentChatVoiceLiveKit` | LiveKit room/session transport foundation (`LiveKitVoiceSessionProvider`). | Isolated in dedicated target; not linked by default host app; deterministic `AgentMockVoiceProvider` available. |
 | **swift-snapshot-testing** | `1.19.6` | `AgentChatSDKTests` | Multi-device, light/dark, and RTL visual regression test assertions. | Test-only dependency. |
 
 ---

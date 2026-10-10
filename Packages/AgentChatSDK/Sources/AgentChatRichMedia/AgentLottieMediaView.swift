@@ -44,10 +44,16 @@ public struct AgentLottieMediaView: View {
     @ViewBuilder
     private var animatedView: some View {
 #if canImport(Lottie)
-        LottieView(animation: .named(animationName))
+        let lottie = LottieView(animation: .named(animationName))
             .playbackMode(isLooping ? .playing(.toProgress(1, loopMode: .loop)) : .playing(.toProgress(1, loopMode: .playOnce)))
             .resizable()
             .aspectRatio(contentMode: .fit)
+#if canImport(Pow)
+        lottie
+            .changeEffect(.glow(color: isDarkMode ? .cyan.opacity(0.5) : .blue.opacity(0.4)), value: animationName)
+#else
+        lottie
+#endif
 #else
         staticFallback
 #endif

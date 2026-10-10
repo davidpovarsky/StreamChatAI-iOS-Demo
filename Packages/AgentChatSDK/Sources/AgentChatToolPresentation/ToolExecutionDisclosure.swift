@@ -14,10 +14,15 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
     public let call: ToolCallInspection
     public let status: ToolExecutionStatus
     public let presentation: () -> Presentation
+    public let forceReduceMotion: Bool?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var internalExpanded: Bool
     private var externalExpanded: Binding<Bool>?
+
+    private var effectiveReduceMotion: Bool {
+        forceReduceMotion ?? reduceMotion
+    }
 
     private var isExpandedBinding: Binding<Bool> {
         externalExpanded ?? $internalExpanded
@@ -27,12 +32,14 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
         call: ToolCallInspection,
         status: ToolExecutionStatus = .completed,
         isExpanded: Bool = false,
+        forceReduceMotion: Bool? = nil,
         @ViewBuilder presentation: @escaping () -> Presentation
     ) {
         self.call = call
         self.status = status
         self._internalExpanded = State(initialValue: isExpanded)
         self.externalExpanded = nil
+        self.forceReduceMotion = forceReduceMotion
         self.presentation = presentation
     }
 
@@ -40,12 +47,14 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
         call: ToolCallInspection,
         status: ToolExecutionStatus = .completed,
         isExpanded: Binding<Bool>,
+        forceReduceMotion: Bool? = nil,
         @ViewBuilder presentation: @escaping () -> Presentation
     ) {
         self.call = call
         self.status = status
         self._internalExpanded = State(initialValue: isExpanded.wrappedValue)
         self.externalExpanded = isExpanded
+        self.forceReduceMotion = forceReduceMotion
         self.presentation = presentation
     }
 
@@ -81,7 +90,7 @@ public struct ToolExecutionDisclosure<Presentation: View>: View {
     @ViewBuilder
     private var statusCompletedIndicator: some View {
 #if canImport(Pow)
-        if !reduceMotion {
+        if !effectiveReduceMotion {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.green)

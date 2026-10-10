@@ -38,6 +38,20 @@ public struct MessageView: View {
     @State private var showThoughtsSheet = false
     @State private var showURLFetchSheet = false
 
+    public init(
+        message: Message,
+        isDarkMode: Bool = false,
+        isLastMessage: Bool = true,
+        isLoading: Bool = false,
+        messageIndex: Int = 0
+    ) {
+        self.message = message
+        self.isDarkMode = isDarkMode
+        self.isLastMessage = isLastMessage
+        self.isLoading = isLoading
+        self.messageIndex = messageIndex
+    }
+
     private var hasAgentActivity: Bool {
         activityStore.session(for: message.id) != nil
     }

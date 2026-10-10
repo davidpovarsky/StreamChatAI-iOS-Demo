@@ -44,6 +44,16 @@ public struct MessageInputView: View {
         case camera, photos, files
     }
 
+    public init(
+        messageText: Binding<String>,
+        viewModel: ChatViewModel,
+        isKeyboardVisible: Bool = false
+    ) {
+        self._messageText = messageText
+        self.viewModel = viewModel
+        self.isKeyboardVisible = isKeyboardVisible
+    }
+
     private var showAttachmentError: Binding<Bool> {
         Binding(
             get: { viewModel.attachmentError != nil },

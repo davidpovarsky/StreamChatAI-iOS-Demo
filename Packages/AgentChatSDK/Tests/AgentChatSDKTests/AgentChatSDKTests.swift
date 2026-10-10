@@ -168,8 +168,8 @@ final class AgentChatSDKTests: XCTestCase {
 
         let videoPart = MessageContentPart(
             kind: .video,
-            title: "Demo Video",
-            url: "https://example.com/demo.mp4"
+            url: "https://example.com/demo.mp4",
+            title: "Demo Video"
         )
         XCTAssertEqual(videoPart.kind, .video)
 
@@ -207,9 +207,9 @@ final class AgentChatSDKTests: XCTestCase {
             resultSummary: "Found repository"
         )
 
-        let imgPart = MessageContentPart(kind: .image, title: "Preview", url: "https://example.com/img.png")
+        let imgPart = MessageContentPart(kind: .image, url: "https://example.com/img.png", title: "Preview")
         let svgPart = MessageContentPart(kind: .svg, caption: "Diagram", svgString: "<svg height='60' width='120'><rect width='120' height='60' fill='blue'/></svg>")
-        let videoPart = MessageContentPart(kind: .video, title: "Video Tutorial", url: "https://example.com/demo.mp4")
+        let videoPart = MessageContentPart(kind: .video, url: "https://example.com/demo.mp4", title: "Video Tutorial")
 
         // 1. Empty / Initial Chat
         let emptySession = AgentChatSession()
@@ -218,17 +218,20 @@ final class AgentChatSDKTests: XCTestCase {
 
         // 2. User Message
         let userMsg = Message(role: .user, content: "What is SwiftChat?")
-        let userMsgView = MessageView(message: userMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        let userMsgView = MessageView(message: userMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 0)
+            .environmentObject(emptySession.viewModel)
         assertSnapshot(of: userMsgView, as: .image(layout: .fixed(width: 375, height: 80)), named: "02_UserMessage")
 
         // 3. Normal Assistant Message
         let assistantMsg = Message(role: .assistant, content: "SwiftChat is an open-source ChatGPT-style client for iOS.")
-        let assistantMsgView = MessageView(message: assistantMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        let assistantMsgView = MessageView(message: assistantMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 1)
+            .environmentObject(emptySession.viewModel)
         assertSnapshot(of: assistantMsgView, as: .image(layout: .fixed(width: 375, height: 100)), named: "03_NormalAssistantMessage")
 
         // 4. Streaming Assistant Message
         let streamingMsg = Message(role: .assistant, content: "Generating response incrementally...", isStreaming: true)
-        let streamingMsgView = MessageView(message: streamingMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        let streamingMsgView = MessageView(message: streamingMsg, isDarkMode: false, isLastMessage: true, isLoading: true, messageIndex: 1)
+            .environmentObject(emptySession.viewModel)
         assertSnapshot(of: streamingMsgView, as: .image(layout: .fixed(width: 375, height: 100)), named: "04_StreamingAssistantMessage")
 
         // 5. Reasoning / Activity State
@@ -246,7 +249,14 @@ final class AgentChatSDKTests: XCTestCase {
         assertSnapshot(of: activityView, as: .image(layout: .fixed(width: 375, height: 110)), named: "05_ReasoningActivityState")
 
         // 6. Web Search State
-        let webSearchBox = WebSearchBox(source: s1)
+        let webSearchBox = WebSearchBox(
+            webSearchState: WebSearchState(
+                query: "Apple HIG materials",
+                status: .completed,
+                sources: [s1, s2]
+            ),
+            isDarkMode: false
+        )
         assertSnapshot(of: webSearchBox, as: .image(layout: .fixed(width: 375, height: 60)), named: "06_WebSearchState")
 
         // 7. Inline Citations / Sources
@@ -308,10 +318,8 @@ final class AgentChatSDKTests: XCTestCase {
 
         // 16. Composer
         let composer = MessageInputView(
-            isDarkMode: false,
-            text: .constant("What is the speed of light?"),
-            viewModel: emptySession.viewModel,
-            onSend: {}
+            messageText: .constant("What is the speed of light?"),
+            viewModel: emptySession.viewModel
         )
         assertSnapshot(of: composer, as: .image(layout: .fixed(width: 375, height: 80)), named: "16_Composer")
 
@@ -320,16 +328,21 @@ final class AgentChatSDKTests: XCTestCase {
         assertSnapshot(of: modelMenu, as: .image(layout: .fixed(width: 200, height: 44)), named: "17_ModelSelectorMenu")
 
         // 18. Light Mode
-        let lightAssistant = assistantMsgView.environment(\.colorScheme, .light)
+        let lightAssistant = MessageView(message: assistantMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 1)
+            .environmentObject(emptySession.viewModel)
+            .environment(\.colorScheme, .light)
         assertSnapshot(of: lightAssistant, as: .image(layout: .fixed(width: 375, height: 100)), named: "18_LightMode")
 
         // 19. Dark Mode
-        let darkAssistant = assistantMsgView.environment(\.colorScheme, .dark)
+        let darkAssistant = MessageView(message: assistantMsg, isDarkMode: true, isLastMessage: true, isLoading: false, messageIndex: 1)
+            .environmentObject(emptySession.viewModel)
+            .environment(\.colorScheme, .dark)
         assertSnapshot(of: darkAssistant, as: .image(layout: .fixed(width: 375, height: 100)), named: "19_DarkMode")
 
         // 20. RTL / Hebrew
         let hebrewMsg = Message(role: .assistant, content: "שלום! זוהי הדגמה של עברית וכיווניות מימין לשמאל.")
-        let hebrewView = MessageView(message: hebrewMsg, isLast: true, isEditing: false, viewModel: emptySession.viewModel)
+        let hebrewView = MessageView(message: hebrewMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 1)
+            .environmentObject(emptySession.viewModel)
             .environment(\.layoutDirection, .rightToLeft)
         assertSnapshot(of: hebrewView, as: .image(layout: .fixed(width: 375, height: 100)), named: "20_RTLHebrew")
 
@@ -349,28 +362,24 @@ final class AgentChatSDKTests: XCTestCase {
             arguments: .text("scheme: AgentChatSDK"),
             resultSummary: "Build completed successfully"
         )
-        let viewAnimated = ToolExecutionDisclosure(call: call, status: .completed) {
+        let viewAnimated = ToolExecutionDisclosure(call: call, status: .completed, forceReduceMotion: false) {
             Text("Building Target")
         }
-        .environment(\.accessibilityReduceMotion, false)
 
         assertSnapshot(of: viewAnimated, as: .image(layout: .fixed(width: 375, height: 60)), named: "Pow_ToolCompleted_Animated")
 
-        let viewReduceMotion = ToolExecutionDisclosure(call: call, status: .completed) {
+        let viewReduceMotion = ToolExecutionDisclosure(call: call, status: .completed, forceReduceMotion: true) {
             Text("Building Target")
         }
-        .environment(\.accessibilityReduceMotion, true)
 
         assertSnapshot(of: viewReduceMotion, as: .image(layout: .fixed(width: 375, height: 60)), named: "Pow_ToolCompleted_ReduceMotion")
     }
 
     func testAgentLottieMediaViewReduceMotion() {
-        let viewAnimated = AgentLottieMediaView(animationName: "sparkles", isDarkMode: false)
-            .environment(\.accessibilityReduceMotion, false)
+        let viewAnimated = AgentLottieMediaView(animationName: "sparkles", isDarkMode: false, forceReduceMotion: false)
         assertSnapshot(of: viewAnimated, as: .image(layout: .fixed(width: 100, height: 100)), named: "Lottie_Animated")
 
-        let viewReduceMotion = AgentLottieMediaView(animationName: "sparkles", isDarkMode: false)
-            .environment(\.accessibilityReduceMotion, true)
+        let viewReduceMotion = AgentLottieMediaView(animationName: "sparkles", isDarkMode: false, forceReduceMotion: true)
         assertSnapshot(of: viewReduceMotion, as: .image(layout: .fixed(width: 100, height: 100)), named: "Lottie_ReduceMotion")
     }
 

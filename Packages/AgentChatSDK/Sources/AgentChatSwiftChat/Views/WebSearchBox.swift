@@ -10,14 +10,28 @@ import SwiftUI
 import AgentChatCore
 
 /// Inline row showing web search status; tapping opens sources sheet
-struct WebSearchBox: View {
-    let webSearchState: WebSearchState
-    let isDarkMode: Bool
-    let isStreaming: Bool
-    let webSearchSummary: String?
-    let onTap: () -> Void
+public struct WebSearchBox: View {
+    public let webSearchState: WebSearchState
+    public let isDarkMode: Bool
+    public let isStreaming: Bool
+    public let webSearchSummary: String?
+    public let onTap: () -> Void
 
-    var body: some View {
+    public init(
+        webSearchState: WebSearchState,
+        isDarkMode: Bool = false,
+        isStreaming: Bool = false,
+        webSearchSummary: String? = nil,
+        onTap: @escaping () -> Void = {}
+    ) {
+        self.webSearchState = webSearchState
+        self.isDarkMode = isDarkMode
+        self.isStreaming = isStreaming
+        self.webSearchSummary = webSearchSummary
+        self.onTap = onTap
+    }
+
+    public var body: some View {
         Button(action: onTap) {
             HStack {
                 headerContent

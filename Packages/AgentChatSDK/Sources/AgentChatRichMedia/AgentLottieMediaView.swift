@@ -15,24 +15,31 @@ public struct AgentLottieMediaView: View {
     public let isLooping: Bool
     public let isDarkMode: Bool
     public let size: CGSize
+    public let forceReduceMotion: Bool?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var effectiveReduceMotion: Bool {
+        forceReduceMotion ?? reduceMotion
+    }
 
     public init(
         animationName: String,
         isLooping: Bool = true,
         isDarkMode: Bool = false,
-        size: CGSize = CGSize(width: 80, height: 80)
+        size: CGSize = CGSize(width: 80, height: 80),
+        forceReduceMotion: Bool? = nil
     ) {
         self.animationName = animationName
         self.isLooping = isLooping
         self.isDarkMode = isDarkMode
         self.size = size
+        self.forceReduceMotion = forceReduceMotion
     }
 
     public var body: some View {
         Group {
-            if reduceMotion {
+            if effectiveReduceMotion {
                 staticFallback
             } else {
                 animatedView

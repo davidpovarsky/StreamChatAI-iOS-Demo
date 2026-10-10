@@ -3,16 +3,31 @@ import Collections
 import AsyncAlgorithms
 
 /// A bounded thread-safe ring buffer for streaming chunks and activity event sequencing,
-/// utilizing `Collections.Deque` and `AsyncAlgorithms` for debounced updates.
+/// utilizing `Collections.Deque` and `AsyncAlgorithms` for debounced and chunked updates.
 public final class AsyncEventBuffer<Element: Sendable>: @unchecked Sendable {
     private let capacity: Int
     private var deque: Deque<Element>
     private let channel = AsyncChannel<Element>()
+    private let inputContinuation: AsyncStream<Element>.Continuation
+    private var forwardingTask: Task<Void, Never>?
     private let lock = NSLock()
 
     public init(capacity: Int = 100) {
         self.capacity = capacity
         self.deque = Deque<Element>()
+        let (stream, continuation) = AsyncStream.makeStream(of: Element.self)
+        self.inputContinuation = continuation
+        let channelRef = self.channel
+        self.forwardingTask = Task {
+            for await element in stream {
+                await channelRef.send(element)
+            }
+        }
+    }
+
+    deinit {
+        inputContinuation.finish()
+        forwardingTask?.cancel()
     }
 
     public func append(_ element: Element) {
@@ -23,9 +38,7 @@ public final class AsyncEventBuffer<Element: Sendable>: @unchecked Sendable {
         deque.append(element)
         lock.unlock()
 
-        Task { [channel] in
-            await channel.send(element)
-        }
+        inputContinuation.yield(element)
     }
 
     public var allElements: [Element] {
@@ -48,12 +61,34 @@ public final class AsyncEventBuffer<Element: Sendable>: @unchecked Sendable {
 
     /// Provides a debounced async stream of elements using `AsyncAlgorithms.debounce(for:)`
     /// to avoid UI stuttering during high-frequency token generation.
-    public func debouncedStream(for duration: Duration = .milliseconds(50)) -> some AsyncSequence {
-        channel.debounce(for: duration)
+    public func debouncedStream(for duration: Duration = .milliseconds(50)) -> AsyncStream<Element> {
+        let debounced = channel.debounce(for: duration)
+        return AsyncStream { continuation in
+            let task = Task {
+                for await item in debounced {
+                    continuation.yield(item)
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
     }
 
     /// Provides a chunked async stream of elements using `AsyncAlgorithms.chunks(ofCount:)`.
-    public func chunkedStream(count: Int = 5) -> some AsyncSequence {
-        channel.chunks(ofCount: count)
+    public func chunkedStream(count: Int = 5) -> AsyncStream<[Element]> {
+        let chunked = channel.chunks(ofCount: count)
+        return AsyncStream { continuation in
+            let task = Task {
+                for await chunk in chunked {
+                    continuation.yield(Array(chunk))
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
+        }
     }
 }

@@ -22,18 +22,57 @@ import AgentChatSwiftChat
 
 #if os(iOS) && canImport(SwiftUI) && canImport(iosMath) && canImport(SwiftMath)
 
+/// Bridge view wrapping SwiftMath's `MTMathUILabel` in a SwiftUI `UIViewRepresentable`
+public struct SwiftMathViewBridge: UIViewRepresentable {
+    public let latex: String
+    public let fontSize: CGFloat
+    public let isDarkMode: Bool
+    public let mode: SwiftMath.MTMathUILabelMode
+
+    public init(
+        latex: String,
+        fontSize: CGFloat = 18,
+        isDarkMode: Bool = false,
+        mode: SwiftMath.MTMathUILabelMode = .display
+    ) {
+        self.latex = latex
+        self.fontSize = fontSize
+        self.isDarkMode = isDarkMode
+        self.mode = mode
+    }
+
+    public func makeUIView(context: Context) -> SwiftMath.MTMathUILabel {
+        let label = SwiftMath.MTMathUILabel()
+        label.latex = latex
+        label.fontSize = fontSize
+        label.textColor = isDarkMode ? .white : .black
+        label.labelMode = mode
+        label.textAlignment = .center
+        label.setContentHuggingPriority(.required, for: .vertical)
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }
+
+    public func updateUIView(_ uiView: SwiftMath.MTMathUILabel, context: Context) {
+        uiView.latex = latex
+        uiView.fontSize = fontSize
+        uiView.textColor = isDarkMode ? .white : .black
+        uiView.labelMode = mode
+    }
+}
+
 /// Bridge view wrapping iosMath's `MTMathUILabel` in a SwiftUI `UIViewRepresentable`
 public struct IOSMathViewBridge: UIViewRepresentable {
     public let latex: String
     public let fontSize: CGFloat
     public let textColor: UIColor
-    public let mode: MTMathUILabelMode
+    public let mode: iosMath.MTMathUILabelMode
 
     public init(
         latex: String,
         fontSize: CGFloat = 20,
         textColor: UIColor = .label,
-        mode: MTMathUILabelMode = .display
+        mode: iosMath.MTMathUILabelMode = .display
     ) {
         self.latex = latex
         self.fontSize = fontSize
@@ -41,8 +80,8 @@ public struct IOSMathViewBridge: UIViewRepresentable {
         self.mode = mode
     }
 
-    public func makeUIView(context: Context) -> MTMathUILabel {
-        let label = MTMathUILabel()
+    public func makeUIView(context: Context) -> iosMath.MTMathUILabel {
+        let label = iosMath.MTMathUILabel()
         label.latex = latex
         label.fontSize = fontSize
         label.textColor = textColor
@@ -53,7 +92,7 @@ public struct IOSMathViewBridge: UIViewRepresentable {
         return label
     }
 
-    public func updateUIView(_ uiView: MTMathUILabel, context: Context) {
+    public func updateUIView(_ uiView: iosMath.MTMathUILabel, context: Context) {
         uiView.latex = latex
         uiView.fontSize = fontSize
         uiView.textColor = textColor
@@ -93,11 +132,16 @@ public struct MathRendererComparisonView: View {
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.blue)
 
-                    SwiftMath.MathView(equation: latex)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .padding(8)
-                        .background(isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    SwiftMathViewBridge(
+                        latex: latex,
+                        fontSize: 18,
+                        isDarkMode: isDarkMode,
+                        mode: .display
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .padding(8)
+                    .background(isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
 
                 // Right: Candidate iosMath
@@ -170,19 +214,22 @@ final class MathComparisonTests: XCTestCase {
 #if os(iOS) && canImport(SwiftMath) && canImport(iosMath)
         for (index, token) in progressiveTokens.enumerated() {
             // 1. SwiftMath Path
-            let swiftMathView = SwiftMath.MathView(equation: token)
-            XCTAssertNotNil(swiftMathView, "SwiftMath MathView must instantiate without crash for '\(token)'")
+            let swiftLabel = SwiftMath.MTMathUILabel()
+            swiftLabel.latex = token
+            XCTAssertNotNil(swiftLabel, "SwiftMath MTMathUILabel must instantiate without crash for '\(token)'")
 
-            let swiftBuilder = SwiftMath.MTMathListBuilder(string: token)
-            let swiftList = swiftBuilder.build()
-            let swiftError = swiftBuilder.error
+            var swiftError: NSError? = nil
+            let swiftList = SwiftMath.MTMathListBuilder.build(fromString: token, error: &swiftError)
 
             if index == 0 || index == 3 {
                 // Incomplete LaTeX syntax: unclosed bracket / unclosed radical
                 XCTAssertNil(swiftList, "SwiftMath should return nil for incomplete token '\(token)'")
                 XCTAssertNotNil(swiftError, "SwiftMath should record parser error for incomplete token '\(token)'")
+                XCTAssertNotNil(swiftLabel.error, "SwiftMath MTMathUILabel should have error for incomplete token '\(token)'")
             } else {
                 XCTAssertNotNil(swiftList, "SwiftMath should successfully parse valid token '\(token)'")
+                XCTAssertNil(swiftError, "SwiftMath should have nil error for valid token '\(token)'")
+                XCTAssertNil(swiftLabel.error, "SwiftMath MTMathUILabel should have nil error for valid token '\(token)'")
             }
 
             // 2. iosMath Path
@@ -198,10 +245,10 @@ final class MathComparisonTests: XCTestCase {
                 // Incomplete LaTeX syntax
                 XCTAssertNil(iosList, "iosMath should return nil for incomplete token '\(token)'")
                 XCTAssertNotNil(iosError, "iosMath should record parser error for incomplete token '\(token)'")
-                XCTAssertNotNil(iosLabel.error, "MTMathUILabel should have error for incomplete token '\(token)'")
+                XCTAssertNotNil(iosLabel.error, "iosMath MTMathUILabel should have error for incomplete token '\(token)'")
             } else {
                 XCTAssertNotNil(iosList, "iosMath should successfully parse valid token '\(token)'")
-                XCTAssertNil(iosLabel.error, "MTMathUILabel should have nil error for valid token '\(token)'")
+                XCTAssertNil(iosLabel.error, "iosMath MTMathUILabel should have nil error for valid token '\(token)'")
             }
         }
 #else

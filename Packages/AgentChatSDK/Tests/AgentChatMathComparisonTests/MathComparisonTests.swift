@@ -85,7 +85,7 @@ public struct IOSMathViewBridge: UIViewRepresentable {
         label.latex = latex
         label.fontSize = fontSize
         label.textColor = textColor
-        label.labelMode = mode
+        label.mode = mode
         label.textAlignment = .center
         label.setContentHuggingPriority(.required, for: .vertical)
         label.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -96,7 +96,7 @@ public struct IOSMathViewBridge: UIViewRepresentable {
         uiView.latex = latex
         uiView.fontSize = fontSize
         uiView.textColor = textColor
-        uiView.labelMode = mode
+        uiView.mode = mode
     }
 }
 

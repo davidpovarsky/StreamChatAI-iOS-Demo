@@ -89,8 +89,7 @@ public struct MessageInputView: View {
                 .ignoresSafeArea()
             }
             .sheet(isPresented: $showEmojiPicker) {
-                AgentEmojiPicker(isDarkMode: isDarkMode) { selectedEmoji in
-                    messageText += selectedEmoji
+                AgentEmojiPicker(text: $messageText, isDarkMode: isDarkMode) {
                     showEmojiPicker = false
                 }
                 .presentationDetents([.medium])

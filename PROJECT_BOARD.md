@@ -17,9 +17,12 @@ Quick captures that still need classification.
 ## Discoveries & Tips
 
 - **SwiftChat Golden Parity**: Upstream `sachaservan/SwiftChat` relies on `Textual` (`StructuredText`) for markdown/syntax highlighting and `SwiftMath` for LaTeX math. Attempting to replace these with `Highlightr` or `iosMath` breaks visual parity with the full demo and risks package collisions (e.g. `cmark-gfm`). All proposed replacements must remain gated behind explicit user approval.
-- **Kingfisher Non-Invasive Integration**: `Kingfisher` (`KFImage`) can be wrapped cleanly inside `SafeInlineImageMediaView` to provide disk/memory caching and progress indicators without leaking Kingfisher types to the public API or changing SwiftChat's `MessageContentPart` contract.
+- **Kingfisher Non-Invasive Integration**: `Kingfisher` (`KFImage`) can be wrapped cleanly inside `SafeInlineImageMediaView` to provide disk/memory caching and progress indicators without leaking Kingfisher types to the public API or changing SwiftChat's `MessageContentPart` contract. Pre-seeding `ImageCache.default.store(fixtureImage, forKey:)` enables 100% deterministic offline snapshot testing.
 - **Eliminating Circular Module Dependencies**: Bridging `SelectedModelMenu` to SwiftChat's `ChatViewModel` via convenience extensions in `AgentChatSwiftChat/Views/SelectedModelMenu+Convenience.swift` decouples `AgentChatComposerExtensions` from `AgentChatSwiftChat`, allowing a strict acyclic DAG.
-- **Accessibility & Micro-Animations**: `Lottie` and `Pow` should always be conditioned on `@Environment(\.accessibilityReduceMotion)` to respect user accessibility preferences, dropping gracefully to static SF Symbols and standard opacity fades.
+- **Accessibility & Micro-Animations**: `Lottie` and `Pow` (`.changeEffect(.glow(...))`) are conditioned on `@Environment(\.accessibilityReduceMotion)` (with optional `forceReduceMotion` override for deterministic testing) to respect user accessibility preferences, dropping gracefully to static SF Symbols and non-animated indicators.
+- **Swift 6 Concurrency & Lock Safety in LiveKit**: `NSLock.lock()`/`unlock()` is unavailable in Swift 6 `async` contexts (`-warn-concurrency`). Using an `actor` (`LiveKitVoiceState`) and `OSAllocatedUnfairLock` (`import os`) for synchronous state access eliminates concurrency warnings/errors cleanly.
+- **Standalone SwiftMath vs iosMath Hebrew `\text{...}`**: In side-by-side snapshots (`Light_Unicode-Hebrew-Context.png`), standalone `iosMath.MTMathUILabel` cascades to the iOS system Hebrew font inside `\text{...}`, whereas standalone `SwiftMath.MTMathUILabel` uses its bundled Latin Modern Math font and omits non-Latin glyphs inside `\text{...}`. Production `LaTeXMarkdownView` in `AgentChatSwiftChat` avoids this by tokenizing Hebrew prose outside `$...$` via `StructuredText` and passing only math expressions to `SwiftMath`.
+- **JSONSerialization Slash Escaping**: `JSONSerialization.data(withJSONObject:options:)` escapes `/` as `\/` unless `.withoutEscapingSlashes` is included in `WritingOptions`.
 - Wrapping `MTMathUILabel` in a `UIViewRepresentable` provides smooth LaTeX rendering without needing WebViews or JavaScript engines.
 - Using `#if canImport(SwiftUI)` and `#if canImport(UIKit)` across SDK targets allows pure Swift domain models and parsers to type-check and run cross-platform while compiling full UI surfaces on iOS/macOS.
 - Liquid Glass effects (`.glassEffect(.regular)`) on iOS 26+ gracefully degrade to `.ultraThinMaterial` and borders on iOS 16-18.
@@ -33,36 +36,36 @@ Quick captures that still need classification.
 
 ## Open Questions
 
-- None. All Category B decision gates resolved per master alignment requirements.
+- None. All Category B decision gates and Phase 1 CI verification gates resolved.
 
 ## Planned / Todo
 
-- [ ] Make CI test gates real (never swallow test failures)
-- [ ] Fix test scheme configuration so both AgentChatSDKTests and AgentChatMathComparisonTests execute
-- [ ] Fix LiveKit async/lock concurrency compilation failure in Swift 6
-- [ ] Clarify LiveKit feature status honestly
-- [ ] Record and commit real snapshot baselines, verify with recording OFF
-- [ ] Ensure 22 snapshot states represent claimed states and are deterministic
-- [ ] Fix Math A/B progressive rendering test and verify with real engine APIs
-- [ ] Refine iosMath vs SwiftMath A/B report with measured vs qualitative distinctions
-- [ ] Prove Pow integration or remove it cleanly
-- [ ] Verify Lottie reachability in rich media routing
-- [ ] Verify Kingfisher, SVGView, EmojiKit routing
-- [ ] Fix AsyncAlgorithms test to consume debounced/chunked async streams
-- [ ] Build all matrix targets and run CI with hard failure gates
-- [ ] Rebuild and verify final IPA artifacts
+- None pending for Phase 1.
 
 ## In Progress / Verification
 
-Phase 1 — Verification/Fix in progress
+Phase 1 — VERIFIED COMPLETE
 
 ## Done
 
+- [x] **Phase 1 — Truthful CI, Snapshot, Dependency & Build Verification Complete (2026-10-11)**
+  - **Verified Code & Snapshot Commit SHA**: `350bac6` (`350bac6c9a5e63f6d136b13c6496b21a5ee8df7f`) on branch `agent/swiftchat-sdk-chatgpt-stack-realignment`
+  - **CI Run IDs & URLs**:
+    - `Build unsigned IPA`: Run `38130569625` (`completed success`) — `https://github.com/davidpovarsky/StreamChatAI-iOS-Demo/actions/runs/38130569625`
+    - `Build Full Chat SDK Demos`: Run `38130569567` (`completed success`) — `https://github.com/davidpovarsky/StreamChatAI-iOS-Demo/actions/runs/38130569567`
+  - **Hard CI Failure Gates**: Removed all `|| echo` failure-swallowing from `.github/workflows/build-ipa.yml` and `.github/workflows/build-full-demos.yml`; configured `set -euo pipefail` and `-scheme AgentChatSDK-Package`.
+  - **Test Summary**:
+    - `AgentChatSDKTests`: Executed 11 tests, with 0 failures (0 unexpected) in 4.983 seconds.
+    - `AgentChatMathComparisonTests`: Executed 4 tests, with 0 failures (0 unexpected) in 3.680 seconds.
+  - **Snapshot Verification Status**: 48 golden `.png` snapshot files committed under `Packages/AgentChatSDK/Tests/AgentChatSDKTests/__Snapshots__/AgentChatSDKTests/` (26 files: 22 visual states `01_EmptyInitialChat` through `22_iPadRegularWidth` + 2 `Pow` + 2 `Lottie`) and `Packages/AgentChatSDK/Tests/AgentChatMathComparisonTests/__Snapshots__/MathComparisonTests/` (22 files: 10 Light + 10 Dark + 1 RTL Narrow + 1 iPad Regular). Re-verified in CI with recording OFF and 0 failures.
+  - **LiveKit Target Build Status**: `AgentChatVoiceLiveKit` (`LiveKitVoiceSessionProvider.swift`) refactored with `actor LiveKitVoiceState` and `OSAllocatedUnfairLock`; verified `** BUILD SUCCEEDED **` on both `iphoneos` and `iphonesimulator` with 0 Swift 6 concurrency errors. Documented truthfully as `LiveKit room/session transport foundation`.
+  - **`SwiftMath` vs `iosMath` Decision Summary**: `SwiftMath` remains the 100% canonical production math renderer in `AgentChatSwiftChat` (`LaTeXMarkdownView`); `iosMath` is retained strictly in the isolated `AgentChatMathComparisonTests` target for side-by-side visual and progressive-streaming evaluation (`docs/IOSMATH_VS_SWIFTMATH_AB_TEST.md`).
+  - **Final IPA Artifacts & Sizes**:
+    - `SwiftChat-AgentSDK-Demo-IPA` (`SwiftChat-AgentSDK-Demo-unsigned.ipa`): `21,214,466` bytes (`20.23 MB`), valid zip containing `Payload/StreamChatAI Demo.app` (95 entries).
+    - `StreamChatAI-Demo-IPA` (`StreamChatAI-Demo-unsigned.ipa`): `21,214,466` bytes (`20.23 MB`), valid zip containing `Payload/StreamChatAI Demo.app` (95 entries).
+    - `SwiftChat-Full-Demo-IPA` (`SwiftChat-Full-Demo-unsigned.ipa`): `22,420,741` bytes (`21.38 MB`), valid zip containing `Payload/SwiftChat.app` (73 entries).
 - [x] Baseline SwiftChat Safe Overlay Verification at `b9d2cc0` (100% clean check).
-- [x] Corrective Realignment of `AgentChatSDK` around SwiftChat Full Demo (`d6f54cc`) + safe overlay
-  - Date: 2026-10-08
-  - Decision Gate Resolved: Highlightr (rejected), swift-markdown (rejected), KaTeX (rejected), STTextKitPlus (deferred), Motion (rejected), iosMath (isolated A/B test only).
-  - Pushed to remote branch: `agent/swiftchat-sdk-chatgpt-stack-realignment`.
+- [x] Corrective Realignment of `AgentChatSDK` around SwiftChat Full Demo (`d6f54cc`) + safe overlay (2026-10-08).
 
 ## Archive
 

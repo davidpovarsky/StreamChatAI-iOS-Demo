@@ -29,8 +29,8 @@ To ensure truthful, verifiable documentation, all statements in this report are 
 | **Dynamic Height & Sizing** | Native SwiftUI intrinsic content size and layout negotiation. | Requires auto-layout compression resistance hooks to avoid clipping in `ScrollView`. | *[Observed in Snapshots]* | SwiftMath participates naturally in SwiftUI layout passes. |
 | **Inline Math** (`$E=mc^2$`) | Excellent; fits smoothly into surrounding text baselines. | Good; requires font size matching to surrounding text label. | *[Observed in Snapshots]* | SwiftMath renders smoothly within `LaTeXMarkdownView` segments. |
 | **Display Math** (`$$\frac{a}{b}$$`) | Crisp vector rendering; proper fraction bar alignment. | Classical Donald Knuth TeX typesetting rules and spacing. | *[Observed in Snapshots]* | iosMath has authentic TeX typography; SwiftMath is sharper in modern flat UI. |
-| **Matrices & Arrays** | Supports standard `\begin{pmatrix}` and tabular arrays. | Full LaTeX array support with customizable bracket types. | *[Measured in Harness]* | Both parse and render 2x2 and NxM matrices without crashing. |
-| **Unicode & Hebrew** | Preserves mathematical LTR ordering within RTL containers. | Handles Unicode inside `\text{}`; LTR formula layout inside RTL containers. | *[Measured in Harness]* | Both preserve mathematical LTR ordering when enclosed in an RTL Hebrew view hierarchy. |
+| **Matrices & Arrays** | Supports standard `\begin{pmatrix}` and tabular arrays. | Full LaTeX array support with customizable bracket types. | *[Measured in Harness / Observed in Snapshots]* | Both parse and render 2x2 and NxM matrices without crashing. |
+| **Unicode & Hebrew** | Preserves mathematical LTR ordering within RTL containers; bundled Latin Modern Math font omits non-Latin glyphs inside raw `\text{...}` (handled by `LaTeXMarkdownView` outside `$...$`). | Cascades to system fallback font inside `\text{...}` to render Hebrew glyphs directly; preserves LTR formula layout inside RTL containers. | *[Observed in Snapshots]* | In raw `\text{משוואת איינשטיין: }`, `iosMath` renders Hebrew glyphs via system font fallback whereas standalone `SwiftMath.MTMathUILabel` omits non-Latin glyphs (production `LaTeXMarkdownView` renders Hebrew prose via `StructuredText` outside `$...$`). |
 | **Dark Mode Adaptation** | Immediate automatic SwiftUI environment color scheme response. | Requires updating `textColor` in `updateUIView(_:context:)`. | *[Observed in Snapshots]* | SwiftMath dynamically responds to `.colorScheme` changes without manual invalidation. |
 | **Streaming Token Influx** | Returns nil / parser error during incomplete syntax; no crash. | Returns nil / parser error during incomplete syntax; no crash. | *[Measured in Harness]* | Both fail gracefully on incomplete tokens and recover once tokens are closed. |
 
@@ -73,8 +73,8 @@ During live token generation, LLMs stream LaTeX incrementally. The automated tes
 - `\frac{1}{2} + \sqrt{x} = 0` (complete statement)
 
 ### Verified Findings:
-- **`SwiftMath`**: `SwiftMath.MTMathListBuilder(string: token).build()` safely returns `nil` and records an error for incomplete syntax tokens (`\frac{1}{`, `\sqrt{`), without throwing an unhandled exception or crashing. Upon receiving closed brackets, valid `MTMathList` objects are produced.
-- **`iosMath`**: `iosMath.MTMathListBuilder(string: token).build()` safely returns `nil` and populates `builder.error` and `label.error` for incomplete syntax tokens without crashing.
+- **`SwiftMath`**: `SwiftMath.MTMathListBuilder.build(fromString: token, error: &swiftError)` and `SwiftMath.MTMathUILabel` safely return `nil` and populate `NSError` for incomplete syntax tokens (`\frac{1}{`, `\sqrt{`), without throwing an unhandled exception or crashing. Upon receiving closed brackets, valid `MTMathList` objects are produced and `swiftLabel.error` is `nil`.
+- **`iosMath`**: `iosMath.MTMathListBuilder(string: token).build()` and `iosMath.MTMathUILabel` safely return `nil` and populate `builder.error` and `label.error` for incomplete syntax tokens without crashing.
 - **Summary**: Neither engine crashes during progressive streaming influx.
 
 ---
@@ -83,8 +83,8 @@ During live token generation, LLMs stream LaTeX incrementally. The automated tes
 
 In an RTL environment (`.environment(\.layoutDirection, .rightToLeft)`):
 - Math formulas are universally read Left-to-Right (LTR).
-- Both `SwiftMath` and `iosMath` preserve LTR formula alignment while permitting right-aligned labels in the surrounding chat container.
-- `SwiftMath` automatically aligns with SwiftUI text flow, whereas `iosMath`'s `textAlignment = .center` requires container styling.
+- Both `SwiftMath` and `iosMath` preserve LTR formula alignment (`RTL_Narrow_Quadratic.png`) while permitting right-aligned labels in the surrounding chat container.
+- In `Light_Unicode-Hebrew-Context.png` and `Dark_Unicode-Hebrew-Context.png` (`\text{משוואת איינשטיין: } E = mc^2`), standalone `iosMath.MTMathUILabel` cascades to the iOS system Hebrew font inside `\text{...}`, whereas standalone `SwiftMath.MTMathUILabel` uses its bundled math font and omits non-Latin glyphs inside `\text{...}` (in production `AgentChatSwiftChat`, `LaTeXMarkdownView` tokenizes Hebrew prose outside `$...$` via `StructuredText` and passes only the math segments to `SwiftMath`).
 
 ---
 

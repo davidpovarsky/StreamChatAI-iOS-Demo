@@ -37,7 +37,7 @@ public enum ToolCallArguments: Equatable, Sendable {
     private static func prettyPrintedJSON(_ raw: String) -> String {
         guard let data = raw.data(using: .utf8),
               let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []),
-              let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted, .sortedKeys]),
+              let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
               let prettyString = String(data: prettyData, encoding: .utf8) else {
             return raw
         }

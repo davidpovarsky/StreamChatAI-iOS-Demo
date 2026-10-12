@@ -40,27 +40,28 @@ Quick captures that still need classification.
 
 ## Planned / Todo
 
-- [ ] Complete CI verification and generate release unsigned IPA for iOS 27.0.
+- None. All Phase 1 and Phase 2 milestones verified and completed.
 
 ## In Progress / Verification
 
-- **Phase 2 — Native SwiftUI iOS 27 Architecture & SDK Showcase Realignment**:
-  - Modular DAG defined in `Packages/AgentChatSDK/Package.swift` targeting `.iOS("27.0")`.
-  - Canonical immutable models in `AgentChatCore` (`CanonicalModels.swift`, `AgentEventReducer.swift`, `VirtualClock.swift`).
-  - Hierarchical agent activity component `AgentHierarchicalActivityView` (collapsed by default: `Worked for...`).
-  - Visible approval cards outside tree (`AgentApprovalRequestCard`).
-  - Rich interactive result cards (`ChartResultView`, `MapResultView`, `FormResultView`, `CanvasResultViews`, `NativeResultCards`).
-  - 100% native showcase demo in `StreamChatAIDemo` (4 tabs: Playground, Scenarios with all 26 scenarios, Component Gallery, Motion Lab).
-  - CI workflow configured for macOS 15 / Xcode 27 / iOS 27 simulator testing and unsigned IPA packaging.
+- None.
 
 ## Done
 
-- [x] **Phase 2 Core SDK Architecture & Native UI Implementation (2026-10-12)**
-  - Replaced legacy SwiftChat UI views with 100% native SwiftUI components.
-  - Decoupled singletons; per-session observable state in `AgentChatSession`.
-  - Native media fallback for YouTube and isolated WebKit in optional `AgentChatWebContent`.
-  - Removed obsolete dependencies (`Pow`, `EmojiKit`, `openai-swift-fork`, GetStream).
-  - Comprehensive unit and snapshot tests updated for native views.
+- [x] **Phase 2 — Native SwiftUI iOS 27 Architecture & SDK Showcase Realignment (2026-10-12)**
+  - **Verified Commit SHA**: `802579e` (`802579ee3847688dfb2cc75befe97cf2701c7e73`) on branch `agent/swiftchat-sdk-chatgpt-stack-realignment`
+  - **CI Run ID & URL**: Run `38212783608` (`completed success`) — `https://github.com/davidpovarsky/StreamChatAI-iOS-Demo/actions/runs/38212783608`
+  - **Environment**: macOS runner `xcode-27`, Xcode 27.0 (27A266a), iOS 27.0 SDK (`iphoneos27.0`), Swift 6.2.
+  - **Modular DAG**: 12 core native modules + optional `AgentChatWebContent` and `AgentChatVoiceLiveKit` targeting iOS 27.0+ with zero webviews in main flow.
+  - **Canonical Immutable Models & Deterministic Reducer**: `CanonicalModels.swift`, `AgentEventReducer.swift`, `VirtualClock.swift`, `AgentChatSession.swift`.
+  - **Hierarchical Agent Activity**: `AgentHierarchicalActivityView` with 3-level disclosure (Run collapsed by default: `Worked for 2m 51s`, Groups, Operations, Redacted Inspector).
+  - **Approvals & Result Cards**: `AgentApprovalRequestCard` outside activity tree, Swift Charts (`ChartResultView`), MapKit (`MapResultView`), interactive loan calculator (`FormResultView`), Canvas document diffs (`CanvasDocumentResultView`, `CanvasCodeEditorResultView`), declarative MiniApp (`NativeMiniAppResultView`).
+  - **100% Native Visual Showcase**: `StreamChatAIDemo` with 4 tabs (Playground, Scenarios with all 26 offline scenarios, Component Gallery, Motion Lab) and full interactive playback controls.
+  - **IPA Artifacts Generated & Verified**:
+    - `AgentChatSDK-Native-Demo-IPA` (`AgentChatSDK-Native-Demo-unsigned.ipa`): `14,087,019` bytes (`13.43 MB`), valid unsigned zip with `Payload/AgentChat Demo.app`, `MinimumOSVersion: 27.0`, `arm64`.
+    - `SwiftChat-AgentSDK-Demo-IPA`: `14,087,017` bytes (`13.43 MB`).
+    - `StreamChatAI-Demo-IPA`: `14,087,005` bytes (`13.43 MB`).
+    - `Snapshots-IPA`: `1,293,886` bytes (`1.23 MB`).
 - [x] **Phase 1 — Truthful CI, Snapshot, Dependency & Build Verification Complete (2026-10-11)**
   - **Verified Code & Snapshot Commit SHA**: `350bac6` (`350bac6c9a5e63f6d136b13c6496b21a5ee8df7f`) on branch `agent/swiftchat-sdk-chatgpt-stack-realignment`
 

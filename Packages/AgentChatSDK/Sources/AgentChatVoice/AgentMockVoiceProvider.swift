@@ -72,8 +72,10 @@ public final class AgentMockVoiceProvider: AgentVoiceSessionProvider, @unchecked
     }
 
     public func endSession() async {
-        simulationTask?.cancel()
+        let task = simulationTask
         simulationTask = nil
+        task?.cancel()
+        _ = await task?.result
         updateState(.disconnected)
         setLevel(0.0)
     }

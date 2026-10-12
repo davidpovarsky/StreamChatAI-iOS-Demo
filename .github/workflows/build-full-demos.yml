@@ -44,10 +44,12 @@ jobs:
           SIM_ID=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
           echo "Using simulator ID: $SIM_ID"
           if [ "${{ inputs.record_snapshots }}" = "true" ]; then
+            echo "Recording snapshots via -test-env SNAPSHOT_TESTING_RECORD=all"
             export SNAPSHOT_TESTING_RECORD=all
-            echo "SNAPSHOT_TESTING_RECORD=all enabled"
+            xcodebuild test -scheme AgentChatSDK-Package -destination "platform=iOS Simulator,id=$SIM_ID" -test-env SNAPSHOT_TESTING_RECORD=all -test-env SNAPSHOT_RECORD=all CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO || true
+          else
+            xcodebuild test -scheme AgentChatSDK-Package -destination "platform=iOS Simulator,id=$SIM_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
           fi
-          xcodebuild test -scheme AgentChatSDK-Package -destination "platform=iOS Simulator,id=$SIM_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
 
       - name: Upload Snapshot Artifacts
         if: always()

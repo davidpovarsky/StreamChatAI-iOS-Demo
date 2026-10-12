@@ -71,17 +71,18 @@ public struct ChartResultView: View {
             }
 
             #if canImport(Charts)
-            Chart {
-                ForEach(sampleData) { item in
-                    switch chartType {
-                    case 0:
+            Group {
+                if chartType == 0 {
+                    Chart(sampleData) { item in
                         BarMark(
                             x: .value("Category", item.category),
                             y: .value("Value", item.value)
                         )
                         .foregroundStyle(selectedCategory == item.category ? Color.blue : Color.blue.opacity(0.7))
                         .cornerRadius(4)
-                    case 1:
+                    }
+                } else if chartType == 1 {
+                    Chart(sampleData) { item in
                         LineMark(
                             x: .value("Category", item.category),
                             y: .value("Value", item.value)
@@ -92,7 +93,9 @@ public struct ChartResultView: View {
                             y: .value("Value", item.value)
                         )
                         .foregroundStyle(Color.blue)
-                    case 2:
+                    }
+                } else {
+                    Chart(sampleData) { item in
                         AreaMark(
                             x: .value("Category", item.category),
                             y: .value("Value", item.value)
@@ -109,8 +112,6 @@ public struct ChartResultView: View {
                             y: .value("Value", item.value)
                         )
                         .foregroundStyle(Color.blue)
-                    default:
-                        EmptyModifier()
                     }
                 }
             }

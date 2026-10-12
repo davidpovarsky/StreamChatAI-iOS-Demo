@@ -80,8 +80,6 @@ public struct AgentModel: Identifiable, Codable, Equatable, Hashable, Sendable {
     ]
 }
 
-public typealias ModelType = AgentModel
-
 // MARK: - Typed AnySendable for Forms & Payloads
 
 public enum AnySendable: Codable, Equatable, Hashable, Sendable {

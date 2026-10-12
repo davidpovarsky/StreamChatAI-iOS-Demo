@@ -9,7 +9,7 @@ on:
         default: false
         type: boolean
   push:
-    branches: [agent/swiftchat-safe-overlay-v3, agent/tool-execution-disclosure-ui, agent/swiftchat-sdk-chatgpt-stack-realignment]
+    branches: [agent/swiftchat-safe-overlay-v3, agent/tool-execution-disclosure-ui]
 
 jobs:
   swiftchat:

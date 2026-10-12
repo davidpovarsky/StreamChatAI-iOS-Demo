@@ -40,7 +40,7 @@ public final class VirtualClock: AgentClock, @unchecked Sendable {
 
 // MARK: - Demo Scenario Types
 
-public struct DemoScenarioEvent: Codable, Equatable, Sendable {
+public struct DemoScenarioEvent: Equatable, Sendable {
     public let atMs: Int
     public let event: AgentChatStreamEvent
 

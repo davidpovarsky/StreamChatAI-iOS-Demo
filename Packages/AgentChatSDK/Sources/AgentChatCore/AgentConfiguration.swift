@@ -34,7 +34,6 @@ public struct AgentChatAppearanceConfiguration: Sendable, Equatable {
 public struct AgentChatFeaturesConfiguration: Sendable, Equatable {
     public var enableWebSearch: Bool
     public var enableVoiceMode: Bool
-    public var enableEmojiPicker: Bool
     public var enableToolExecutionDisclosure: Bool
     public var enableActivityTimeline: Bool
     public var enableInlineSources: Bool
@@ -43,7 +42,6 @@ public struct AgentChatFeaturesConfiguration: Sendable, Equatable {
     public init(
         enableWebSearch: Bool = true,
         enableVoiceMode: Bool = true,
-        enableEmojiPicker: Bool = true,
         enableToolExecutionDisclosure: Bool = true,
         enableActivityTimeline: Bool = true,
         enableInlineSources: Bool = true,
@@ -51,7 +49,6 @@ public struct AgentChatFeaturesConfiguration: Sendable, Equatable {
     ) {
         self.enableWebSearch = enableWebSearch
         self.enableVoiceMode = enableVoiceMode
-        self.enableEmojiPicker = enableEmojiPicker
         self.enableToolExecutionDisclosure = enableToolExecutionDisclosure
         self.enableActivityTimeline = enableActivityTimeline
         self.enableInlineSources = enableInlineSources
@@ -68,7 +65,6 @@ public struct AgentChatCapabilitiesConfiguration: Sendable, Equatable {
     public var supportsCitations: Bool
     public var supportsToolExecution: Bool
     public var supportsVoice: Bool
-    public var supportsEmoji: Bool
     public var supportsAttachments: Bool
 
     public init(
@@ -80,7 +76,6 @@ public struct AgentChatCapabilitiesConfiguration: Sendable, Equatable {
         supportsCitations: Bool = true,
         supportsToolExecution: Bool = true,
         supportsVoice: Bool = true,
-        supportsEmoji: Bool = true,
         supportsAttachments: Bool = true
     ) {
         self.supportsMarkdown = supportsMarkdown
@@ -91,7 +86,6 @@ public struct AgentChatCapabilitiesConfiguration: Sendable, Equatable {
         self.supportsCitations = supportsCitations
         self.supportsToolExecution = supportsToolExecution
         self.supportsVoice = supportsVoice
-        self.supportsEmoji = supportsEmoji
         self.supportsAttachments = supportsAttachments
     }
 }

@@ -40,16 +40,30 @@ Quick captures that still need classification.
 
 ## Planned / Todo
 
-- None pending for Phase 1.
+- [ ] Complete CI verification and generate release unsigned IPA for iOS 27.0.
 
 ## In Progress / Verification
 
-Phase 1 — VERIFIED COMPLETE
+- **Phase 2 — Native SwiftUI iOS 27 Architecture & SDK Showcase Realignment**:
+  - Modular DAG defined in `Packages/AgentChatSDK/Package.swift` targeting `.iOS("27.0")`.
+  - Canonical immutable models in `AgentChatCore` (`CanonicalModels.swift`, `AgentEventReducer.swift`, `VirtualClock.swift`).
+  - Hierarchical agent activity component `AgentHierarchicalActivityView` (collapsed by default: `Worked for...`).
+  - Visible approval cards outside tree (`AgentApprovalRequestCard`).
+  - Rich interactive result cards (`ChartResultView`, `MapResultView`, `FormResultView`, `CanvasResultViews`, `NativeResultCards`).
+  - 100% native showcase demo in `StreamChatAIDemo` (4 tabs: Playground, Scenarios with all 26 scenarios, Component Gallery, Motion Lab).
+  - CI workflow configured for macOS 15 / Xcode 27 / iOS 27 simulator testing and unsigned IPA packaging.
 
 ## Done
 
+- [x] **Phase 2 Core SDK Architecture & Native UI Implementation (2026-10-12)**
+  - Replaced legacy SwiftChat UI views with 100% native SwiftUI components.
+  - Decoupled singletons; per-session observable state in `AgentChatSession`.
+  - Native media fallback for YouTube and isolated WebKit in optional `AgentChatWebContent`.
+  - Removed obsolete dependencies (`Pow`, `EmojiKit`, `openai-swift-fork`, GetStream).
+  - Comprehensive unit and snapshot tests updated for native views.
 - [x] **Phase 1 — Truthful CI, Snapshot, Dependency & Build Verification Complete (2026-10-11)**
   - **Verified Code & Snapshot Commit SHA**: `350bac6` (`350bac6c9a5e63f6d136b13c6496b21a5ee8df7f`) on branch `agent/swiftchat-sdk-chatgpt-stack-realignment`
+
   - **CI Run IDs & URLs**:
     - `Build unsigned IPA`: Run `38130569625` (`completed success`) — `https://github.com/davidpovarsky/StreamChatAI-iOS-Demo/actions/runs/38130569625`
     - `Build Full Chat SDK Demos`: Run `38130569567` (`completed success`) — `https://github.com/davidpovarsky/StreamChatAI-iOS-Demo/actions/runs/38130569567`

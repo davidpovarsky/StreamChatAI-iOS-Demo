@@ -1,27 +1,34 @@
 #if canImport(SwiftUI)
 import SwiftUI
 import AgentChatCore
-import AgentChatSwiftChat
+import AgentChatUI
 
-/// Public front door for the SwiftChat-derived AgentChat experience.
-/// Renders the complete, packaged SwiftChat chat container with navigation, sidebar,
-/// reasoning disclosure, inline sources, rich media, and tool presentations.
+/// Public front door for the 100% native SwiftUI AgentChat experience.
+/// Renders the complete native SwiftUI chat root with navigation split view,
+/// hierarchical activity disclosures (collapsed by default), rich interactive result cards,
+/// and responsive multiline composer.
+@MainActor
 public struct AgentChatView: View {
     @ObservedObject public var session: AgentChatSession
     public var configuration: AgentChatConfiguration
+    public var onAction: ((AgentChatUserAction) -> Void)?
 
     public init(
         session: AgentChatSession,
-        configuration: AgentChatConfiguration = AgentChatConfiguration()
+        configuration: AgentChatConfiguration = AgentChatConfiguration(),
+        onAction: ((AgentChatUserAction) -> Void)? = nil
     ) {
         self.session = session
         self.configuration = configuration
+        self.onAction = onAction
     }
 
     public var body: some View {
-        ChatContainer()
-            .environmentObject(session.viewModel)
-            .environmentObject(session)
+        AgentChatRootView(
+            session: session,
+            configuration: configuration,
+            onAction: onAction
+        )
     }
 }
 #endif

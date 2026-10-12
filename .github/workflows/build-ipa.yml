@@ -9,35 +9,44 @@ on:
         default: false
         type: boolean
   push:
-    branches: [main, agent/tool-execution-disclosure-ui, agent/swiftchat-sdk-chatgpt-stack-realignment]
+    branches: [main, agent/swiftchat-sdk-chatgpt-stack-realignment]
 
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 26
+      - name: Select Xcode & Print Environment Info
         run: |
-          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' -print | sort | tail -1)
+          set -euo pipefail
+          XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode_27*.app' -print | sort | tail -1)
           if [ -z "$XCODE" ]; then
-            echo "Xcode 26 not found. Available Xcodes:"
-            ls -1 /Applications | grep '^Xcode'
-            exit 1
+            echo "Xcode 27 not found in /Applications. Available Xcodes:"
+            ls -1 /Applications | grep '^Xcode' || true
+            XCODE=$(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort | tail -1)
           fi
-          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
-          "$XCODE/Contents/Developer/usr/bin/xcodebuild" -version
+          echo "Selected Xcode: $XCODE"
+          if [ -n "$XCODE" ]; then
+            echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+            export DEVELOPER_DIR="$XCODE/Contents/Developer"
+          fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version || true
+          swift --version
+          uname -a
 
-      - name: Build AgentChatSDK & LiveKit Package Targets
+      - name: Build AgentChatSDK Package Targets
         run: |
           set -euo pipefail
           cd Packages/AgentChatSDK
           xcodebuild -scheme AgentChatSDK -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
           xcodebuild -scheme AgentChatVoiceLiveKit -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          xcodebuild -scheme AgentChatWebContent -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 
-      - name: Run AgentChatSDK Tests
+      - name: Run AgentChatSDK & Math Comparison Tests
         run: |
           set -euo pipefail
           cd Packages/AgentChatSDK
@@ -73,13 +82,23 @@ jobs:
 
       - name: Package unsigned IPA
         run: |
+          set -euo pipefail
           APP=$(find DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" -print -quit)
           test -n "$APP"
+          rm -rf Payload
           mkdir -p Payload
           cp -R "$APP" Payload/
-          zip -qry SwiftChat-AgentSDK-Demo-unsigned.ipa Payload
-          cp SwiftChat-AgentSDK-Demo-unsigned.ipa StreamChatAI-Demo-unsigned.ipa
-          ls -lh SwiftChat-AgentSDK-Demo-unsigned.ipa
+          zip -qry AgentChatSDK-Native-Demo-unsigned.ipa Payload
+          cp AgentChatSDK-Native-Demo-unsigned.ipa SwiftChat-AgentSDK-Demo-unsigned.ipa
+          cp AgentChatSDK-Native-Demo-unsigned.ipa StreamChatAI-Demo-unsigned.ipa
+          ls -lh AgentChatSDK-Native-Demo-unsigned.ipa
+
+      - name: Upload AgentChatSDK-Native-Demo-IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgentChatSDK-Native-Demo-IPA
+          path: AgentChatSDK-Native-Demo-unsigned.ipa
+          if-no-files-found: error
 
       - name: Upload SwiftChat-AgentSDK-Demo-IPA
         uses: actions/upload-artifact@v4
@@ -88,7 +107,7 @@ jobs:
           path: SwiftChat-AgentSDK-Demo-unsigned.ipa
           if-no-files-found: error
 
-      - name: Upload fallback StreamChatAI-Demo-IPA
+      - name: Upload StreamChatAI-Demo-IPA
         uses: actions/upload-artifact@v4
         with:
           name: StreamChatAI-Demo-IPA

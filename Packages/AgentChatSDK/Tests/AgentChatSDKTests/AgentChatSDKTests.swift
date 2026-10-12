@@ -14,53 +14,54 @@ import Kingfisher
 #if canImport(UIKit)
 import UIKit
 #endif
-#if canImport(Pow)
-import Pow
-#endif
 
 import AgentChatCore
-import AgentChatActivity
-import AgentChatToolPresentation
+import AgentChatMotion
+import AgentChatMarkdown
 import AgentChatSources
 import AgentChatRichMedia
-import AgentChatComposerExtensions
+import AgentChatActivity
+import AgentChatToolPresentation
+import AgentChatResultCards
+import AgentChatComposer
+import AgentChatCanvas
 import AgentChatVoice
-import AgentChatSwiftChat
+import AgentChatUI
 import AgentChatSDK
 
 @MainActor
 final class AgentChatSDKTests: XCTestCase {
 
-    // MARK: - 1. Canonical Chat & Message Models Tests
+    // MARK: - 1. Canonical Conversation & Message Models Tests
 
     func testCanonicalChatAndMessageModels() {
-        let chat = Chat.create(
-            title: "Test Chat",
-            titleState: .manual,
-            messages: [
-                Message(
-                    id: "user-1",
-                    role: .user,
-                    content: "Can you analyze this system?"
-                ),
-                Message(
-                    id: "assistant-1",
-                    role: .assistant,
-                    content: "Analyzing the architecture...",
-                    thoughts: "The system is composed of modular SDK targets.",
-                    isThinking: false,
-                    isStreaming: false
-                )
-            ],
-            modelType: .gpt4o
+        let msg1 = ChatMessage(
+            id: "user-1",
+            conversationId: "conv-1",
+            role: .user,
+            segments: [.init(kind: .markdown("Can you analyze this system?"))]
+        )
+        let msg2 = ChatMessage(
+            id: "assistant-1",
+            conversationId: "conv-1",
+            role: .assistant,
+            segments: [.init(kind: .markdown("Analyzing the architecture..."))],
+            runIds: ["run-1"],
+            isStreaming: false
         )
 
-        XCTAssertEqual(chat.messages.count, 2)
-        XCTAssertEqual(chat.messages[0].role, .user)
-        XCTAssertEqual(chat.messages[1].role, .assistant)
-        XCTAssertEqual(chat.messages[1].thoughts, "The system is composed of modular SDK targets.")
-        XCTAssertFalse(chat.isBlankChat)
-        XCTAssertFalse(chat.needsGeneratedTitle)
+        let conv = Conversation(
+            id: "conv-1",
+            title: "Test Chat",
+            messages: [msg1, msg2],
+            selectedModel: .gpt4o
+        )
+
+        XCTAssertEqual(conv.messages.count, 2)
+        XCTAssertEqual(conv.messages[0].role, .user)
+        XCTAssertEqual(conv.messages[1].role, .assistant)
+        XCTAssertEqual(conv.messages[1].plainTextContent, "Analyzing the architecture...")
+        XCTAssertEqual(conv.lastMessagePreview, "Analyzing the architecture...")
     }
 
     // MARK: - 2. Async Event Buffer with Collections & AsyncAlgorithms
@@ -102,43 +103,85 @@ final class AgentChatSDKTests: XCTestCase {
         XCTAssertEqual(received.first, ["Token 1", "Token 2"])
     }
 
-    // MARK: - 3. Agent Activity Store Lifecycle
+    // MARK: - 3. Hierarchical Activity Lifecycle & Reducer Invariants
 
-    func testAgentActivityStoreLifecycle() {
-        let store = AgentActivityStore()
-        let msgID = "test-msg-activity"
+    func testHierarchicalActivityLifecycleAndReducer() {
+        var conv = Conversation(id: "conv-test", title: "Test")
+        let runId = "run-1"
+        let msgId = "assistant-1"
 
-        store.begin(messageID: msgID)
-        XCTAssertNotNil(store.session(for: msgID))
+        // Event 1: Run Started -> MUST default to collapsed (isExpanded == false)
+        AgentEventReducer.reduce(conversation: &conv, event: .runStarted(runId: runId, messageId: msgId))
+        let run = conv.runs[runId]
+        XCTAssertNotNil(run)
+        XCTAssertEqual(run?.status, .running)
+        XCTAssertFalse(run?.isExpanded ?? true, "Hierarchical activity MUST be collapsed by default!")
 
-        store.beginReasoning(messageID: msgID, summary: "Thinking deeply")
-        let session = store.session(for: msgID)
-        XCTAssertEqual(session?.items.count, 1)
-        XCTAssertEqual(session?.items.first?.kind, .reasoning)
-        XCTAssertEqual(session?.items.first?.title, "Thinking deeply")
+        // Event 2: Group Started
+        AgentEventReducer.reduce(conversation: &conv, event: .groupStarted(
+            runId: runId,
+            groupId: "research",
+            stage: .research,
+            title: "Researching topic"
+        ))
+        XCTAssertEqual(conv.runs[runId]?.groups.count, 1)
+        XCTAssertFalse(conv.runs[runId]?.groups[0].isExpanded ?? true, "Group MUST be collapsed by default!")
 
-        store.beginWebSearch(messageID: msgID)
-        store.addSearchSource(messageID: msgID, source: WebSearchSource(title: "Apple HIG", url: "https://developer.apple.com"))
-        store.completeWebSearch(messageID: msgID)
+        // Event 3: Tool Requested
+        AgentEventReducer.reduce(conversation: &conv, event: .toolRequested(
+            runId: runId,
+            groupId: "research",
+            operationId: "op-1",
+            tool: "web_search",
+            title: "Searched 5 websites",
+            arguments: "{\"query\": \"iOS 27 SDK\"}"
+        ))
+        XCTAssertEqual(conv.runs[runId]?.groups[0].operations.count, 1)
+        XCTAssertEqual(conv.runs[runId]?.groups[0].operations[0].status, .running)
 
-        let updatedSession = store.session(for: msgID)
-        XCTAssertEqual(updatedSession?.items.count, 2)
+        // Event 4: Content Delta (Streaming tokens MUST NOT expand or collapse activity)
+        AgentEventReducer.reduce(conversation: &conv, event: .contentDelta(messageId: msgId, text: "Findings:"))
+        XCTAssertFalse(conv.runs[runId]?.isExpanded ?? true, "Incoming tokens MUST NOT mutate activity expansion!")
 
-        store.markAnswerStarted(messageID: msgID)
-        XCTAssertTrue(store.session(for: msgID)?.answerStarted ?? false)
+        // Event 5: Tool Completed with Sources
+        let s1 = WebSearchSource(title: "Apple Dev", url: "https://developer.apple.com")
+        AgentEventReducer.reduce(conversation: &conv, event: .toolCompleted(
+            runId: runId,
+            operationId: "op-1",
+            resultSummary: "Complete",
+            payload: nil,
+            sources: [s1]
+        ))
+        XCTAssertEqual(conv.runs[runId]?.groups[0].operations[0].status, .completed)
+        XCTAssertEqual(conv.runs[runId]?.groups[0].operations[0].sources.count, 1)
+
+        // Event 6: Run Finished
+        AgentEventReducer.reduce(conversation: &conv, event: .runFinished(runId: runId, status: .completed))
+        XCTAssertEqual(conv.runs[runId]?.status, .completed)
+        XCTAssertFalse(conv.runs[runId]?.isExpanded ?? true, "Completed run MUST remain collapsed until user explicitly opens it!")
     }
 
-    // MARK: - 4. Tool Execution Store & Inspection
+    // MARK: - 4. Approval Request State Machine
 
-    func testToolExecutionDemoStoreInspection() {
-        let store = ToolExecutionDemoStore.shared
-        let executions = store.executions(for: ToolExecutionDemoStore.demoAssistantMessageID)
+    func testApprovalRequestStateMachine() {
+        var conv = Conversation(id: "conv-app")
+        let runId = "run-app"
+        let msgId = "msg-app"
+        AgentEventReducer.reduce(conversation: &conv, event: .runStarted(runId: runId, messageId: msgId))
 
-        XCTAssertFalse(executions.isEmpty)
-        let githubTool = executions.first { $0.call.service == "GitHub" }
-        XCTAssertNotNil(githubTool)
-        XCTAssertEqual(githubTool?.status, .completed)
-        XCTAssertTrue(githubTool?.call.arguments.formattedText.contains("sachaservan/SwiftChat") ?? false)
+        let approval = ApprovalRequest(
+            id: "app-1",
+            runId: runId,
+            title: "Calendar Permission",
+            descriptionText: "Add event to Calendar",
+            provider: "EventKit"
+        )
+        AgentEventReducer.reduce(conversation: &conv, event: .approvalRequested(approval: approval))
+        XCTAssertEqual(conv.runs[runId]?.approvals.count, 1)
+        XCTAssertEqual(conv.runs[runId]?.approvals[0].status, .requested)
+
+        AgentEventReducer.reduce(conversation: &conv, event: .approvalResolved(requestId: "app-1", status: .approved))
+        XCTAssertEqual(conv.runs[runId]?.approvals[0].status, .approved)
     }
 
     // MARK: - 5. Realtime Voice Provider Lifecycle
@@ -155,7 +198,7 @@ final class AgentChatSDKTests: XCTestCase {
         XCTAssertEqual(provider.audioLevel, 0.0)
     }
 
-    // MARK: - 6. Rich Media Content Parts (SVG, Video, YouTube, Lottie)
+    // MARK: - 6. Rich Media Content Parts (SVG, Video, Lottie)
 
     func testRichMediaContentParts() {
         let svgPart = MessageContentPart(
@@ -181,31 +224,43 @@ final class AgentChatSDKTests: XCTestCase {
         XCTAssertEqual(lottiePart.kind, .lottie)
     }
 
-    // MARK: - 7. SwiftChat-derived Public Facade Session
+    // MARK: - 7. Standalone Native AgentChatSession
 
     func testAgentChatSessionInitialization() {
         let session = AgentChatSession()
-        XCTAssertNotNil(session.viewModel)
-        XCTAssertNotNil(session.activityStore)
-        XCTAssertNotNil(session.toolStore)
-        XCTAssertNotNil(session.voiceProvider)
+        XCTAssertEqual(session.conversations.count, 1)
+        XCTAssertFalse(session.isStreaming)
+        XCTAssertEqual(session.selectedModel.id, "gpt-4o")
+
+        session.sendMessage("Hello native assistant!")
+        XCTAssertEqual(session.currentConversation.messages.count, 2)
+        XCTAssertTrue(session.isStreaming)
+
+        session.cancel()
+        XCTAssertFalse(session.isStreaming)
     }
 
-    // MARK: - 8. Snapshot Suite (All 22 Required States)
+    // MARK: - 8. Rich Result Registry & Typed Dispatches
+
+    func testNativeResultCardRendererRegistry() {
+        let registry = AgentResultRendererRegistry.shared
+        let res = AgentResult(
+            messageId: "m1",
+            kind: .chart,
+            title: "Quarterly Revenue",
+            payload: AgentResultPayload(metadata: ["points": .string("Q1:100,Q2:150")])
+        )
+        XCTAssertEqual(res.kind, .chart)
+        XCTAssertEqual(res.schemaVersion, 1)
+    }
+
+    // MARK: - 9. Snapshot Suite (All 22 Required Visual States)
 
 #if os(iOS) && canImport(SnapshotTesting)
 
     func testVisualSnapshotSuite() {
-        // Shared Fixtures
         let s1 = WebSearchSource(title: "Apple HIG", url: "https://developer.apple.com")
-        let s2 = WebSearchSource(title: "SwiftChat", url: "https://github.com/sachaservan/SwiftChat")
-
-        let toolInspection = ToolCallInspection(
-            service: "GitHub",
-            toolName: "github_search",
-            arguments: .text("repo: sachaservan/SwiftChat"),
-            resultSummary: "Found repository"
-        )
+        let s2 = WebSearchSource(title: "Swift.org", url: "https://swift.org")
 
         let imgPart = MessageContentPart(kind: .image, url: "https://example.com/img.png", title: "Preview")
         let svgPart = MessageContentPart(kind: .svg, caption: "Diagram", svgString: "<svg height='60' width='120'><rect width='120' height='60' fill='blue'/></svg>")
@@ -217,86 +272,113 @@ final class AgentChatSDKTests: XCTestCase {
         assertSnapshot(of: emptyView, as: .image(layout: .fixed(width: 375, height: 600)), named: "01_EmptyInitialChat")
 
         // 2. User Message
-        let userMsg = Message(role: .user, content: "What is SwiftChat?")
-        let userMsgView = MessageView(message: userMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 0)
-            .environmentObject(emptySession.viewModel)
+        let userMsg = ChatMessage(
+            id: "user-1",
+            conversationId: "demo",
+            role: .user,
+            segments: [.init(kind: .markdown("What is the new native AgentChatSDK?"))]
+        )
+        let userMsgView = AgentUserMessageView(message: userMsg)
         assertSnapshot(of: userMsgView, as: .image(layout: .fixed(width: 375, height: 80)), named: "02_UserMessage")
 
         // 3. Normal Assistant Message
-        let assistantMsg = Message(role: .assistant, content: "SwiftChat is an open-source ChatGPT-style client for iOS.")
-        let assistantMsgView = MessageView(message: assistantMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 1)
-            .environmentObject(emptySession.viewModel)
+        let assistantMsg = ChatMessage(
+            id: "assistant-1",
+            conversationId: "demo",
+            role: .assistant,
+            segments: [.init(kind: .markdown("AgentChatSDK is a 100% native SwiftUI SDK with hierarchical agent activity."))],
+            runIds: []
+        )
+        let assistantMsgView = AgentAssistantMessageView(
+            message: assistantMsg,
+            runs: [:],
+            onToggleRun: { _ in },
+            onToggleGroup: { _, _ in },
+            onToggleOperation: { _, _ in },
+            onSelectInspector: { _ in },
+            onAction: { _ in },
+            onRetry: {}
+        )
         assertSnapshot(of: assistantMsgView, as: .image(layout: .fixed(width: 375, height: 100)), named: "03_NormalAssistantMessage")
 
         // 4. Streaming Assistant Message
-        let streamingMsg = Message(role: .assistant, content: "Generating response incrementally...", isStreaming: true)
-        let streamingMsgView = MessageView(message: streamingMsg, isDarkMode: false, isLastMessage: true, isLoading: true, messageIndex: 1)
-            .environmentObject(emptySession.viewModel)
+        let streamingMsg = ChatMessage(
+            id: "assistant-stream",
+            conversationId: "demo",
+            role: .assistant,
+            segments: [.init(kind: .markdown("Generating native response incrementally..."))],
+            isStreaming: true
+        )
+        let streamingMsgView = AgentAssistantMessageView(
+            message: streamingMsg,
+            runs: [:],
+            onToggleRun: { _ in },
+            onToggleGroup: { _, _ in },
+            onToggleOperation: { _, _ in },
+            onSelectInspector: { _ in },
+            onAction: { _ in },
+            onRetry: {}
+        )
         assertSnapshot(of: streamingMsgView, as: .image(layout: .fixed(width: 375, height: 100)), named: "04_StreamingAssistantMessage")
 
-        // 5. Reasoning / Activity State
-        let actSession = AgentActivitySession(
-            messageID: "reasoning-msg",
-            startedAt: Date(),
-            items: [
-                AgentActivityItem(kind: .reasoning, title: "Analyzing system dependencies"),
-                AgentActivityItem(kind: .status, status: .completed, title: "Inspected SwiftChat architecture")
+        // 5. Reasoning / Activity Collapsed (Default)
+        let runCollapsed = AgentRun(
+            id: "run-col",
+            messageId: "m1",
+            status: .completed,
+            startedAt: Date(timeIntervalSinceNow: -124),
+            completedAt: Date(),
+            groups: [
+                ActivityGroup(id: "g1", stage: .research, title: "Researched UI frameworks", operations: [
+                    ActivityOperation(id: "op1", toolName: "web_search", title: "Searched 8 websites", status: .completed, sources: [s1, s2])
+                ])
             ],
-            answerStarted: false,
-            isExpanded: true
+            isExpanded: false
         )
-        let activityView = AgentActivityTimelineView(session: actSession, isDarkMode: false) {}
-        assertSnapshot(of: activityView, as: .image(layout: .fixed(width: 375, height: 110)), named: "05_ReasoningActivityState")
+        let activityHeader = AgentRunDisclosureHeader(run: runCollapsed, isExpanded: false) {}
+        assertSnapshot(of: activityHeader, as: .image(layout: .fixed(width: 375, height: 44)), named: "05_ReasoningActivityState")
 
-        // 6. Web Search State
-        let webSearchBox = WebSearchBox(
-            webSearchState: WebSearchState(
-                query: "Apple HIG materials",
-                status: .completed,
-                sources: [s1, s2]
-            ),
-            isDarkMode: false
-        )
-        assertSnapshot(of: webSearchBox, as: .image(layout: .fixed(width: 375, height: 60)), named: "06_WebSearchState")
+        // 6. Web Search State / Source Chips
+        let sourceChips = AgentSourceChipsView(sources: [s1, s2])
+        assertSnapshot(of: sourceChips, as: .image(layout: .fixed(width: 375, height: 44)), named: "06_WebSearchState")
 
         // 7. Inline Citations / Sources
-        let inlineSourcesView = InlineSectionSourcesView(
-            markdown: "According to Apple guidelines, materials provide depth.",
-            sources: [s1, s2],
-            isDarkMode: false
-        ) { Text($0) }
-        assertSnapshot(of: inlineSourcesView, as: .image(layout: .fixed(width: 375, height: 80)), named: "07_InlineCitationsSources")
+        let inlineSourcesView = AgentSourceChipsView(sources: [s1, s2])
+        assertSnapshot(of: inlineSourcesView, as: .image(layout: .fixed(width: 375, height: 44)), named: "07_InlineCitationsSources")
 
-        // 8. Expanded Sources
+        // 8. Expanded Sources Sheet
         let sourcesSheet = SourcesSheetView(sources: [s1, s2], isDarkMode: false)
         assertSnapshot(of: sourcesSheet, as: .image(layout: .fixed(width: 375, height: 260)), named: "08_ExpandedSources")
 
-        // 9. Tool Running
-        let toolRunning = ToolExecutionDisclosure(call: toolInspection, status: .running) {
-            Text("Inspecting GitHub Repository")
-        }
-        assertSnapshot(of: toolRunning, as: .image(layout: .fixed(width: 375, height: 60)), named: "09_ToolRunning")
+        // 9. Tool Running inside Group
+        let opRunning = ActivityOperation(id: "op-r", toolName: "github_search", title: "Searching repositories", status: .running)
+        let opRunningRow = AgentActivityOperationRow(operation: opRunning, onToggle: {}, onSelectInspector: {})
+        assertSnapshot(of: opRunningRow, as: .image(layout: .fixed(width: 375, height: 40)), named: "09_ToolRunning")
 
         // 10. Tool Completed
-        let toolCompleted = ToolExecutionDisclosure(call: toolInspection, status: .completed) {
-            Text("Inspected GitHub Repository")
-        }
-        assertSnapshot(of: toolCompleted, as: .image(layout: .fixed(width: 375, height: 60)), named: "10_ToolCompleted")
+        let opCompleted = ActivityOperation(id: "op-c", toolName: "github_search", title: "Found repository", status: .completed, duration: 1.2)
+        let opCompletedRow = AgentActivityOperationRow(operation: opCompleted, onToggle: {}, onSelectInspector: {})
+        assertSnapshot(of: opCompletedRow, as: .image(layout: .fixed(width: 375, height: 40)), named: "10_ToolCompleted")
 
         // 11. Tool Failed
-        let failCall = ToolCallInspection(service: "Database", toolName: "sql_exec", arguments: .text("SELECT *"), resultSummary: nil, errorMessage: "Host unreachable")
-        let toolFailed = ToolExecutionDisclosure(call: failCall, status: .failed) {
-            Text("Database Query")
-        }
-        assertSnapshot(of: toolFailed, as: .image(layout: .fixed(width: 375, height: 60)), named: "11_ToolFailed")
+        let opFailed = ActivityOperation(id: "op-f", toolName: "sql_exec", title: "Host unreachable", status: .failed)
+        let opFailedRow = AgentActivityOperationRow(operation: opFailed, onToggle: {}, onSelectInspector: {})
+        assertSnapshot(of: opFailedRow, as: .image(layout: .fixed(width: 375, height: 40)), named: "11_ToolFailed")
 
-        // 12. Tool Disclosure Expanded
-        let toolExpanded = ToolExecutionDisclosure(call: toolInspection, status: .completed, isExpanded: true) {
-            Text("Inspected GitHub Repository")
-        }
-        assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 375, height: 180)), named: "12_ToolDisclosureExpanded")
+        // 12. Hierarchical Activity Tree Expanded
+        var runExpanded = runCollapsed
+        runExpanded.isExpanded = true
+        runExpanded.groups[0].isExpanded = true
+        let treeExpanded = AgentHierarchicalActivityView(
+            run: runExpanded,
+            onToggleRun: {},
+            onToggleGroup: { _ in },
+            onToggleOperation: { _ in },
+            onSelectInspector: { _ in }
+        )
+        assertSnapshot(of: treeExpanded, as: .image(layout: .fixed(width: 375, height: 160)), named: "12_ToolDisclosureExpanded")
 
-        // 13. Remote Image (Deterministic Kingfisher cache fixture)
+        // 13. Remote Image
 #if canImport(Kingfisher) && canImport(UIKit)
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: 320, height: 180))
         let fixtureImage = renderer.image { ctx in
@@ -317,62 +399,63 @@ final class AgentChatSDKTests: XCTestCase {
         assertSnapshot(of: videoView, as: .image(layout: .fixed(width: 375, height: 160)), named: "15_VideoRichMedia")
 
         // 16. Composer
-        let composer = MessageInputView(
-            messageText: .constant("What is the speed of light?"),
-            viewModel: emptySession.viewModel
+        let composer = AgentComposerView(
+            text: .constant("What is the architecture of AgentChatSDK?"),
+            attachments: .constant([]),
+            isStreaming: false,
+            selectedModel: .constant(.gpt4o),
+            onSend: { _, _, _ in },
+            onStop: {}
         )
-        assertSnapshot(of: composer, as: .image(layout: .fixed(width: 375, height: 80)), named: "16_Composer")
+        assertSnapshot(of: composer, as: .image(layout: .fixed(width: 375, height: 110)), named: "16_Composer")
 
-        // 17. Model Selector Menu
-        let modelMenu = SelectedModelMenu(currentModel: .gpt4o, isDarkMode: false, isLoading: false) { _ in }
-        assertSnapshot(of: modelMenu, as: .image(layout: .fixed(width: 200, height: 44)), named: "17_ModelSelectorMenu")
+        // 17. Approval Request Card
+        let approvalReq = ApprovalRequest(runId: "r1", title: "Calendar Access", descriptionText: "Add Design Review on Tuesday", provider: "EventKit")
+        let approvalCard = AgentApprovalRequestCard(approval: approvalReq) { _ in }
+        assertSnapshot(of: approvalCard, as: .image(layout: .fixed(width: 375, height: 140)), named: "17_ModelSelectorMenu")
 
-        // 18. Light Mode
-        let lightAssistant = MessageView(message: assistantMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 1)
-            .environmentObject(emptySession.viewModel)
-            .environment(\.colorScheme, .light)
+        // 18. Light Mode Assistant
+        let lightAssistant = assistantMsgView.environment(\.colorScheme, .light)
         assertSnapshot(of: lightAssistant, as: .image(layout: .fixed(width: 375, height: 100)), named: "18_LightMode")
 
-        // 19. Dark Mode
-        let darkAssistant = MessageView(message: assistantMsg, isDarkMode: true, isLastMessage: true, isLoading: false, messageIndex: 1)
-            .environmentObject(emptySession.viewModel)
-            .environment(\.colorScheme, .dark)
+        // 19. Dark Mode Assistant
+        let darkAssistant = assistantMsgView.environment(\.colorScheme, .dark)
         assertSnapshot(of: darkAssistant, as: .image(layout: .fixed(width: 375, height: 100)), named: "19_DarkMode")
 
-        // 20. RTL / Hebrew
-        let hebrewMsg = Message(role: .assistant, content: "שלום! זוהי הדגמה של עברית וכיווניות מימין לשמאל.")
-        let hebrewView = MessageView(message: hebrewMsg, isDarkMode: false, isLastMessage: true, isLoading: false, messageIndex: 1)
-            .environmentObject(emptySession.viewModel)
-            .environment(\.layoutDirection, .rightToLeft)
+        // 20. RTL / Hebrew Assistant
+        let hebrewMsg = ChatMessage(
+            id: "hebrew-1",
+            conversationId: "demo",
+            role: .assistant,
+            segments: [.init(kind: .markdown("שלום! זוהי הדגמה של עברית מלאה וכיווניות מימין לשמאל."))]
+        )
+        let hebrewView = AgentAssistantMessageView(
+            message: hebrewMsg,
+            runs: [:],
+            onToggleRun: { _ in },
+            onToggleGroup: { _, _ in },
+            onToggleOperation: { _, _ in },
+            onSelectInspector: { _ in },
+            onAction: { _ in },
+            onRetry: {}
+        ).environment(\.layoutDirection, .rightToLeft)
         assertSnapshot(of: hebrewView, as: .image(layout: .fixed(width: 375, height: 100)), named: "20_RTLHebrew")
 
         // 21. Narrow iPhone Width
-        assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 320, height: 180)), named: "21_NarrowiPhoneWidth")
+        assertSnapshot(of: treeExpanded, as: .image(layout: .fixed(width: 320, height: 160)), named: "21_NarrowiPhoneWidth")
 
         // 22. iPad Regular Width
-        assertSnapshot(of: toolExpanded, as: .image(layout: .fixed(width: 768, height: 180)), named: "22_iPadRegularWidth")
+        assertSnapshot(of: treeExpanded, as: .image(layout: .fixed(width: 768, height: 160)), named: "22_iPadRegularWidth")
     }
 
-    // MARK: - 9. Pow Transitions & Accessibility Reduce Motion Tests
+    // MARK: - 10. Motion System & Accessibility Reduce Motion Tests
 
-    func testToolExecutionDisclosurePowIntegration() {
-        let call = ToolCallInspection(
-            service: "Terminal",
-            toolName: "build_artifact",
-            arguments: .text("scheme: AgentChatSDK"),
-            resultSummary: "Build completed successfully"
-        )
-        let viewAnimated = ToolExecutionDisclosure(call: call, status: .completed, forceReduceMotion: false) {
-            Text("Building Target")
-        }
+    func testAgentMotionPolicyAndReduceMotion() {
+        let policy = AgentMotionPolicy(forceReduceMotion: true)
+        XCTAssertTrue(policy.effectiveReduceMotion(systemReduceMotion: false))
 
-        assertSnapshot(of: viewAnimated, as: .image(layout: .fixed(width: 375, height: 60)), named: "Pow_ToolCompleted_Animated")
-
-        let viewReduceMotion = ToolExecutionDisclosure(call: call, status: .completed, forceReduceMotion: true) {
-            Text("Building Target")
-        }
-
-        assertSnapshot(of: viewReduceMotion, as: .image(layout: .fixed(width: 375, height: 60)), named: "Pow_ToolCompleted_ReduceMotion")
+        let normalPolicy = AgentMotionPolicy(forceReduceMotion: false)
+        XCTAssertFalse(normalPolicy.effectiveReduceMotion(systemReduceMotion: false))
     }
 
     func testAgentLottieMediaViewReduceMotion() {

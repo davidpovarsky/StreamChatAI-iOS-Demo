@@ -16,7 +16,7 @@ import iosMath
 #endif
 
 import AgentChatCore
-import AgentChatSwiftChat
+import AgentChatMarkdown
 
 // MARK: - 1. Side-by-Side Comparison Container View
 

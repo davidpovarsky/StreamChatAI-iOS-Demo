@@ -48,14 +48,3 @@ public protocol AgentChatRuntimeProvider: Sendable {
     func cancel(chatId: String)
 }
 
-// Extension for backwards compatibility with legacy ModelType
-public extension AgentChatRuntimeProvider {
-    func sendMessage(
-        chatId: String,
-        content: String,
-        model: ModelType,
-        attachments: [Attachment]
-    ) async throws -> AsyncStream<AgentChatStreamEvent> {
-        try await sendMessage(chatId: chatId, content: content, model: model, attachments: attachments)
-    }
-}

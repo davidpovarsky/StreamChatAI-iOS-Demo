@@ -111,16 +111,16 @@ public struct AgentChatConfiguration: Sendable, Equatable {
     public var features: AgentChatFeaturesConfiguration
     public var capabilities: AgentChatCapabilitiesConfiguration
     public var rendering: AgentChatRenderingConfiguration
-    public var availableModels: [ModelType]
-    public var defaultModel: ModelType
+    public var availableModels: [AgentModel]
+    public var defaultModel: AgentModel
 
     public init(
         appearance: AgentChatAppearanceConfiguration = AgentChatAppearanceConfiguration(),
         features: AgentChatFeaturesConfiguration = AgentChatFeaturesConfiguration(),
         capabilities: AgentChatCapabilitiesConfiguration = AgentChatCapabilitiesConfiguration(),
         rendering: AgentChatRenderingConfiguration = AgentChatRenderingConfiguration(),
-        availableModels: [ModelType] = [.gpt4o, .gpt4oMini, .o1, .o3Mini],
-        defaultModel: ModelType = .gpt4o
+        availableModels: [AgentModel] = AgentModel.defaultModels,
+        defaultModel: AgentModel = .gpt4o
     ) {
         self.appearance = appearance
         self.features = features

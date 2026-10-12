@@ -89,6 +89,12 @@ public struct AgentResultDispatcher: View {
 public struct MarkdownResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         AgentChatMarkdownView(content: result.payload.contentText ?? "")
     }
@@ -98,6 +104,11 @@ public struct CodeResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
     @State private var isCopied = false
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -133,6 +144,12 @@ public struct CodeResultView: View {
 public struct MathResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         LaTeXView(latex: result.payload.contentText ?? "", isDisplay: true, isDarkMode: false)
     }
@@ -143,6 +160,12 @@ public struct MathResultView: View {
 public struct ImageResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let urlStr = result.payload.urlString, let url = URL(string: urlStr) {
@@ -176,6 +199,12 @@ public struct ImageResultView: View {
 public struct SVGResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let svg = result.payload.metadata["svgString"]?.stringValue {
@@ -199,6 +228,12 @@ public struct SVGResultView: View {
 public struct VideoResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let urlStr = result.payload.urlString, let url = URL(string: urlStr) {
@@ -221,6 +256,12 @@ public struct AudioResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
     @State private var isPlaying = false
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 12) {
             Button {
@@ -251,6 +292,12 @@ public struct AudioResultView: View {
 public struct FileResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "doc.fill")
@@ -285,6 +332,12 @@ public struct FileResultView: View {
 public struct CitationResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(result.title ?? "Retrieved Citations")
@@ -301,6 +354,12 @@ public struct CitationResultView: View {
 public struct CalendarResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 12) {
             VStack {
@@ -334,6 +393,12 @@ public struct ReminderResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
     @State private var isChecked = false
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 10) {
             Button {
@@ -370,6 +435,12 @@ public struct ReminderResultView: View {
 public struct HealthResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "heart.fill")
@@ -395,6 +466,12 @@ public struct HealthResultView: View {
 public struct KnowledgeResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -424,6 +501,12 @@ public struct NativeMiniAppResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
     @State private var activeTab = 0
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -478,6 +561,12 @@ public struct NativeMiniAppResultView: View {
 public struct ArtifactResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "cube.box.fill")
@@ -502,6 +591,12 @@ public struct ArtifactResultView: View {
 public struct ToolResultFallbackView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -522,6 +617,12 @@ public struct ToolResultFallbackView: View {
 public struct ErrorResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -558,6 +659,12 @@ public struct ErrorResultView: View {
 public struct ApprovalResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
+
     public var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.shield.fill")
@@ -575,6 +682,11 @@ public struct RichLinkPreviewView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
     @Environment(\.openURL) private var openURL
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
 
     public var body: some View {
         Button {
@@ -611,6 +723,11 @@ public struct WebContentFallbackResultView: View {
     public let result: AgentResult
     public let onAction: (AgentChatUserAction) -> Void
     @Environment(\.openURL) private var openURL
+
+    public init(result: AgentResult, onAction: @escaping (AgentChatUserAction) -> Void = { _ in }) {
+        self.result = result
+        self.onAction = onAction
+    }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {

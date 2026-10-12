@@ -86,9 +86,15 @@ public struct ComponentGalleryView: View {
                 ActivityOperation(id: "op1", toolName: "web_search", title: "Searched 8 websites", status: .completed, sources: [s1, s2]),
                 ActivityOperation(id: "op2", toolName: "github_api", title: "Scanning commits", status: .running)
             ], isExpanded: true)
-            var expandedRun = runCompleted
-            expandedRun.isExpanded = true
-            expandedRun.groups = [group]
+            let expandedRun = AgentRun(
+                id: "r2",
+                messageId: "m2",
+                status: .completed,
+                startedAt: Date(timeIntervalSinceNow: -171),
+                completedAt: Date(),
+                groups: [group],
+                isExpanded: true
+            )
             AgentHierarchicalActivityView(
                 run: expandedRun,
                 onToggleRun: {},
